@@ -1,0 +1,30 @@
+Legions - NEXT STEPS for next AI session
+
+Current baseline
+- Typed parser and loader for rules tables are implemented.
+- API startup now validates and loads supported rules tables.
+- Table data is still mostly template-level and needs real values from source charts.
+
+Priority order
+1) Fill Original data tables with real values (do this incrementally per table)
+2) Add runtime adapters that convert loaded table models into rule-engine lookups
+3) Replace hardcoded movement costs in rulesets with table-driven movement profile selection
+4) Implement stacking resolution using stacking tables
+5) Implement missile table resolution and DR modifiers
+
+Data import workflow
+- Source files are in `docs/sources/charts/` and `docs/SPQR_4thEdition_Living_Rules_Draft_Oct2022.pdf`.
+- For each table:
+  - copy `*.template.json` -> `<table_id>.json`
+  - fill values, keep schema keys stable
+  - keep `null` only where value is unknown and add short note
+- Validate with `just check` from repo root.
+
+Coding constraints
+- Keep files small and strongly typed.
+- Keep deterministic behavior in core rules.
+- Add tests for every behavior change.
+- Keep line length <= 140 chars.
+
+Suggested first task next session
+- Finish `movement_costs.json` with full terrain/elevation/facing values and wire movement resolver to use profile-based costs.

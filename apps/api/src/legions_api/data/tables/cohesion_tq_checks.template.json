@@ -1,0 +1,21 @@
+{
+  "table_id": "cohesion_tq_checks",
+  "version": "draft-1",
+  "notes": "Machine-readable trigger list for TQ checks and automatic cohesion hits.",
+  "triggers": [
+    {
+      "trigger_id": "move_again_same_turn",
+      "phase": "orders_movement",
+      "type": "automatic_hits",
+      "formula": "1",
+      "exceptions": ["skirmisher"]
+    },
+    {
+      "trigger_id": "pre_shock_check",
+      "phase": "shock",
+      "type": "tq_check",
+      "formula": "if dr > tq then hits = dr - tq",
+      "exceptions": []
+    }
+  ]
+}

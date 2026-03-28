@@ -1,0 +1,20 @@
+{
+  "table_id": "stacking_mandatory",
+  "version": "draft-1",
+  "notes": "Mandatory movement stacking outcomes (rout and retreat interactions).",
+  "rows": [
+    {
+      "moving_category": "routing_basic",
+      "stationary_category": "basic",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "stationary_unit_tq_check": {
+        "required": false,
+        "formula": null
+      },
+      "comments": "Fill from original chart."
+    }
+  ]
+}

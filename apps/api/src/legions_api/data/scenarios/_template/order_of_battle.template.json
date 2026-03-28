@@ -1,0 +1,36 @@
+{
+  "scenario_id": "replace_me",
+  "sides": [
+    {
+      "side_id": "red",
+      "leaders": [
+        {
+          "leader_id": "red_oc",
+          "name": "Overall Commander",
+          "is_overall_commander": true,
+          "initiative": 0,
+          "command_range": 0,
+          "line_command": 0,
+          "strategy": 0,
+          "charisma": 0,
+          "elite_commander": false,
+          "command_restrictions": []
+        }
+      ],
+      "units": [
+        {
+          "unit_id": "red_unit_1",
+          "type": "LG",
+          "class": "HA",
+          "size": 0,
+          "tq": 0,
+          "move_allowance": 0,
+          "missile_class": null,
+          "depleted": false,
+          "position": {"q": 0, "r": 0},
+          "facing": "NE"
+        }
+      ]
+    }
+  ]
+}

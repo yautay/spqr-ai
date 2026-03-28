@@ -1,0 +1,13 @@
+{
+  "table_id": "rally_table",
+  "version": "draft-1",
+  "notes": "Rally result by die roll and unit TQ band if applicable.",
+  "rows": [
+    {
+      "die_roll": 0,
+      "result": {
+        "cohesion_hits_after_rally": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "table_id": "pursuit_option",
+  "version": "draft-1",
+  "notes": "Optional cavalry pursuit check configuration values.",
+  "ratings": {
+    "LC": null,
+    "LN": null,
+    "RC": null,
+    "HC": null,
+    "BC": null
+  },
+  "dr_modifiers": [
+    {"id": "numidian_lc", "drm": null},
+    {"id": "defender_is_infantry", "drm": null},
+    {"id": "leader_charisma", "drm": "plus_or_minus"},
+    {"id": "attacker_in_enemy_zoc", "drm": null}
+  ]
+}

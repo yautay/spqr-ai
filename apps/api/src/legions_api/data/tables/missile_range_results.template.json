@@ -1,0 +1,53 @@
+{
+  "table_id": "missile_range_results",
+  "version": "draft-1",
+  "notes": "Missile strength by missile class and range with DR modifiers.",
+  "missile_classes": [
+    {
+      "missile_class_id": "A",
+      "name": "archer",
+      "strength_by_range": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null,
+        "5": null
+      }
+    },
+    {
+      "missile_class_id": "J",
+      "name": "javelin",
+      "strength_by_range": {
+        "1": null,
+        "2": null
+      }
+    },
+    {
+      "missile_class_id": "S",
+      "name": "slinger",
+      "strength_by_range": {
+        "1": null,
+        "2": null,
+        "3": null,
+        "4": null
+      }
+    },
+    {
+      "missile_class_id": "elephant_screen_a",
+      "name": "elephant_screen_archer",
+      "strength_by_range": {
+        "1": null,
+        "2": null,
+        "3": null
+      }
+    }
+  ],
+  "dr_modifiers": [
+    {"id": "target_woods", "drm": null},
+    {"id": "target_ph_or_hi", "drm": null},
+    {"id": "adjacent_a_s_vs_ph_hi_front", "drm": null},
+    {"id": "target_sk", "drm": null},
+    {"id": "firing_while_moving_selected_types", "drm": null},
+    {"id": "firing_unit_depleted", "drm": null}
+  ]
+}

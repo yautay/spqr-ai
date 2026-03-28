@@ -1,0 +1,20 @@
+{
+  "scenario_id": "replace_me",
+  "line_rules": [
+    {
+      "line_id": "example_line",
+      "side_id": "red",
+      "eligible_unit_filters": {
+        "unit_types": ["LG"],
+        "unit_classes": ["HA", "PR", "TR"],
+        "allow_velites_skirmish_interruption": true
+      },
+      "adjacency_rule": {
+        "max_gap": 0,
+        "allow_gap_through": []
+      },
+      "requires_same_orientation": true,
+      "max_lines_per_command": 1
+    }
+  ]
+}

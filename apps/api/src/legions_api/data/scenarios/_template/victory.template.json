@@ -1,0 +1,23 @@
+{
+  "scenario_id": "replace_me",
+  "retreat_edges": {
+    "red": "S",
+    "blue": "N"
+  },
+  "withdrawal_levels": {
+    "red": 0,
+    "blue": 0
+  },
+  "rout_point_rules": {
+    "default": "unit_tq",
+    "overrides": [
+      {"selector": {"unit_type": "SK"}, "rout_points": 2},
+      {"selector": {"unit_type": "EL"}, "rout_points": 2},
+      {"selector": {"unit_type": "PH"}, "rout_points_formula": "2x_tq"}
+    ],
+    "leader_rules": {
+      "named_multiplier": 5,
+      "tribune_prefect_replacement": "initiative"
+    }
+  }
+}

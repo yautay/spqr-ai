@@ -1,0 +1,20 @@
+{
+  "scenario_id": "replace_me",
+  "rules": {
+    "carthaginian_command_override": false,
+    "triarii_doctrine_active": false,
+    "double_depth_phalanx_allowed": false,
+    "pre_arranged_withdrawal_available": false,
+    "elephant_command_optional_active": false,
+    "engaged_optional_active": false,
+    "artillery_active": false
+  },
+  "reinforcements": [
+    {
+      "turn": 0,
+      "side_id": "red",
+      "units": [],
+      "entry_hexes": []
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "table_id": "unit_type_traits",
+  "version": "draft-1",
+  "notes": "Canonical trait registry used by rules checks and table joins.",
+  "unit_types": [
+    {
+      "unit_type": "PH",
+      "traits": {
+        "shock_capable": true,
+        "is_heavy_for_must_shock": true,
+        "is_skirmisher": false,
+        "is_cavalry": false,
+        "is_elephant": false,
+        "can_orderly_withdraw": true,
+        "can_use_column": true,
+        "can_use_manipular_line_extension": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "table_id": "clash_columns",
+  "version": "draft-1",
+  "notes": "Base shock CRT column before modifiers by attacker, defender and angle.",
+  "angles": ["front", "flank", "rear"],
+  "entries": [
+    {
+      "attacker_type": "PH",
+      "defender_type": "HI",
+      "angle": "front",
+      "base_column": null
+    }
+  ]
+}

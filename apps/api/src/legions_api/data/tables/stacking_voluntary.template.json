@@ -1,0 +1,17 @@
+{
+  "table_id": "stacking_voluntary",
+  "version": "draft-1",
+  "notes": "Voluntary movement stacking outcomes for moving and stationary units.",
+  "rows": [
+    {
+      "moving_category": "basic",
+      "stationary_category": "basic",
+      "may_move_through": false,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "tq_check_drm": null,
+      "comments": "Fill from original chart."
+    }
+  ]
+}

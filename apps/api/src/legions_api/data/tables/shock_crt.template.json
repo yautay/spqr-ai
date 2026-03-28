@@ -1,0 +1,18 @@
+{
+  "table_id": "shock_crt",
+  "version": "draft-1",
+  "notes": "Shock combat results table. Values are attacker_hits and defender_hits.",
+  "columns": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
+  "rows": ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
+  "cells": {
+    "1": {
+      "0": {"attacker_hits": null, "defender_hits": null}
+    }
+  },
+  "column_adjustments": [
+    {"id": "size_ratio_diff", "direction": "left_or_right", "value": null},
+    {"id": "terrain", "direction": "left_or_right", "value": null},
+    {"id": "depletion_attacker", "direction": "left", "value": null},
+    {"id": "depletion_defender", "direction": "right", "value": null}
+  ]
+}

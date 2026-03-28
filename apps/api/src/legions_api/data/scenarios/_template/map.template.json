@@ -1,0 +1,23 @@
+{
+  "scenario_id": "replace_me",
+  "map": {
+    "tiles": [
+      {
+        "q": 0,
+        "r": 0,
+        "terrain": "clear",
+        "elevation": 0,
+        "passable": true
+      }
+    ],
+    "edges": [
+      {
+        "a": {"q": 0, "r": 0},
+        "b": {"q": 1, "r": 0},
+        "blocks_movement": false,
+        "movement_cost_delta": 0,
+        "blocks_los": false
+      }
+    ]
+  }
+}

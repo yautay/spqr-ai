@@ -1,0 +1,24 @@
+{
+  "table_id": "shock_superiority",
+  "version": "draft-1",
+  "notes": "Weapon system superiority matrix. Read from attacker perspective.",
+  "attacker_types": ["PH", "HI", "MI", "LG", "LI", "HC", "LC", "RC", "EL", "SK"],
+  "defender_types": ["PH", "HI", "MI", "LG", "LI", "HC", "LC", "RC", "EL", "SK"],
+  "matrix": [
+    {
+      "attacker_type": "PH",
+      "results": {
+        "PH": "none",
+        "HI": "none",
+        "MI": "none",
+        "LG": "none",
+        "LI": "none",
+        "HC": "none",
+        "LC": "none",
+        "RC": "none",
+        "EL": "none",
+        "SK": "none"
+      }
+    }
+  ]
+}

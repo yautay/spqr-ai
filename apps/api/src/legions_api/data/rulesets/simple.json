@@ -1,0 +1,15 @@
+{
+  "ruleset": "simple",
+  "options": {
+    "zoc_locks_movement": false
+  },
+  "movement": {
+    "terrain_costs": {
+      "clear": 1,
+      "rough": 1,
+      "woods": 1,
+      "road": 1,
+      "water": 99
+    }
+  }
+}

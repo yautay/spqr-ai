@@ -1,0 +1,12 @@
+{
+  "table_id": "leader_casualty_table",
+  "version": "draft-1",
+  "notes": "Outcome table used after leader casualty trigger succeeds.",
+  "rows": [
+    {
+      "die_roll": 0,
+      "outcome": "eliminated",
+      "effects": ["remove_leader"]
+    }
+  ]
+}
