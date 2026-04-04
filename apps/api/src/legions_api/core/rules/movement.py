@@ -26,16 +26,20 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
     if not state.scenario_map.contains(action.destination):
         return ActionResult(ok=False, reason="destination_out_of_map", state=state)
 
-    if state.unit_at(action.destination) is not None:
-        return ActionResult(ok=False, reason="destination_occupied", state=state)
-
     if unit.position == action.destination:
         return ActionResult(ok=False, reason="no_op_move", state=state)
 
+    stacking_lookup = _load_voluntary_stacking_lookup()
+
+    destination_unit = state.unit_at(action.destination)
+    if destination_unit is not None:
+        destination_outcome = stacking_lookup.get((unit.stacking_category, destination_unit.stacking_category))
+        if destination_outcome is not None and destination_outcome.may_stop_in_hex:
+            return ActionResult(ok=False, reason="stacking_stop_not_supported", state=state)
+        return ActionResult(ok=False, reason="destination_occupied", state=state)
+
     if state.ruleset.options.zoc_locks_movement and is_in_enemy_zoc(state, unit.side, unit.position):
         return ActionResult(ok=False, reason="unit_pinned_by_enemy_zoc", state=state)
-
-    stacking_lookup = _load_voluntary_stacking_lookup()
 
     def can_traverse_occupied_hex(destination: HexCoord) -> bool:
         occupant_id = state.occupant_by_hex.get(destination)

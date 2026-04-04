@@ -41,6 +41,24 @@ def test_move_fails_when_unit_starts_in_enemy_zoc() -> None:
     assert result.reason == "unit_pinned_by_enemy_zoc"
 
 
+def test_move_rejects_no_op_before_destination_occupied_check() -> None:
+    """Moving to the same hex should return no-op reason."""
+
+    scenario_map = build_irregular_map(tiles=[HexTile(coord=HexCoord(0, 0))])
+    units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1)}
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 0)))
+
+    assert not result.ok
+    assert result.reason == "no_op_move"
+
+
 def test_move_succeeds_when_path_cost_within_allowance() -> None:
     """Movement resolves through pathfinding within move allowance."""
 
@@ -205,3 +223,49 @@ def test_move_can_pass_through_occupied_hex_when_stacking_allows(monkeypatch: py
     result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 2)))
 
     assert result.ok
+
+
+def test_move_reports_stacking_stop_not_supported_when_table_allows_stop(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Destination stacking stop is table-allowed but not yet implemented in state model."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1, stacking_category="scout"),
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1, stacking_category="basic"),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    custom_stacking_table = StackingVoluntaryTableModel.model_validate(
+        {
+            "table_id": "stacking_voluntary",
+            "version": "test",
+            "rows": [
+                {
+                    "moving_category": "scout",
+                    "stationary_category": "basic",
+                    "may_move_through": True,
+                    "may_stop_in_hex": True,
+                    "moving_unit_cohesion_hits": 0,
+                    "stationary_unit_cohesion_hits": 0,
+                    "tq_check_drm": 0,
+                }
+            ],
+        }
+    )
+
+    monkeypatch.setattr(movement_rules, "load_table", lambda table_id: custom_stacking_table)
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 1)))
+
+    assert not result.ok
+    assert result.reason == "stacking_stop_not_supported"
