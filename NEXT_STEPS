@@ -14,6 +14,8 @@ Current baseline
 - TQ rolls now use seeded per-game RNG state (`rng_seed` + advancing `rng_counter`) for deterministic replayable sequences.
 - Failed TQ checks now apply cohesion loss and set stationary units to routed state (`is_routed`).
 - Routed-unit movement now uses mandatory stacking lookup (with `routing_*` moving categories).
+- Stacking table JSONs are finalized for current category matrix and loader validates complete pair coverage.
+- Movement API contract for effects/TQ outcomes is covered by smoke tests and stable for UI integration.
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)
@@ -37,4 +39,4 @@ Coding constraints
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Expand mandatory stacking category maps and import full chart values from source docs.
+- Start missile module runtime adapter and resolver using `missile_range_results` table.
