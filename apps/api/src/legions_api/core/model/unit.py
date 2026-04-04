@@ -29,6 +29,7 @@ class Unit:
     exerts_zoc: bool = True
     move_profile_id: str | None = None
     stacking_category: str = "basic"
+    missile_class_id: str | None = None
 
     def with_position(self, position: HexCoord) -> Unit:
         """Return the same unit placed in another coordinate."""
@@ -44,6 +45,7 @@ class Unit:
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
+            missile_class_id=self.missile_class_id,
         )
 
     def with_added_cohesion_hits(self, delta: int) -> Unit:
@@ -60,6 +62,7 @@ class Unit:
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
+            missile_class_id=self.missile_class_id,
         )
 
     def with_routed(self, is_routed: bool = True) -> Unit:
@@ -78,4 +81,5 @@ class Unit:
             exerts_zoc=exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
+            missile_class_id=self.missile_class_id,
         )

@@ -29,6 +29,7 @@ class UnitPayload(BaseModel):
     exerts_zoc: bool
     move_profile_id: str | None
     stacking_category: str
+    missile_class_id: str | None
 
 
 class TilePayload(BaseModel):

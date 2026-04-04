@@ -65,7 +65,7 @@ def create_demo_state(mode: RulesetMode = RulesetMode.ORIGINAL) -> GameState:
         ]
     )
     units = {
-        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0)),
-        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(2, -1)),
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(2, -1), missile_class_id="J"),
     }
     return GameState.from_units(scenario_map=scenario_map, ruleset=ruleset, active_side=Side.RED, units=units)

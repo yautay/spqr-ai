@@ -56,6 +56,31 @@ class TQCheckOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class MissileDRMModifier:
+    """One missile die-roll modifier contribution."""
+
+    id: str
+    drm: int
+
+
+@dataclass(frozen=True, slots=True)
+class MissileOutcome:
+    """Resolved missile attack metadata."""
+
+    firing_unit_id: str
+    target_unit_id: str
+    missile_class_id: str
+    range_to_target: int
+    table_strength: int
+    base_roll: int
+    total_drm: int
+    modified_roll: int
+    hit: bool
+    applied_cohesion_hits: int
+    drm_breakdown: tuple[MissileDRMModifier, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ActionResult:
     """Outcome of attempting to resolve an action."""
 
@@ -65,3 +90,4 @@ class ActionResult:
     effects: tuple[StackingEffect, ...] = ()
     pending_tq_checks: tuple[PendingTQCheck, ...] = ()
     tq_check_outcomes: tuple[TQCheckOutcome, ...] = ()
+    missile_outcome: MissileOutcome | None = None

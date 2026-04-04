@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from legions_api.core.model.map import TerrainType
-from legions_api.core.tables.adapters import mandatory_stacking_lookup, movement_costs_by_profile, voluntary_stacking_lookup
-from legions_api.core.tables.models import MovementCostsTableModel, StackingMandatoryTableModel, StackingVoluntaryTableModel
+from legions_api.core.tables.adapters import mandatory_stacking_lookup, missile_class_lookup, movement_costs_by_profile, voluntary_stacking_lookup
+from legions_api.core.tables.models import MissileTableModel, MovementCostsTableModel, StackingMandatoryTableModel, StackingVoluntaryTableModel
 
 
 def test_movement_costs_by_profile_raises_for_unknown_terrain() -> None:
@@ -147,3 +147,50 @@ def test_mandatory_stacking_lookup_maps_tq_fields() -> None:
     assert outcome.stationary_unit_tq_check_required
     assert outcome.stationary_unit_tq_check_formula == "tq-2"
     assert outcome.tq_check_drm is None
+
+
+def test_missile_class_lookup_builds_numeric_range_lookup() -> None:
+    """Missile adapter should normalize range bands to int keys."""
+
+    table = MissileTableModel.model_validate(
+        {
+            "table_id": "missile_range_results",
+            "version": "test",
+            "missile_classes": [
+                {
+                    "missile_class_id": "A",
+                    "name": "archer",
+                    "strength_by_range": {"1": 7, "2": 5, "3": None},
+                }
+            ],
+            "dr_modifiers": [],
+        }
+    )
+
+    lookup = missile_class_lookup(table)
+
+    assert lookup["A"].strengths_by_range[1] == 7
+    assert lookup["A"].strengths_by_range[2] == 5
+    assert 3 not in lookup["A"].strengths_by_range
+
+
+def test_missile_class_lookup_rejects_non_numeric_range_band() -> None:
+    """Missile adapter should fail fast for invalid range keys."""
+
+    table = MissileTableModel.model_validate(
+        {
+            "table_id": "missile_range_results",
+            "version": "test",
+            "missile_classes": [
+                {
+                    "missile_class_id": "A",
+                    "name": "archer",
+                    "strength_by_range": {"adjacent": 7},
+                }
+            ],
+            "dr_modifiers": [],
+        }
+    )
+
+    with pytest.raises(ValueError, match="non-numeric range band"):
+        missile_class_lookup(table)

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from legions_api.core.model.map import TerrainType
 from legions_api.core.tables.models import (
+    MissileTableModel,
     MovementCostsTableModel,
     StackingMandatoryTableModel,
     StackingVoluntaryTableModel,
@@ -23,6 +24,14 @@ class StackingOutcome:
     stationary_unit_tq_check_required: bool
     stationary_unit_tq_check_formula: str | None
     tq_check_drm: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class MissileClassLookup:
+    """Runtime lookup fields for one missile class."""
+
+    class_id: str
+    strengths_by_range: dict[int, int]
 
 
 def movement_costs_by_profile(table: MovementCostsTableModel) -> dict[str, dict[TerrainType, int]]:
@@ -87,6 +96,41 @@ def mandatory_stacking_lookup(table: StackingMandatoryTableModel) -> dict[tuple[
             stationary_unit_tq_check_required=row.stationary_unit_tq_check.required,
             stationary_unit_tq_check_formula=row.stationary_unit_tq_check.formula,
             tq_check_drm=None,
+        )
+
+    return lookup
+
+
+def missile_class_lookup(table: MissileTableModel) -> dict[str, MissileClassLookup]:
+    """Build range-strength lookup keyed by missile class id."""
+
+    lookup: dict[str, MissileClassLookup] = {}
+    for missile_class in table.missile_classes:
+        if missile_class.missile_class_id in lookup:
+            raise ValueError(f"duplicate missile class id: {missile_class.missile_class_id!r}")
+
+        strengths_by_range: dict[int, int] = {}
+        for range_band, strength in missile_class.strength_by_range.items():
+            if strength is None:
+                continue
+
+            try:
+                numeric_range = int(range_band)
+            except ValueError as exc:
+                raise ValueError(
+                    f"missile class {missile_class.missile_class_id!r} uses non-numeric range band {range_band!r}"
+                ) from exc
+
+            if numeric_range <= 0:
+                raise ValueError(
+                    f"missile class {missile_class.missile_class_id!r} uses non-positive range band {numeric_range}"
+                )
+
+            strengths_by_range[numeric_range] = int(strength)
+
+        lookup[missile_class.missile_class_id] = MissileClassLookup(
+            class_id=missile_class.missile_class_id,
+            strengths_by_range=strengths_by_range,
         )
 
     return lookup

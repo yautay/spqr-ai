@@ -13,3 +13,11 @@ class MoveAction:
 
     unit_id: str
     destination: HexCoord
+
+
+@dataclass(frozen=True, slots=True)
+class MissileAction:
+    """Resolve one direct missile attack against a target unit."""
+
+    firing_unit_id: str
+    target_unit_id: str
