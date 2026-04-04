@@ -7,6 +7,7 @@ from legions_api.api.schemas import (
     GameStatePayload,
     HexPayload,
     MissileDRMModifierPayload,
+    MissileEventPayload,
     MissileOutcomePayload,
     PendingTQCheckPayload,
     StackingEffectPayload,
@@ -15,7 +16,15 @@ from legions_api.api.schemas import (
     UnitPayload,
 )
 from legions_api.core.model.game_state import GameState
-from legions_api.core.results import ActionResult, MissileDRMModifier, MissileOutcome, PendingTQCheck, StackingEffect, TQCheckOutcome
+from legions_api.core.results import (
+    ActionResult,
+    MissileDRMModifier,
+    MissileEvent,
+    MissileOutcome,
+    PendingTQCheck,
+    StackingEffect,
+    TQCheckOutcome,
+)
 
 
 def to_game_state_payload(state: GameState) -> GameStatePayload:
@@ -35,6 +44,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             move_profile_id=unit.move_profile_id,
             stacking_category=unit.stacking_category,
             missile_class_id=unit.missile_class_id,
+            missile_supply=unit.missile_supply,
         )
         for unit in sorted_units
     ]
@@ -62,6 +72,7 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         pending_tq_checks=[_to_pending_tq_check_payload(check) for check in result.pending_tq_checks],
         tq_check_outcomes=[_to_tq_check_outcome_payload(outcome) for outcome in result.tq_check_outcomes],
         missile_outcome=_to_missile_outcome_payload(result.missile_outcome),
+        events=[_to_missile_event_payload(event) for event in result.events],
     )
 
 
@@ -123,6 +134,8 @@ def _to_missile_outcome_payload(outcome: MissileOutcome | None) -> MissileOutcom
     return MissileOutcomePayload(
         firing_unit_id=outcome.firing_unit_id,
         target_unit_id=outcome.target_unit_id,
+        fire_mode=outcome.fire_mode,
+        reaction_trigger=outcome.reaction_trigger,
         missile_class_id=outcome.missile_class_id,
         range_to_target=outcome.range_to_target,
         table_strength=outcome.table_strength,
@@ -139,3 +152,19 @@ def _to_missile_drm_modifier_payload(modifier: MissileDRMModifier) -> MissileDRM
     """Convert one missile DRM entry to API payload."""
 
     return MissileDRMModifierPayload(id=modifier.id, drm=modifier.drm)
+
+
+def _to_missile_event_payload(event: MissileEvent) -> MissileEventPayload:
+    """Convert missile domain event to API payload."""
+
+    return MissileEventPayload(
+        event_type=event.event_type,
+        unit_id=event.unit_id,
+        target_unit_id=event.target_unit_id,
+        reaction_trigger=event.reaction_trigger,
+        roll=event.roll,
+        target=event.target,
+        success=event.success,
+        supply_before=event.supply_before,
+        supply_after=event.supply_after,
+    )

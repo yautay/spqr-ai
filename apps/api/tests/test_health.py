@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from legions_api.api.routes import game as game_routes
 from legions_api.core.bootstrap import create_demo_state
-from legions_api.core.results import ActionResult, MissileDRMModifier, MissileOutcome, TQCheckOutcome
+from legions_api.core.results import ActionResult, MissileDRMModifier, MissileEvent, MissileOutcome, TQCheckOutcome
 from legions_api.main import app
 
 
@@ -54,6 +54,7 @@ def test_game_action_rejects_illegal_move() -> None:
     assert payload["effects"] == []
     assert payload["pending_tq_checks"] == []
     assert payload["tq_check_outcomes"] == []
+    assert payload["events"] == []
 
 
 def test_rulesets_endpoint_returns_original_and_simple() -> None:
@@ -142,6 +143,8 @@ def test_missile_action_endpoint_returns_drm_breakdown(monkeypatch) -> None:
             missile_outcome=MissileOutcome(
                 firing_unit_id="r1",
                 target_unit_id="b1",
+                fire_mode="active",
+                reaction_trigger=None,
                 missile_class_id="A",
                 range_to_target=2,
                 table_strength=7,
@@ -153,6 +156,21 @@ def test_missile_action_endpoint_returns_drm_breakdown(monkeypatch) -> None:
                 drm_breakdown=(
                     MissileDRMModifier(id="target_woods", drm=2),
                     MissileDRMModifier(id="target_sk", drm=-1),
+                ),
+            ),
+            events=(
+                MissileEvent(
+                    event_type="missile_fired",
+                    unit_id="r1",
+                    target_unit_id="b1",
+                    roll=6,
+                    success=True,
+                ),
+                MissileEvent(
+                    event_type="supply_changed",
+                    unit_id="r1",
+                    supply_before="normal",
+                    supply_after="low",
                 ),
             ),
         )
@@ -177,4 +195,74 @@ def test_missile_action_endpoint_returns_drm_breakdown(monkeypatch) -> None:
     assert outcome["drm_breakdown"] == [
         {"id": "target_woods", "drm": 2},
         {"id": "target_sk", "drm": -1},
+    ]
+    assert payload["events"][0]["event_type"] == "missile_fired"
+    assert payload["events"][1]["event_type"] == "supply_changed"
+
+
+def test_missile_reload_endpoint_returns_reload_events(monkeypatch) -> None:
+    """Missile reload endpoint should expose reload_attempt and supply_changed events."""
+
+    client = TestClient(app)
+
+    demo_state = create_demo_state()
+
+    def fake_resolve_reload(state, action):
+        return ActionResult(
+            ok=True,
+            reason="ok",
+            state=demo_state,
+            events=(
+                MissileEvent(
+                    event_type="reload_attempt",
+                    unit_id="r1",
+                    roll=2,
+                    target=6,
+                    success=True,
+                    supply_before="no",
+                    supply_after="no",
+                ),
+                MissileEvent(
+                    event_type="supply_changed",
+                    unit_id="r1",
+                    supply_before="no",
+                    supply_after="low",
+                    success=True,
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(game_routes, "resolve_reload", fake_resolve_reload)
+
+    response = client.post(
+        "/game/action/missile/reload",
+        json={"unit_id": "r1"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["events"] == [
+        {
+            "event_type": "reload_attempt",
+            "unit_id": "r1",
+            "target_unit_id": None,
+            "reaction_trigger": None,
+            "roll": 2,
+            "target": 6,
+            "success": True,
+            "supply_before": "no",
+            "supply_after": "no",
+        },
+        {
+            "event_type": "supply_changed",
+            "unit_id": "r1",
+            "target_unit_id": None,
+            "reaction_trigger": None,
+            "roll": None,
+            "target": None,
+            "success": True,
+            "supply_before": "no",
+            "supply_after": "low",
+        },
     ]

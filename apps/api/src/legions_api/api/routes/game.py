@@ -11,14 +11,15 @@ from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
     MissileActionPayload,
+    MissileReloadActionPayload,
     MoveActionPayload,
     NewGamePayload,
     RulesetsPayload,
 )
 from legions_api.api.state_store import GameStateStore
-from legions_api.core.actions import MissileAction, MoveAction
+from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction
 from legions_api.core.model.hex import HexCoord
-from legions_api.core.rules.missile import resolve_missile
+from legions_api.core.rules.missile import resolve_missile, resolve_reload
 from legions_api.core.rules.movement import resolve_move
 from legions_api.core.tables.loader import available_rulesets
 
@@ -80,6 +81,8 @@ async def missile_action(
         firing_unit_id=payload.firing_unit_id,
         target_unit_id=payload.target_unit_id,
         modifier_ids=tuple(payload.modifier_ids),
+        fire_mode=payload.fire_mode,
+        reaction_trigger=payload.reaction_trigger,
     )
     result = resolve_missile(store.state, action)
     if result.ok:
@@ -97,5 +100,23 @@ async def missile_action(
             payload.target_unit_id,
             result.reason,
         )
+
+    return to_action_response_payload(result)
+
+
+@router.post("/action/missile/reload", response_model=ActionResponsePayload)
+async def missile_reload_action(
+    payload: MissileReloadActionPayload,
+    store: GameStateStore = Depends(get_game_store),
+) -> ActionResponsePayload:
+    """Apply missile reload action and return updated state payload."""
+
+    action = ReloadMissileAction(unit_id=payload.unit_id)
+    result = resolve_reload(store.state, action)
+    if result.ok:
+        store.replace(result.state)
+        logger.debug("Missile reload resolved: unit={}", payload.unit_id)
+    else:
+        logger.debug("Missile reload rejected: unit={} reason={}", payload.unit_id, result.reason)
 
     return to_action_response_payload(result)

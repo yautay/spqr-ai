@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Literal
 
 from legions_api.core.model.hex import HexCoord
 
@@ -22,3 +23,12 @@ class MissileAction:
     firing_unit_id: str
     target_unit_id: str
     modifier_ids: tuple[str, ...] = ()
+    fire_mode: Literal["active", "reaction"] = "active"
+    reaction_trigger: Literal["entry", "retire", "return"] | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReloadMissileAction:
+    """Attempt to reload missile supply for one unit."""
+
+    unit_id: str

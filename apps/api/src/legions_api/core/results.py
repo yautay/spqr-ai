@@ -69,6 +69,8 @@ class MissileOutcome:
 
     firing_unit_id: str
     target_unit_id: str
+    fire_mode: Literal["active", "reaction"]
+    reaction_trigger: Literal["entry", "retire", "return"] | None
     missile_class_id: str
     range_to_target: int
     table_strength: int
@@ -78,6 +80,21 @@ class MissileOutcome:
     hit: bool
     applied_cohesion_hits: int
     drm_breakdown: tuple[MissileDRMModifier, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MissileEvent:
+    """Domain event emitted by missile fire/reload resolution."""
+
+    event_type: Literal["missile_fired", "reaction_fire", "reload_attempt", "supply_changed"]
+    unit_id: str
+    target_unit_id: str | None = None
+    reaction_trigger: Literal["entry", "retire", "return"] | None = None
+    roll: int | None = None
+    target: int | None = None
+    success: bool | None = None
+    supply_before: str | None = None
+    supply_after: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,3 +108,4 @@ class ActionResult:
     pending_tq_checks: tuple[PendingTQCheck, ...] = ()
     tq_check_outcomes: tuple[TQCheckOutcome, ...] = ()
     missile_outcome: MissileOutcome | None = None
+    events: tuple[MissileEvent, ...] = ()

@@ -15,6 +15,14 @@ class Side(StrEnum):
     BLUE = "blue"
 
 
+class MissileSupply(StrEnum):
+    """Missile ammunition readiness state."""
+
+    NORMAL = "normal"
+    LOW = "low"
+    NO = "no"
+
+
 @dataclass(frozen=True, slots=True)
 class Unit:
     """A minimal tactical unit for movement and ZOC simulation."""
@@ -30,6 +38,7 @@ class Unit:
     move_profile_id: str | None = None
     stacking_category: str = "basic"
     missile_class_id: str | None = None
+    missile_supply: MissileSupply = MissileSupply.NORMAL
 
     def with_position(self, position: HexCoord) -> Unit:
         """Return the same unit placed in another coordinate."""
@@ -46,6 +55,7 @@ class Unit:
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
+            missile_supply=self.missile_supply,
         )
 
     def with_added_cohesion_hits(self, delta: int) -> Unit:
@@ -63,6 +73,7 @@ class Unit:
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
+            missile_supply=self.missile_supply,
         )
 
     def with_routed(self, is_routed: bool = True) -> Unit:
@@ -82,4 +93,23 @@ class Unit:
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
+            missile_supply=self.missile_supply,
+        )
+
+    def with_missile_supply(self, missile_supply: MissileSupply) -> Unit:
+        """Return unit with updated missile supply state."""
+
+        return Unit(
+            unit_id=self.unit_id,
+            side=self.side,
+            position=self.position,
+            move_allowance=self.move_allowance,
+            tq=self.tq,
+            cohesion_hits=self.cohesion_hits,
+            is_routed=self.is_routed,
+            exerts_zoc=self.exerts_zoc,
+            move_profile_id=self.move_profile_id,
+            stacking_category=self.stacking_category,
+            missile_class_id=self.missile_class_id,
+            missile_supply=missile_supply,
         )

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetMode
-from legions_api.core.model.unit import Side
+from legions_api.core.model.unit import MissileSupply, Side
 
 
 class HexPayload(BaseModel):
@@ -30,6 +32,7 @@ class UnitPayload(BaseModel):
     move_profile_id: str | None
     stacking_category: str
     missile_class_id: str | None
+    missile_supply: MissileSupply
 
 
 class TilePayload(BaseModel):
@@ -63,6 +66,14 @@ class MissileActionPayload(BaseModel):
     firing_unit_id: str
     target_unit_id: str
     modifier_ids: list[str] = Field(default_factory=list)
+    fire_mode: Literal["active", "reaction"] = "active"
+    reaction_trigger: Literal["entry", "retire", "return"] | None = None
+
+
+class MissileReloadActionPayload(BaseModel):
+    """Missile reload command payload."""
+
+    unit_id: str
 
 
 class NewGamePayload(BaseModel):
@@ -132,6 +143,8 @@ class MissileOutcomePayload(BaseModel):
 
     firing_unit_id: str
     target_unit_id: str
+    fire_mode: Literal["active", "reaction"]
+    reaction_trigger: Literal["entry", "retire", "return"] | None
     missile_class_id: str
     range_to_target: int
     table_strength: int
@@ -141,6 +154,20 @@ class MissileOutcomePayload(BaseModel):
     hit: bool
     applied_cohesion_hits: int
     drm_breakdown: list[MissileDRMModifierPayload]
+
+
+class MissileEventPayload(BaseModel):
+    """Domain event emitted by missile and reload resolution."""
+
+    event_type: Literal["missile_fired", "reaction_fire", "reload_attempt", "supply_changed"]
+    unit_id: str
+    target_unit_id: str | None
+    reaction_trigger: Literal["entry", "retire", "return"] | None
+    roll: int | None
+    target: int | None
+    success: bool | None
+    supply_before: str | None
+    supply_after: str | None
 
 
 class ActionResponsePayload(BaseModel):
@@ -153,3 +180,4 @@ class ActionResponsePayload(BaseModel):
     pending_tq_checks: list[PendingTQCheckPayload]
     tq_check_outcomes: list[TQCheckOutcomePayload]
     missile_outcome: MissileOutcomePayload | None = None
+    events: list[MissileEventPayload]
