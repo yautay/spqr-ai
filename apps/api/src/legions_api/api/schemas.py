@@ -23,6 +23,7 @@ class UnitPayload(BaseModel):
     side: Side
     position: HexPayload
     move_allowance: int
+    cohesion_hits: int
     exerts_zoc: bool
     move_profile_id: str | None
     stacking_category: str
@@ -65,9 +66,25 @@ class RulesetsPayload(BaseModel):
     rulesets: list[RulesetMode]
 
 
+class StackingEffectPayload(BaseModel):
+    """Stacking side-effect metadata generated during movement."""
+
+    effect_type: str
+    interaction: str
+    location: HexPayload
+    moving_unit_id: str
+    stationary_unit_id: str
+    moving_unit_cohesion_hits: int
+    stationary_unit_cohesion_hits: int
+    stationary_unit_tq_check_required: bool
+    stationary_unit_tq_check_formula: str | None
+    tq_check_drm: int | None
+
+
 class ActionResponsePayload(BaseModel):
     """Action execution response."""
 
     ok: bool
     reason: str
     state: GameStatePayload
+    effects: list[StackingEffectPayload]

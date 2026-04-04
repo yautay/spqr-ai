@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, Depends
 from loguru import logger
 
 from legions_api.api.dependencies import get_game_store
-from legions_api.api.mapper import to_game_state_payload
+from legions_api.api.mapper import to_action_response_payload, to_game_state_payload
 from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
@@ -64,4 +64,4 @@ async def game_action(
     else:
         logger.debug("Move rejected: unit={} reason={}", payload.unit_id, result.reason)
 
-    return ActionResponsePayload(ok=result.ok, reason=result.reason, state=to_game_state_payload(result.state))
+    return to_action_response_payload(result)

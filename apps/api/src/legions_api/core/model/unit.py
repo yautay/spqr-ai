@@ -23,6 +23,7 @@ class Unit:
     side: Side
     position: HexCoord
     move_allowance: int = 1
+    cohesion_hits: int = 0
     exerts_zoc: bool = True
     move_profile_id: str | None = None
     stacking_category: str = "basic"
@@ -35,6 +36,21 @@ class Unit:
             side=self.side,
             position=position,
             move_allowance=self.move_allowance,
+            cohesion_hits=self.cohesion_hits,
+            exerts_zoc=self.exerts_zoc,
+            move_profile_id=self.move_profile_id,
+            stacking_category=self.stacking_category,
+        )
+
+    def with_added_cohesion_hits(self, delta: int) -> Unit:
+        """Return unit with additional cohesion hits applied."""
+
+        return Unit(
+            unit_id=self.unit_id,
+            side=self.side,
+            position=self.position,
+            move_allowance=self.move_allowance,
+            cohesion_hits=self.cohesion_hits + delta,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,

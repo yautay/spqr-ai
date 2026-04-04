@@ -7,6 +7,7 @@ Current baseline
 - Movement baseline data exists in `movement_costs.json`; elevation/facing values are placeholders.
 - Movement pathfinding now supports occupied-hex pass-through checks via voluntary stacking table categories.
 - Game state supports multi-unit occupancy and voluntary stacking stop-in-hex when table rows allow it.
+- Movement now applies voluntary stacking side effects (cohesion hits) and emits stacking effect metadata with TQ-check fields.
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)
@@ -30,4 +31,4 @@ Coding constraints
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Apply stacking side effects (cohesion hits, TQ checks/DRM) during pass-through and stop-in-hex resolution.
+- Implement TQ check resolution pipeline and consume emitted stacking effect metadata (DRM/formula) in core action flow.

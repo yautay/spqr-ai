@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from legions_api.core.actions import MoveAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
-from legions_api.core.results import ActionResult
+from legions_api.core.model.unit import Unit
+from legions_api.core.results import ActionResult, StackingEffect
 from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
 from legions_api.core.tables.adapters import StackingOutcome, voluntary_stacking_lookup
@@ -70,9 +73,16 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         return ActionResult(ok=False, reason="no_valid_path", state=state)
 
     updated_units = dict(state.units)
-    updated_units[unit.unit_id] = unit.with_position(action.destination)
+    movement_effects, moved_unit = _resolve_stacking_side_effects(
+        unit=unit,
+        destination=action.destination,
+        path=path.path,
+        current_units=updated_units,
+        stacking_lookup=stacking_lookup,
+    )
+    updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
 
-    return ActionResult(ok=True, reason="ok", state=state.with_units(updated_units))
+    return ActionResult(ok=True, reason="ok", state=state.with_units(updated_units), effects=movement_effects)
 
 
 def _load_voluntary_stacking_lookup() -> dict[tuple[str, str], StackingOutcome]:
@@ -105,3 +115,60 @@ def _may_stop_in_hex(
 
     outcome = lookup.get((moving_category, stationary_category))
     return bool(outcome is not None and outcome.may_stop_in_hex)
+
+
+def _resolve_stacking_side_effects(
+    unit: Unit,
+    destination: HexCoord,
+    path: tuple[HexCoord, ...],
+    current_units: dict[str, Unit],
+    stacking_lookup: dict[tuple[str, str], StackingOutcome],
+) -> tuple[tuple[StackingEffect, ...], Unit]:
+    """Apply stacking row side effects for occupied hex interactions along movement path."""
+
+    moved_unit = unit
+    effects: list[StackingEffect] = []
+
+    for step in path[1:]:
+        occupant_ids = [
+            unit_id
+            for unit_id, occupant in current_units.items()
+            if occupant.position == step and unit_id != moved_unit.unit_id
+        ]
+        if not occupant_ids:
+            continue
+
+        interaction: Literal["pass_through", "stop_in_hex"]
+        if step == destination:
+            interaction = "stop_in_hex"
+        else:
+            interaction = "pass_through"
+        for occupant_id in occupant_ids:
+            stationary_unit = current_units[occupant_id]
+            outcome = stacking_lookup.get((moved_unit.stacking_category, stationary_unit.stacking_category))
+            if outcome is None:
+                continue
+
+            moving_delta = outcome.moving_unit_cohesion_hits or 0
+            stationary_delta = outcome.stationary_unit_cohesion_hits or 0
+
+            if moving_delta:
+                moved_unit = moved_unit.with_added_cohesion_hits(moving_delta)
+            if stationary_delta:
+                current_units[occupant_id] = stationary_unit.with_added_cohesion_hits(stationary_delta)
+
+            effects.append(
+                StackingEffect(
+                    interaction=interaction,
+                    location=step,
+                    moving_unit_id=moved_unit.unit_id,
+                    stationary_unit_id=stationary_unit.unit_id,
+                    moving_unit_cohesion_hits=moving_delta,
+                    stationary_unit_cohesion_hits=stationary_delta,
+                    stationary_unit_tq_check_required=outcome.stationary_unit_tq_check_required,
+                    stationary_unit_tq_check_formula=outcome.stationary_unit_tq_check_formula,
+                    tq_check_drm=outcome.tq_check_drm,
+                )
+            )
+
+    return tuple(effects), moved_unit

@@ -2,8 +2,16 @@
 
 from __future__ import annotations
 
-from legions_api.api.schemas import GameStatePayload, HexPayload, TilePayload, UnitPayload
+from legions_api.api.schemas import (
+    ActionResponsePayload,
+    GameStatePayload,
+    HexPayload,
+    StackingEffectPayload,
+    TilePayload,
+    UnitPayload,
+)
 from legions_api.core.model.game_state import GameState
+from legions_api.core.results import ActionResult, StackingEffect
 
 
 def to_game_state_payload(state: GameState) -> GameStatePayload:
@@ -16,6 +24,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             side=unit.side,
             position=HexPayload(q=unit.position.q, r=unit.position.r),
             move_allowance=unit.move_allowance,
+            cohesion_hits=unit.cohesion_hits,
             exerts_zoc=unit.exerts_zoc,
             move_profile_id=unit.move_profile_id,
             stacking_category=unit.stacking_category,
@@ -33,3 +42,31 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
         for tile in sorted_tiles
     ]
     return GameStatePayload(ruleset=state.ruleset.mode, tiles=tiles, active_side=state.active_side, units=units)
+
+
+def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
+    """Convert core action result to transport payload."""
+
+    return ActionResponsePayload(
+        ok=result.ok,
+        reason=result.reason,
+        state=to_game_state_payload(result.state),
+        effects=[_to_stacking_effect_payload(effect) for effect in result.effects],
+    )
+
+
+def _to_stacking_effect_payload(effect: StackingEffect) -> StackingEffectPayload:
+    """Convert stacking effect metadata to API payload."""
+
+    return StackingEffectPayload(
+        effect_type=effect.effect_type,
+        interaction=effect.interaction,
+        location=HexPayload(q=effect.location.q, r=effect.location.r),
+        moving_unit_id=effect.moving_unit_id,
+        stationary_unit_id=effect.stationary_unit_id,
+        moving_unit_cohesion_hits=effect.moving_unit_cohesion_hits,
+        stationary_unit_cohesion_hits=effect.stationary_unit_cohesion_hits,
+        stationary_unit_tq_check_required=effect.stationary_unit_tq_check_required,
+        stationary_unit_tq_check_formula=effect.stationary_unit_tq_check_formula,
+        tq_check_drm=effect.tq_check_drm,
+    )

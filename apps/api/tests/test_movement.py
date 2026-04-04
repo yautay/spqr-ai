@@ -318,3 +318,107 @@ def test_move_through_fails_when_any_occupant_category_disallows(monkeypatch: py
 
     assert not result.ok
     assert result.reason == "no_valid_path"
+
+
+def test_move_applies_cohesion_hits_on_pass_through(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pass-through interactions should apply cohesion side effects and expose metadata."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+            HexTile(coord=HexCoord(0, 2)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=2, stacking_category="scout"),
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1, stacking_category="basic"),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    custom_stacking_table = StackingVoluntaryTableModel.model_validate(
+        {
+            "table_id": "stacking_voluntary",
+            "version": "test",
+            "rows": [
+                {
+                    "moving_category": "scout",
+                    "stationary_category": "basic",
+                    "may_move_through": True,
+                    "may_stop_in_hex": False,
+                    "moving_unit_cohesion_hits": 1,
+                    "stationary_unit_cohesion_hits": 2,
+                    "tq_check_drm": -1,
+                }
+            ],
+        }
+    )
+
+    monkeypatch.setattr(movement_rules, "load_table", lambda table_id: custom_stacking_table)
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 2)))
+
+    assert result.ok
+    assert result.state.units["r1"].cohesion_hits == 1
+    assert result.state.units["r2"].cohesion_hits == 2
+    assert len(result.effects) == 1
+    assert result.effects[0].interaction == "pass_through"
+    assert result.effects[0].location == HexCoord(0, 1)
+    assert result.effects[0].moving_unit_cohesion_hits == 1
+    assert result.effects[0].stationary_unit_cohesion_hits == 2
+    assert result.effects[0].tq_check_drm == -1
+
+
+def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stop-in-hex stacking interactions should apply cohesion side effects."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1, stacking_category="scout"),
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1, stacking_category="basic"),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    custom_stacking_table = StackingVoluntaryTableModel.model_validate(
+        {
+            "table_id": "stacking_voluntary",
+            "version": "test",
+            "rows": [
+                {
+                    "moving_category": "scout",
+                    "stationary_category": "basic",
+                    "may_move_through": True,
+                    "may_stop_in_hex": True,
+                    "moving_unit_cohesion_hits": 2,
+                    "stationary_unit_cohesion_hits": 1,
+                    "tq_check_drm": 0,
+                }
+            ],
+        }
+    )
+
+    monkeypatch.setattr(movement_rules, "load_table", lambda table_id: custom_stacking_table)
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 1)))
+
+    assert result.ok
+    assert result.state.units["r1"].cohesion_hits == 2
+    assert result.state.units["r2"].cohesion_hits == 1
+    assert len(result.effects) == 1
+    assert result.effects[0].interaction == "stop_in_hex"
+    assert result.effects[0].location == HexCoord(0, 1)
