@@ -21,3 +21,4 @@ class MissileAction:
 
     firing_unit_id: str
     target_unit_id: str
+    modifier_ids: tuple[str, ...] = ()

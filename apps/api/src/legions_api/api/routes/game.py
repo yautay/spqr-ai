@@ -10,13 +10,15 @@ from legions_api.api.mapper import to_action_response_payload, to_game_state_pay
 from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
+    MissileActionPayload,
     MoveActionPayload,
     NewGamePayload,
     RulesetsPayload,
 )
 from legions_api.api.state_store import GameStateStore
-from legions_api.core.actions import MoveAction
+from legions_api.core.actions import MissileAction, MoveAction
 from legions_api.core.model.hex import HexCoord
+from legions_api.core.rules.missile import resolve_missile
 from legions_api.core.rules.movement import resolve_move
 from legions_api.core.tables.loader import available_rulesets
 
@@ -63,5 +65,37 @@ async def game_action(
         logger.debug("Move resolved: unit={} destination=({}, {})", payload.unit_id, payload.destination.q, payload.destination.r)
     else:
         logger.debug("Move rejected: unit={} reason={}", payload.unit_id, result.reason)
+
+    return to_action_response_payload(result)
+
+
+@router.post("/action/missile", response_model=ActionResponsePayload)
+async def missile_action(
+    payload: MissileActionPayload,
+    store: GameStateStore = Depends(get_game_store),
+) -> ActionResponsePayload:
+    """Apply missile action and return updated state payload."""
+
+    action = MissileAction(
+        firing_unit_id=payload.firing_unit_id,
+        target_unit_id=payload.target_unit_id,
+        modifier_ids=tuple(payload.modifier_ids),
+    )
+    result = resolve_missile(store.state, action)
+    if result.ok:
+        store.replace(result.state)
+        logger.debug(
+            "Missile resolved: firing_unit={} target_unit={} modifiers={}",
+            payload.firing_unit_id,
+            payload.target_unit_id,
+            payload.modifier_ids,
+        )
+    else:
+        logger.debug(
+            "Missile rejected: firing_unit={} target_unit={} reason={}",
+            payload.firing_unit_id,
+            payload.target_unit_id,
+            result.reason,
+        )
 
     return to_action_response_payload(result)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetMode
@@ -55,6 +55,14 @@ class MoveActionPayload(BaseModel):
 
     unit_id: str
     destination: HexPayload
+
+
+class MissileActionPayload(BaseModel):
+    """Missile command payload."""
+
+    firing_unit_id: str
+    target_unit_id: str
+    modifier_ids: list[str] = Field(default_factory=list)
 
 
 class NewGamePayload(BaseModel):
@@ -112,6 +120,29 @@ class TQCheckOutcomePayload(BaseModel):
     became_routed: bool
 
 
+class MissileDRMModifierPayload(BaseModel):
+    """One missile DR modifier contribution for UI breakdown."""
+
+    id: str
+    drm: int
+
+
+class MissileOutcomePayload(BaseModel):
+    """Resolved missile attack details."""
+
+    firing_unit_id: str
+    target_unit_id: str
+    missile_class_id: str
+    range_to_target: int
+    table_strength: int
+    base_roll: int
+    total_drm: int
+    modified_roll: int
+    hit: bool
+    applied_cohesion_hits: int
+    drm_breakdown: list[MissileDRMModifierPayload]
+
+
 class ActionResponsePayload(BaseModel):
     """Action execution response."""
 
@@ -121,3 +152,4 @@ class ActionResponsePayload(BaseModel):
     effects: list[StackingEffectPayload]
     pending_tq_checks: list[PendingTQCheckPayload]
     tq_check_outcomes: list[TQCheckOutcomePayload]
+    missile_outcome: MissileOutcomePayload | None = None

@@ -34,6 +34,14 @@ class MissileClassLookup:
     strengths_by_range: dict[int, int]
 
 
+@dataclass(frozen=True, slots=True)
+class MissileDRMLookup:
+    """Runtime lookup fields for one missile DR modifier."""
+
+    id: str
+    drm: int
+
+
 def movement_costs_by_profile(table: MovementCostsTableModel) -> dict[str, dict[TerrainType, int]]:
     """Build terrain movement lookup keyed by movement profile id."""
 
@@ -129,5 +137,18 @@ def missile_class_lookup(table: MissileTableModel) -> dict[str, MissileClassLook
             class_id=missile_class.missile_class_id,
             strengths_by_range=strengths_by_range,
         )
+
+    return lookup
+
+
+def missile_drm_lookup(table: MissileTableModel) -> dict[str, MissileDRMLookup]:
+    """Build missile DR-modifier lookup keyed by modifier id."""
+
+    lookup: dict[str, MissileDRMLookup] = {}
+    for modifier in table.dr_modifiers:
+        if modifier.id in lookup:
+            raise ValueError(f"duplicate missile DR modifier id: {modifier.id!r}")
+
+        lookup[modifier.id] = MissileDRMLookup(id=modifier.id, drm=modifier.drm)
 
     return lookup

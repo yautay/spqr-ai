@@ -78,6 +78,61 @@ def test_missile_rejects_target_out_of_range(monkeypatch: pytest.MonkeyPatch) ->
     assert result.state.rng_counter == 0
 
 
+def test_missile_applies_drm_breakdown_and_modified_roll(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Configured DR modifiers should shift roll and be exposed in breakdown order."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
+        }
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=6))
+
+    result = resolve_missile(
+        state,
+        MissileAction(
+            firing_unit_id="r1",
+            target_unit_id="b1",
+            modifier_ids=("target_woods", "target_sk"),
+        ),
+    )
+
+    assert result.ok
+    assert result.missile_outcome is not None
+    assert result.missile_outcome.base_roll == 6
+    assert result.missile_outcome.total_drm == 1
+    assert result.missile_outcome.modified_roll == 7
+    assert not result.missile_outcome.hit
+    assert [entry.id for entry in result.missile_outcome.drm_breakdown] == ["target_woods", "target_sk"]
+    assert [entry.drm for entry in result.missile_outcome.drm_breakdown] == [2, -1]
+
+
+def test_missile_rejects_unknown_drm_modifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Missile action should fail fast when modifier id is not in table data."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
+        }
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=8))
+
+    result = resolve_missile(
+        state,
+        MissileAction(
+            firing_unit_id="r1",
+            target_unit_id="b1",
+            modifier_ids=("unknown_modifier",),
+        ),
+    )
+
+    assert not result.ok
+    assert result.reason == "unknown_missile_drm"
+    assert result.state.rng_counter == 0
+
+
 def _build_state(units: dict[str, Unit]) -> GameState:
     """Create a tiny deterministic battlefield for missile tests."""
 
@@ -110,6 +165,9 @@ def _missile_table(strength_at_range_one: int) -> MissileTableModel:
                     "strength_by_range": {"1": strength_at_range_one},
                 }
             ],
-            "dr_modifiers": [],
+            "dr_modifiers": [
+                {"id": "target_woods", "drm": 2},
+                {"id": "target_sk", "drm": -1},
+            ],
         }
     )

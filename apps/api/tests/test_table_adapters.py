@@ -8,6 +8,7 @@ from legions_api.core.model.map import TerrainType
 from legions_api.core.tables.adapters import (
     mandatory_stacking_lookup,
     missile_class_lookup,
+    missile_drm_lookup,
     movement_costs_by_profile,
     voluntary_stacking_lookup,
 )
@@ -201,3 +202,30 @@ def test_missile_class_lookup_rejects_non_numeric_range_band() -> None:
                 "dr_modifiers": [],
             }
         )
+
+
+def test_missile_drm_lookup_returns_modifier_values() -> None:
+    """Missile DRM adapter should expose id-keyed integer modifier values."""
+
+    table = MissileTableModel.model_validate(
+        {
+            "table_id": "missile_range_results",
+            "version": "test",
+            "missile_classes": [
+                {
+                    "missile_class_id": "A",
+                    "name": "archer",
+                    "strength_by_range": {"1": 7},
+                }
+            ],
+            "dr_modifiers": [
+                {"id": "target_woods", "drm": 2},
+                {"id": "target_sk", "drm": -1},
+            ],
+        }
+    )
+
+    lookup = missile_drm_lookup(table)
+
+    assert lookup["target_woods"].drm == 2
+    assert lookup["target_sk"].drm == -1

@@ -6,6 +6,8 @@ from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
     HexPayload,
+    MissileDRMModifierPayload,
+    MissileOutcomePayload,
     PendingTQCheckPayload,
     StackingEffectPayload,
     TilePayload,
@@ -13,7 +15,7 @@ from legions_api.api.schemas import (
     UnitPayload,
 )
 from legions_api.core.model.game_state import GameState
-from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect, TQCheckOutcome
+from legions_api.core.results import ActionResult, MissileDRMModifier, MissileOutcome, PendingTQCheck, StackingEffect, TQCheckOutcome
 
 
 def to_game_state_payload(state: GameState) -> GameStatePayload:
@@ -59,6 +61,7 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         effects=[_to_stacking_effect_payload(effect) for effect in result.effects],
         pending_tq_checks=[_to_pending_tq_check_payload(check) for check in result.pending_tq_checks],
         tq_check_outcomes=[_to_tq_check_outcome_payload(outcome) for outcome in result.tq_check_outcomes],
+        missile_outcome=_to_missile_outcome_payload(result.missile_outcome),
     )
 
 
@@ -109,3 +112,30 @@ def _to_tq_check_outcome_payload(outcome: TQCheckOutcome) -> TQCheckOutcomePaylo
         applied_cohesion_hits=outcome.applied_cohesion_hits,
         became_routed=outcome.became_routed,
     )
+
+
+def _to_missile_outcome_payload(outcome: MissileOutcome | None) -> MissileOutcomePayload | None:
+    """Convert missile outcome metadata to API payload."""
+
+    if outcome is None:
+        return None
+
+    return MissileOutcomePayload(
+        firing_unit_id=outcome.firing_unit_id,
+        target_unit_id=outcome.target_unit_id,
+        missile_class_id=outcome.missile_class_id,
+        range_to_target=outcome.range_to_target,
+        table_strength=outcome.table_strength,
+        base_roll=outcome.base_roll,
+        total_drm=outcome.total_drm,
+        modified_roll=outcome.modified_roll,
+        hit=outcome.hit,
+        applied_cohesion_hits=outcome.applied_cohesion_hits,
+        drm_breakdown=[_to_missile_drm_modifier_payload(modifier) for modifier in outcome.drm_breakdown],
+    )
+
+
+def _to_missile_drm_modifier_payload(modifier: MissileDRMModifier) -> MissileDRMModifierPayload:
+    """Convert one missile DRM entry to API payload."""
+
+    return MissileDRMModifierPayload(id=modifier.id, drm=modifier.drm)

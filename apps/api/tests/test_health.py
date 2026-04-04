@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 
 from legions_api.api.routes import game as game_routes
 from legions_api.core.bootstrap import create_demo_state
-from legions_api.core.results import ActionResult, TQCheckOutcome
+from legions_api.core.results import ActionResult, MissileDRMModifier, MissileOutcome, TQCheckOutcome
 from legions_api.main import app
 
 
@@ -125,3 +125,56 @@ def test_game_action_response_exposes_tq_roll_metadata(monkeypatch) -> None:
     assert outcome["target"] == 4
     assert outcome["passed"] is False
     assert outcome["became_routed"] is True
+
+
+def test_missile_action_endpoint_returns_drm_breakdown(monkeypatch) -> None:
+    """Missile endpoint should expose modified roll and DRM breakdown payload."""
+
+    client = TestClient(app)
+
+    demo_state = create_demo_state()
+
+    def fake_resolve_missile(state, action):
+        return ActionResult(
+            ok=True,
+            reason="ok",
+            state=demo_state,
+            missile_outcome=MissileOutcome(
+                firing_unit_id="r1",
+                target_unit_id="b1",
+                missile_class_id="A",
+                range_to_target=2,
+                table_strength=7,
+                base_roll=6,
+                total_drm=1,
+                modified_roll=7,
+                hit=True,
+                applied_cohesion_hits=1,
+                drm_breakdown=(
+                    MissileDRMModifier(id="target_woods", drm=2),
+                    MissileDRMModifier(id="target_sk", drm=-1),
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(game_routes, "resolve_missile", fake_resolve_missile)
+
+    response = client.post(
+        "/game/action/missile",
+        json={
+            "firing_unit_id": "r1",
+            "target_unit_id": "b1",
+            "modifier_ids": ["target_woods", "target_sk"],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    outcome = payload["missile_outcome"]
+    assert outcome["modified_roll"] == 7
+    assert outcome["total_drm"] == 1
+    assert outcome["drm_breakdown"] == [
+        {"id": "target_woods", "drm": 2},
+        {"id": "target_sk", "drm": -1},
+    ]
