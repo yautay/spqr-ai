@@ -65,6 +65,11 @@ Instead of trying to build every feature immediately:
 7. Rules regression tests and AI balance tuning.  
 8. Save/Load + replay + AI decision telemetry.
 
+## Current Status
+
+- Backend rules engine is currently through Milestone 2 (`movement + missile + shock + morale + rout/pursuit`).
+- Next implementation target is Milestone 3 (playable UI slice in `apps/web`).
+
 ## How to Measure AI Quality
 
 - AI win rate across selected test scenarios.

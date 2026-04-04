@@ -26,6 +26,13 @@ It defines assumptions, architecture guardrails, and a progress checklist.
 - Keep architecture compatible with future `simple` ruleset replacement/overrides.
 - Do not dilute original parity to fit a guessed simple interpretation.
 
+## Current Milestone Status
+
+- Milestone 1 (Core Movement Loop): done
+- Milestone 1.5 (Missile Baseline): done
+- Milestone 2 (Combat and Morale): done
+- Next target: Milestone 3 (Playable UI Slice)
+
 ## Non-Negotiable Technical Rules
 
 - Keep game logic independent from UI and desktop shell.
@@ -129,9 +136,9 @@ docs/
 
 ### Combat Loop
 
-- [ ] Implement combat resolution and modifiers
-- [ ] Implement morale checks
-- [ ] Implement rout and pursuit
+- [x] Implement combat resolution and modifiers
+- [x] Implement morale checks
+- [x] Implement rout and pursuit
 - [ ] Emit events for each combat step
 
 ### Frontend Playability

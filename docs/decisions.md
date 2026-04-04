@@ -94,6 +94,11 @@ This document records confirmed project decisions and rationale.
 - Decision: implementation priority is full `original` rules first; `simple` support remains architecture-ready but deferred.
 - Rationale: avoid mixing interpretations and ensure one complete, testable ruleset before adding major simplifications.
 
+## D-018 Table-Driven Combat Baseline
+
+- Decision: shock combat baseline is table-driven (`shock_superiority`, `clash_columns`, `shock_crt`) and exposed via one API action contract.
+- Rationale: keep combat math auditable, deterministic, and easy to tune from data files without resolver rewrites.
+
 ## Revisit Policy
 
 Any decision can be revised when one of these is true:
