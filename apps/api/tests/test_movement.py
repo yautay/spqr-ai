@@ -8,6 +8,7 @@ from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.unit import Side, Unit
+from legions_api.core.results import PendingTQCheck
 from legions_api.core.rules import movement as movement_rules
 from legions_api.core.rules.movement import resolve_move
 from legions_api.core.tables.loader import load_ruleset
@@ -376,6 +377,10 @@ def test_move_applies_cohesion_hits_on_pass_through(monkeypatch: pytest.MonkeyPa
     assert result.pending_tq_checks[0].unit_id == "r2"
     assert result.pending_tq_checks[0].drm == -1
     assert result.pending_tq_checks[0].target == 6
+    assert len(result.tq_check_outcomes) == 1
+    assert result.tq_check_outcomes[0].unit_id == "r2"
+    assert result.tq_check_outcomes[0].roll == 6
+    assert result.tq_check_outcomes[0].passed
 
 
 def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -430,6 +435,10 @@ def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPat
     assert result.pending_tq_checks[0].unit_id == "r2"
     assert result.pending_tq_checks[0].drm == 0
     assert result.pending_tq_checks[0].target == 7
+    assert len(result.tq_check_outcomes) == 1
+    assert result.tq_check_outcomes[0].unit_id == "r2"
+    assert result.tq_check_outcomes[0].roll == 6
+    assert result.tq_check_outcomes[0].passed
 
 
 def test_parse_tq_formula_offset_supports_common_forms() -> None:
@@ -446,3 +455,39 @@ def test_parse_tq_formula_offset_rejects_unknown_form() -> None:
 
     with pytest.raises(ValueError, match="unsupported tq formula"):
         movement_rules._parse_tq_formula_offset("tq*2")
+
+
+def test_resolve_pending_tq_checks_applies_cohesion_on_failed_roll() -> None:
+    """Failed deterministic TQ checks should add cohesion hit to checked unit."""
+
+    checks = (
+        PendingTQCheck(
+            unit_id="r2",
+            location=HexCoord(0, 1),
+            source="stacking",
+            required=True,
+            formula="tq-2",
+            drm=0,
+            target=5,
+        ),
+    )
+    units = {
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1),
+    }
+
+    outcomes = movement_rules._resolve_pending_tq_checks(checks, current_units=units)
+
+    assert len(outcomes) == 1
+    assert outcomes[0].roll == 6
+    assert not outcomes[0].passed
+    assert outcomes[0].applied_cohesion_hits == 1
+    assert units["r2"].cohesion_hits == 1
+
+
+def test_deterministic_d10_roll_stays_stable_for_same_inputs() -> None:
+    """Deterministic roll helper should be stable for repeat UI previews."""
+
+    first_roll = movement_rules._deterministic_d10_roll(unit_id="r2", location=HexCoord(0, 1))
+    second_roll = movement_rules._deterministic_d10_roll(unit_id="r2", location=HexCoord(0, 1))
+
+    assert first_roll == second_roll == 6

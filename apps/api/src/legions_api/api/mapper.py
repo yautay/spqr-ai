@@ -9,10 +9,11 @@ from legions_api.api.schemas import (
     PendingTQCheckPayload,
     StackingEffectPayload,
     TilePayload,
+    TQCheckOutcomePayload,
     UnitPayload,
 )
 from legions_api.core.model.game_state import GameState
-from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect
+from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect, TQCheckOutcome
 
 
 def to_game_state_payload(state: GameState) -> GameStatePayload:
@@ -55,6 +56,7 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         state=to_game_state_payload(result.state),
         effects=[_to_stacking_effect_payload(effect) for effect in result.effects],
         pending_tq_checks=[_to_pending_tq_check_payload(check) for check in result.pending_tq_checks],
+        tq_check_outcomes=[_to_tq_check_outcome_payload(outcome) for outcome in result.tq_check_outcomes],
     )
 
 
@@ -86,4 +88,21 @@ def _to_pending_tq_check_payload(check: PendingTQCheck) -> PendingTQCheckPayload
         formula=check.formula,
         drm=check.drm,
         target=check.target,
+    )
+
+
+def _to_tq_check_outcome_payload(outcome: TQCheckOutcome) -> TQCheckOutcomePayload:
+    """Convert resolved TQ check outcome to API payload."""
+
+    return TQCheckOutcomePayload(
+        unit_id=outcome.unit_id,
+        location=HexPayload(q=outcome.location.q, r=outcome.location.r),
+        source=outcome.source,
+        required=outcome.required,
+        formula=outcome.formula,
+        drm=outcome.drm,
+        target=outcome.target,
+        roll=outcome.roll,
+        passed=outcome.passed,
+        applied_cohesion_hits=outcome.applied_cohesion_hits,
     )

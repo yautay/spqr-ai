@@ -94,6 +94,21 @@ class PendingTQCheckPayload(BaseModel):
     target: int
 
 
+class TQCheckOutcomePayload(BaseModel):
+    """Resolved TQ check with rolled value for UI feedback."""
+
+    unit_id: str
+    location: HexPayload
+    source: str
+    required: bool
+    formula: str | None
+    drm: int | None
+    target: int
+    roll: int
+    passed: bool
+    applied_cohesion_hits: int
+
+
 class ActionResponsePayload(BaseModel):
     """Action execution response."""
 
@@ -102,3 +117,4 @@ class ActionResponsePayload(BaseModel):
     state: GameStatePayload
     effects: list[StackingEffectPayload]
     pending_tq_checks: list[PendingTQCheckPayload]
+    tq_check_outcomes: list[TQCheckOutcomePayload]

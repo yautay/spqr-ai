@@ -8,7 +8,7 @@ from legions_api.core.actions import MoveAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
-from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect
+from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect, TQCheckOutcome
 from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
 from legions_api.core.tables.adapters import StackingOutcome, voluntary_stacking_lookup
@@ -81,6 +81,7 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         stacking_lookup=stacking_lookup,
     )
     pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
+    tq_check_outcomes = _resolve_pending_tq_checks(pending_tq_checks, current_units=updated_units)
     updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
 
     return ActionResult(
@@ -89,6 +90,7 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         state=state.with_units(updated_units),
         effects=movement_effects,
         pending_tq_checks=pending_tq_checks,
+        tq_check_outcomes=tq_check_outcomes,
     )
 
 
@@ -245,3 +247,47 @@ def _parse_tq_formula_offset(formula: str | None) -> int:
         return -int(raw_formula[3:])
 
     raise ValueError(f"unsupported tq formula: {formula!r}")
+
+
+def _resolve_pending_tq_checks(
+    checks: tuple[PendingTQCheck, ...],
+    current_units: dict[str, Unit],
+) -> tuple[TQCheckOutcome, ...]:
+    """Resolve pending TQ checks and apply failure side effects."""
+
+    outcomes: list[TQCheckOutcome] = []
+    for check in checks:
+        unit = current_units.get(check.unit_id)
+        if unit is None:
+            continue
+
+        roll = _deterministic_d10_roll(unit_id=check.unit_id, location=check.location)
+        passed = roll <= check.target
+        applied_cohesion_hits = 0
+        if not passed:
+            applied_cohesion_hits = 1
+            current_units[check.unit_id] = unit.with_added_cohesion_hits(applied_cohesion_hits)
+
+        outcomes.append(
+            TQCheckOutcome(
+                unit_id=check.unit_id,
+                location=check.location,
+                source=check.source,
+                required=check.required,
+                formula=check.formula,
+                drm=check.drm,
+                target=check.target,
+                roll=roll,
+                passed=passed,
+                applied_cohesion_hits=applied_cohesion_hits,
+            )
+        )
+
+    return tuple(outcomes)
+
+
+def _deterministic_d10_roll(unit_id: str, location: HexCoord) -> int:
+    """Return deterministic d10 roll used until RNG module is introduced."""
+
+    seed = sum(ord(char) for char in unit_id) + location.q + location.r
+    return (seed % 10) + 1

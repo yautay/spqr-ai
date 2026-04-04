@@ -39,6 +39,22 @@ class PendingTQCheck:
 
 
 @dataclass(frozen=True, slots=True)
+class TQCheckOutcome:
+    """Resolved TQ check outcome with deterministic roll metadata."""
+
+    unit_id: str
+    location: HexCoord
+    source: Literal["stacking"]
+    required: bool
+    formula: str | None
+    drm: int | None
+    target: int
+    roll: int
+    passed: bool
+    applied_cohesion_hits: int
+
+
+@dataclass(frozen=True, slots=True)
 class ActionResult:
     """Outcome of attempting to resolve an action."""
 
@@ -47,3 +63,4 @@ class ActionResult:
     state: GameState
     effects: tuple[StackingEffect, ...] = ()
     pending_tq_checks: tuple[PendingTQCheck, ...] = ()
+    tq_check_outcomes: tuple[TQCheckOutcome, ...] = ()
