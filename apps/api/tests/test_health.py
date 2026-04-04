@@ -31,6 +31,10 @@ def test_game_state_endpoint_returns_tiles_and_units() -> None:
     assert payload["active_side"] in {"red", "blue"}
     assert len(payload["tiles"]) > 0
     assert len(payload["units"]) > 0
+    first_unit = payload["units"][0]
+    assert "tq" in first_unit
+    assert "cohesion_hits" in first_unit
+    assert "is_routed" in first_unit
 
 
 def test_game_action_rejects_illegal_move() -> None:

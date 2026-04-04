@@ -60,6 +60,32 @@ def test_move_rejects_no_op_before_destination_occupied_check() -> None:
     assert result.reason == "no_op_move"
 
 
+def test_routed_enemy_unit_does_not_pin_with_zoc() -> None:
+    """Routed enemy should not exert ZOC that pins movement."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1),
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), move_allowance=1, is_routed=True),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 1)))
+
+    assert result.ok
+
+
 def test_move_succeeds_when_path_cost_within_allowance() -> None:
     """Movement resolves through pathfinding within move allowance."""
 

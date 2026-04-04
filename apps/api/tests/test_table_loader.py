@@ -145,3 +145,23 @@ def test_load_ruleset_fails_for_unknown_profile_terrain(monkeypatch: pytest.Monk
 
     with pytest.raises(ValueError, match="unknown terrain"):
         load_ruleset(RulesetMode.ORIGINAL)
+
+
+def test_validate_stacking_pair_matrix_rejects_duplicates() -> None:
+    """Stacking matrix validator should reject duplicate category pairs."""
+
+    with pytest.raises(ValueError, match="duplicate category rows"):
+        table_loader._validate_stacking_pair_matrix(
+            table_id="stacking_voluntary",
+            keys=[("basic", "basic"), ("basic", "basic")],
+        )
+
+
+def test_validate_stacking_pair_matrix_rejects_missing_pairs() -> None:
+    """Stacking matrix validator should reject incomplete moving/stationary matrix."""
+
+    with pytest.raises(ValueError, match="misses category pairs"):
+        table_loader._validate_stacking_pair_matrix(
+            table_id="stacking_voluntary",
+            keys=[("basic", "basic"), ("basic", "scout"), ("scout", "basic")],
+        )

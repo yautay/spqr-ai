@@ -1,0 +1,174 @@
+{
+  "table_id": "stacking_mandatory",
+  "version": "import-1",
+  "notes": [
+    "Baseline mandatory stacking matrix for routed movement interactions.",
+    "Rows are complete for moving categories routing_basic/routing_scout/routing_heavy and stationary basic/scout/heavy plus routed variants."
+  ],
+  "rows": [
+    {
+      "moving_category": "routing_basic",
+      "stationary_category": "basic",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-2"}
+    },
+    {
+      "moving_category": "routing_basic",
+      "stationary_category": "scout",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-1"}
+    },
+    {
+      "moving_category": "routing_basic",
+      "stationary_category": "heavy",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 1,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-2"}
+    },
+    {
+      "moving_category": "routing_basic",
+      "stationary_category": "routing_basic",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+    {
+      "moving_category": "routing_basic",
+      "stationary_category": "routing_scout",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+    {
+      "moving_category": "routing_basic",
+      "stationary_category": "routing_heavy",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+
+    {
+      "moving_category": "routing_scout",
+      "stationary_category": "basic",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-1"}
+    },
+    {
+      "moving_category": "routing_scout",
+      "stationary_category": "scout",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq"}
+    },
+    {
+      "moving_category": "routing_scout",
+      "stationary_category": "heavy",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 1,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-2"}
+    },
+    {
+      "moving_category": "routing_scout",
+      "stationary_category": "routing_basic",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+    {
+      "moving_category": "routing_scout",
+      "stationary_category": "routing_scout",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+    {
+      "moving_category": "routing_scout",
+      "stationary_category": "routing_heavy",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+
+    {
+      "moving_category": "routing_heavy",
+      "stationary_category": "basic",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 1,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-2"}
+    },
+    {
+      "moving_category": "routing_heavy",
+      "stationary_category": "scout",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 1,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-2"}
+    },
+    {
+      "moving_category": "routing_heavy",
+      "stationary_category": "heavy",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": true, "formula": "tq-1"}
+    },
+    {
+      "moving_category": "routing_heavy",
+      "stationary_category": "routing_basic",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+    {
+      "moving_category": "routing_heavy",
+      "stationary_category": "routing_scout",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    },
+    {
+      "moving_category": "routing_heavy",
+      "stationary_category": "routing_heavy",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "stationary_unit_tq_check": {"required": false, "formula": null}
+    }
+  ]
+}

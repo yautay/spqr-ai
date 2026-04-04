@@ -114,9 +114,19 @@ def load_table(table_id: TableId) -> ParsedTableModel:
     if table_id == "movement_costs":
         return MovementCostsTableModel.model_validate(raw)
     if table_id == "stacking_voluntary":
-        return StackingVoluntaryTableModel.model_validate(raw)
+        voluntary_table = StackingVoluntaryTableModel.model_validate(raw)
+        _validate_stacking_pair_matrix(
+            table_id=table_id,
+            keys=[(row.moving_category, row.stationary_category) for row in voluntary_table.rows],
+        )
+        return voluntary_table
     if table_id == "stacking_mandatory":
-        return StackingMandatoryTableModel.model_validate(raw)
+        mandatory_table = StackingMandatoryTableModel.model_validate(raw)
+        _validate_stacking_pair_matrix(
+            table_id=table_id,
+            keys=[(row.moving_category, row.stationary_category) for row in mandatory_table.rows],
+        )
+        return mandatory_table
     if table_id == "missile_range_results":
         return MissileTableModel.model_validate(raw)
     if table_id == "rally_table":
@@ -134,3 +144,32 @@ def available_rulesets() -> tuple[RulesetMode, ...]:
     """Return all supported ruleset modes."""
 
     return (RulesetMode.ORIGINAL, RulesetMode.SIMPLE)
+
+
+def _validate_stacking_pair_matrix(table_id: str, keys: list[tuple[str, str]]) -> None:
+    """Validate uniqueness and matrix completeness for stacking category pairs."""
+
+    moving_categories = sorted({moving for moving, _ in keys})
+    stationary_categories = sorted({stationary for _, stationary in keys})
+
+    seen: set[tuple[str, str]] = set()
+    duplicates: list[tuple[str, str]] = []
+    for key in keys:
+        if key in seen:
+            duplicates.append(key)
+        seen.add(key)
+
+    if duplicates:
+        duplicate_names = ", ".join(f"{moving}/{stationary}" for moving, stationary in duplicates)
+        raise ValueError(f"{table_id} has duplicate category rows: {duplicate_names}")
+
+    missing: list[tuple[str, str]] = []
+    for moving in moving_categories:
+        for stationary in stationary_categories:
+            pair = (moving, stationary)
+            if pair not in seen:
+                missing.append(pair)
+
+    if missing:
+        missing_names = ", ".join(f"{moving}/{stationary}" for moving, stationary in missing)
+        raise ValueError(f"{table_id} misses category pairs: {missing_names}")

@@ -1,0 +1,91 @@
+{
+  "table_id": "stacking_voluntary",
+  "version": "import-1",
+  "notes": [
+    "Baseline voluntary stacking matrix imported for current movement categories.",
+    "Rows are complete for moving/stationary categories: basic, scout, heavy."
+  ],
+  "rows": [
+    {
+      "moving_category": "basic",
+      "stationary_category": "basic",
+      "may_move_through": false,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "tq_check_drm": null
+    },
+    {
+      "moving_category": "basic",
+      "stationary_category": "scout",
+      "may_move_through": false,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "tq_check_drm": null
+    },
+    {
+      "moving_category": "basic",
+      "stationary_category": "heavy",
+      "may_move_through": false,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "tq_check_drm": null
+    },
+    {
+      "moving_category": "scout",
+      "stationary_category": "basic",
+      "may_move_through": true,
+      "may_stop_in_hex": true,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "tq_check_drm": 0
+    },
+    {
+      "moving_category": "scout",
+      "stationary_category": "scout",
+      "may_move_through": true,
+      "may_stop_in_hex": true,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "tq_check_drm": 0
+    },
+    {
+      "moving_category": "scout",
+      "stationary_category": "heavy",
+      "may_move_through": true,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": 0,
+      "stationary_unit_cohesion_hits": 0,
+      "tq_check_drm": -1
+    },
+    {
+      "moving_category": "heavy",
+      "stationary_category": "basic",
+      "may_move_through": false,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "tq_check_drm": null
+    },
+    {
+      "moving_category": "heavy",
+      "stationary_category": "scout",
+      "may_move_through": false,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "tq_check_drm": null
+    },
+    {
+      "moving_category": "heavy",
+      "stationary_category": "heavy",
+      "may_move_through": false,
+      "may_stop_in_hex": false,
+      "moving_unit_cohesion_hits": null,
+      "stationary_unit_cohesion_hits": null,
+      "tq_check_drm": null
+    }
+  ]
+}

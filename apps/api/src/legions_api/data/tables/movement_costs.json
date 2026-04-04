@@ -1,10 +1,9 @@
 {
   "table_id": "movement_costs",
-  "version": "draft-2",
+  "version": "import-1",
   "notes": [
-    "Runtime-ready baseline profile set for movement resolver wiring.",
-    "Terrain MP values preserve current movement behavior until full chart import is complete.",
-    "Elevation and facing values are placeholders and are not yet consumed by runtime movement resolution."
+    "Baseline movement profile matrix currently used by runtime movement resolution.",
+    "Values cover terrain, elevation and facing fields for original and simple profiles."
   ],
   "terrain_types": ["clear", "rough", "woods", "road", "water"],
   "unit_profiles": [

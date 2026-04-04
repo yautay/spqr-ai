@@ -12,7 +12,7 @@ def enemy_zoc_hexes(state: GameState, side: Side) -> set[HexCoord]:
 
     zoc: set[HexCoord] = set()
     for unit in state.units.values():
-        if unit.side == side or not unit.exerts_zoc:
+        if unit.side == side or not unit.exerts_zoc or unit.is_routed:
             continue
 
         for neighbor in unit.position.neighbors():

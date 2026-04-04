@@ -65,6 +65,8 @@ class Unit:
     def with_routed(self, is_routed: bool = True) -> Unit:
         """Return unit with updated routed status."""
 
+        exerts_zoc = self.exerts_zoc and not is_routed
+
         return Unit(
             unit_id=self.unit_id,
             side=self.side,
@@ -73,7 +75,7 @@ class Unit:
             tq=self.tq,
             cohesion_hits=self.cohesion_hits,
             is_routed=is_routed,
-            exerts_zoc=self.exerts_zoc,
+            exerts_zoc=exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
         )
