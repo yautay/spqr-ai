@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from legions_api.core.actions import MissileAction, ReloadMissileAction
 from legions_api.core.model.game_state import GameState
+from legions_api.core.model.map import TerrainType
 from legions_api.core.model.unit import MissileSupply
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, MissileDRMModifier, MissileEvent, MissileOutcome
+from legions_api.core.rules.los import has_line_of_sight
 from legions_api.core.tables.adapters import missile_class_lookup, missile_drm_lookup
 from legions_api.core.tables.loader import load_table
 from legions_api.core.tables.models import MissileTableModel
@@ -50,9 +52,16 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
     if class_row is None:
         return ActionResult(ok=False, reason="unknown_missile_class", state=state)
 
+    if not has_line_of_sight(state, firing_unit.position, target_unit.position):
+        return ActionResult(ok=False, reason="no_line_of_sight", state=state)
+
     drm_lookup = missile_drm_lookup(table)
+    modifier_ids = _resolve_modifier_ids(
+        auto_modifier_ids=_auto_modifier_ids(state=state, firing_unit_id=firing_unit.unit_id, target_unit_id=target_unit.unit_id),
+        explicit_modifier_ids=action.modifier_ids,
+    )
     drm_breakdown: list[MissileDRMModifier] = []
-    for modifier_id in action.modifier_ids:
+    for modifier_id in modifier_ids:
         modifier = drm_lookup.get(modifier_id)
         if modifier is None:
             return ActionResult(ok=False, reason="unknown_missile_drm", state=state)
@@ -204,3 +213,35 @@ def _improve_supply(supply: MissileSupply) -> MissileSupply:
     if supply == MissileSupply.LOW:
         return MissileSupply.NORMAL
     return MissileSupply.NORMAL
+
+
+def _auto_modifier_ids(state: GameState, firing_unit_id: str, target_unit_id: str) -> tuple[str, ...]:
+    """Resolve state-driven missile modifiers that should apply automatically."""
+
+    firing_unit = state.units[firing_unit_id]
+    target_unit = state.units[target_unit_id]
+    target_tile = state.scenario_map.tile_at(target_unit.position)
+
+    modifier_ids: list[str] = []
+    if target_tile is not None and target_tile.terrain == TerrainType.WOODS:
+        modifier_ids.append("target_woods")
+
+    if firing_unit.missile_supply != MissileSupply.NORMAL:
+        modifier_ids.append("firing_unit_depleted")
+
+    return tuple(modifier_ids)
+
+
+def _resolve_modifier_ids(auto_modifier_ids: tuple[str, ...], explicit_modifier_ids: tuple[str, ...]) -> tuple[str, ...]:
+    """Merge auto and explicit modifier ids while preserving first-seen order."""
+
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for modifier_id in (*auto_modifier_ids, *explicit_modifier_ids):
+        if modifier_id in seen:
+            continue
+
+        seen.add(modifier_id)
+        ordered.append(modifier_id)
+
+    return tuple(ordered)

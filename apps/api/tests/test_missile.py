@@ -7,7 +7,7 @@ import pytest
 from legions_api.core.actions import MissileAction, ReloadMissileAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
-from legions_api.core.model.map import HexTile, build_irregular_map
+from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.unit import MissileSupply, Side, Unit
 from legions_api.core.rules import missile as missile_rules
@@ -119,6 +119,33 @@ def test_missile_rejects_target_out_of_range(monkeypatch: pytest.MonkeyPatch) ->
     assert result.state.rng_counter == 0
 
 
+def test_missile_rejects_when_line_of_sight_is_blocked(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Missile action should fail when LOS is blocked by intermediate hex."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(2, 0)),
+        },
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, 0), blocks_line_of_sight=True),
+            HexTile(coord=HexCoord(2, 0)),
+        ],
+    )
+    monkeypatch.setattr(
+        missile_rules,
+        "load_table",
+        lambda table_id: _missile_table(strength_at_range_one=8, strength_at_range_two=8),
+    )
+
+    result = resolve_missile(state, MissileAction(firing_unit_id="r1", target_unit_id="b1"))
+
+    assert not result.ok
+    assert result.reason == "no_line_of_sight"
+    assert result.state.rng_counter == 0
+
+
 def test_missile_applies_drm_breakdown_and_modified_roll(monkeypatch: pytest.MonkeyPatch) -> None:
     """Configured DR modifiers should shift roll and be exposed in breakdown order."""
 
@@ -172,6 +199,88 @@ def test_missile_rejects_unknown_drm_modifier(monkeypatch: pytest.MonkeyPatch) -
     assert not result.ok
     assert result.reason == "unknown_missile_drm"
     assert result.state.rng_counter == 0
+
+
+def test_missile_auto_applies_terrain_modifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Target woods terrain should add configured DR modifier automatically."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
+        },
+        tiles=[
+            HexTile(coord=HexCoord(0, 0), terrain=TerrainType.CLEAR),
+            HexTile(coord=HexCoord(1, 0), terrain=TerrainType.WOODS),
+            HexTile(coord=HexCoord(2, 0), terrain=TerrainType.CLEAR),
+        ],
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=7))
+
+    result = resolve_missile(state, MissileAction(firing_unit_id="r1", target_unit_id="b1"))
+
+    assert result.ok
+    assert result.missile_outcome is not None
+    assert result.missile_outcome.total_drm == 2
+    assert [entry.id for entry in result.missile_outcome.drm_breakdown] == ["target_woods"]
+
+
+def test_missile_auto_applies_depleted_supply_modifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Low missile supply should add depleted DR modifier automatically."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(
+                unit_id="r1",
+                side=Side.RED,
+                position=HexCoord(0, 0),
+                missile_class_id="A",
+                missile_supply=MissileSupply.LOW,
+            ),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
+        }
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=6))
+
+    result = resolve_missile(state, MissileAction(firing_unit_id="r1", target_unit_id="b1"))
+
+    assert result.ok
+    assert result.missile_outcome is not None
+    assert result.missile_outcome.total_drm == 1
+    assert result.missile_outcome.modified_roll == 7
+    assert [entry.id for entry in result.missile_outcome.drm_breakdown] == ["firing_unit_depleted"]
+
+
+def test_missile_auto_modifiers_do_not_duplicate_explicit_ids(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Explicit modifier ids should not duplicate identical state-driven modifiers."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(
+                unit_id="r1",
+                side=Side.RED,
+                position=HexCoord(0, 0),
+                missile_class_id="A",
+                missile_supply=MissileSupply.LOW,
+            ),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
+        }
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=6))
+
+    result = resolve_missile(
+        state,
+        MissileAction(
+            firing_unit_id="r1",
+            target_unit_id="b1",
+            modifier_ids=("firing_unit_depleted",),
+        ),
+    )
+
+    assert result.ok
+    assert result.missile_outcome is not None
+    assert result.missile_outcome.total_drm == 1
+    assert [entry.id for entry in result.missile_outcome.drm_breakdown] == ["firing_unit_depleted"]
 
 
 def test_reaction_fire_emits_reaction_and_supply_events(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -228,16 +337,15 @@ def test_fire_reload_sequence_updates_supply_and_events(monkeypatch: pytest.Monk
     assert reload.events[0].success is True
 
 
-def _build_state(units: dict[str, Unit]) -> GameState:
+def _build_state(units: dict[str, Unit], tiles: list[HexTile] | None = None) -> GameState:
     """Create a tiny deterministic battlefield for missile tests."""
 
-    scenario_map = build_irregular_map(
-        tiles=[
-            HexTile(coord=HexCoord(0, 0)),
-            HexTile(coord=HexCoord(1, 0)),
-            HexTile(coord=HexCoord(2, 0)),
-        ]
-    )
+    scenario_tiles = tiles or [
+        HexTile(coord=HexCoord(0, 0)),
+        HexTile(coord=HexCoord(1, 0)),
+        HexTile(coord=HexCoord(2, 0)),
+    ]
+    scenario_map = build_irregular_map(tiles=scenario_tiles)
     return GameState.from_units(
         scenario_map=scenario_map,
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
@@ -246,8 +354,12 @@ def _build_state(units: dict[str, Unit]) -> GameState:
     )
 
 
-def _missile_table(strength_at_range_one: int) -> MissileTableModel:
+def _missile_table(strength_at_range_one: int, strength_at_range_two: int | None = None) -> MissileTableModel:
     """Build minimal missile table fixture for resolver tests."""
+
+    strength_by_range: dict[str, int] = {"1": strength_at_range_one}
+    if strength_at_range_two is not None:
+        strength_by_range["2"] = strength_at_range_two
 
     return MissileTableModel.model_validate(
         {
@@ -257,12 +369,13 @@ def _missile_table(strength_at_range_one: int) -> MissileTableModel:
                 {
                     "missile_class_id": "A",
                     "name": "archer",
-                    "strength_by_range": {"1": strength_at_range_one},
+                    "strength_by_range": strength_by_range,
                 }
             ],
             "dr_modifiers": [
                 {"id": "target_woods", "drm": 2},
                 {"id": "target_sk", "drm": -1},
+                {"id": "firing_unit_depleted", "drm": 1},
             ],
         }
     )
