@@ -19,6 +19,8 @@ class GameState:
     active_side: Side
     units: dict[str, Unit]
     occupant_by_hex: dict[HexCoord, tuple[str, ...]]
+    rng_seed: int
+    rng_counter: int
 
     @classmethod
     def from_units(
@@ -27,6 +29,8 @@ class GameState:
         ruleset: RulesetDefinition,
         active_side: Side,
         units: dict[str, Unit],
+        rng_seed: int = 1,
+        rng_counter: int = 0,
     ) -> GameState:
         """Create state and build occupancy index from units."""
 
@@ -48,6 +52,8 @@ class GameState:
             active_side=active_side,
             units=units,
             occupant_by_hex=frozen_occupants,
+            rng_seed=rng_seed,
+            rng_counter=rng_counter,
         )
 
     def unit_at(self, coord: HexCoord) -> Unit | None:
@@ -73,6 +79,8 @@ class GameState:
             ruleset=self.ruleset,
             active_side=self.active_side,
             units=units,
+            rng_seed=self.rng_seed,
+            rng_counter=self.rng_counter,
         )
 
     def with_active_side(self, active_side: Side) -> GameState:
@@ -84,4 +92,19 @@ class GameState:
             active_side=active_side,
             units=self.units,
             occupant_by_hex=self.occupant_by_hex,
+            rng_seed=self.rng_seed,
+            rng_counter=self.rng_counter,
+        )
+
+    def with_rng_counter(self, rng_counter: int) -> GameState:
+        """Return copy with updated RNG counter."""
+
+        return GameState(
+            scenario_map=self.scenario_map,
+            ruleset=self.ruleset,
+            active_side=self.active_side,
+            units=self.units,
+            occupant_by_hex=self.occupant_by_hex,
+            rng_seed=self.rng_seed,
+            rng_counter=rng_counter,
         )

@@ -11,6 +11,7 @@ Current baseline
 - Movement action results now include pending TQ check requests derived from stacking effects.
 - Pending TQ checks now include computed targets using unit TQ, formula offsets, and DRM.
 - TQ check outcomes now expose rolled value (`roll`) for UI explanation.
+- TQ rolls now use seeded per-game RNG state (`rng_seed` + advancing `rng_counter`) for deterministic replayable sequences.
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)

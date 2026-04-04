@@ -81,13 +81,19 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         stacking_lookup=stacking_lookup,
     )
     pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
-    tq_check_outcomes = _resolve_pending_tq_checks(pending_tq_checks, current_units=updated_units)
+    tq_check_outcomes, next_rng_counter = _resolve_pending_tq_checks(
+        pending_tq_checks,
+        current_units=updated_units,
+        rng_seed=state.rng_seed,
+        rng_counter=state.rng_counter,
+    )
     updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
+    updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter)
 
     return ActionResult(
         ok=True,
         reason="ok",
-        state=state.with_units(updated_units),
+        state=updated_state,
         effects=movement_effects,
         pending_tq_checks=pending_tq_checks,
         tq_check_outcomes=tq_check_outcomes,
@@ -252,16 +258,20 @@ def _parse_tq_formula_offset(formula: str | None) -> int:
 def _resolve_pending_tq_checks(
     checks: tuple[PendingTQCheck, ...],
     current_units: dict[str, Unit],
-) -> tuple[TQCheckOutcome, ...]:
+    rng_seed: int,
+    rng_counter: int,
+) -> tuple[tuple[TQCheckOutcome, ...], int]:
     """Resolve pending TQ checks and apply failure side effects."""
 
     outcomes: list[TQCheckOutcome] = []
+    next_counter = rng_counter
     for check in checks:
         unit = current_units.get(check.unit_id)
         if unit is None:
             continue
 
-        roll = _deterministic_d10_roll(unit_id=check.unit_id, location=check.location)
+        roll = _seeded_d10_roll(rng_seed=rng_seed, rng_counter=next_counter)
+        next_counter += 1
         passed = roll <= check.target
         applied_cohesion_hits = 0
         if not passed:
@@ -283,11 +293,11 @@ def _resolve_pending_tq_checks(
             )
         )
 
-    return tuple(outcomes)
+    return tuple(outcomes), next_counter
 
 
-def _deterministic_d10_roll(unit_id: str, location: HexCoord) -> int:
-    """Return deterministic d10 roll used until RNG module is introduced."""
+def _seeded_d10_roll(rng_seed: int, rng_counter: int) -> int:
+    """Return deterministic seeded d10 roll for current game RNG state."""
 
-    seed = sum(ord(char) for char in unit_id) + location.q + location.r
-    return (seed % 10) + 1
+    value = (1664525 * rng_seed + 1013904223 * rng_counter) % (2**32)
+    return (value % 10) + 1

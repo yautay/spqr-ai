@@ -381,6 +381,7 @@ def test_move_applies_cohesion_hits_on_pass_through(monkeypatch: pytest.MonkeyPa
     assert result.tq_check_outcomes[0].unit_id == "r2"
     assert result.tq_check_outcomes[0].roll == 6
     assert result.tq_check_outcomes[0].passed
+    assert result.state.rng_counter == 1
 
 
 def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -439,6 +440,7 @@ def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPat
     assert result.tq_check_outcomes[0].unit_id == "r2"
     assert result.tq_check_outcomes[0].roll == 6
     assert result.tq_check_outcomes[0].passed
+    assert result.state.rng_counter == 1
 
 
 def test_parse_tq_formula_offset_supports_common_forms() -> None:
@@ -475,19 +477,34 @@ def test_resolve_pending_tq_checks_applies_cohesion_on_failed_roll() -> None:
         "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1),
     }
 
-    outcomes = movement_rules._resolve_pending_tq_checks(checks, current_units=units)
+    outcomes, next_counter = movement_rules._resolve_pending_tq_checks(
+        checks,
+        current_units=units,
+        rng_seed=1,
+        rng_counter=0,
+    )
 
     assert len(outcomes) == 1
     assert outcomes[0].roll == 6
     assert not outcomes[0].passed
     assert outcomes[0].applied_cohesion_hits == 1
     assert units["r2"].cohesion_hits == 1
+    assert next_counter == 1
 
 
-def test_deterministic_d10_roll_stays_stable_for_same_inputs() -> None:
-    """Deterministic roll helper should be stable for repeat UI previews."""
+def test_seeded_d10_roll_is_deterministic_for_same_seed_and_counter() -> None:
+    """Seeded roll helper should stay stable for identical RNG state."""
 
-    first_roll = movement_rules._deterministic_d10_roll(unit_id="r2", location=HexCoord(0, 1))
-    second_roll = movement_rules._deterministic_d10_roll(unit_id="r2", location=HexCoord(0, 1))
+    first_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=0)
+    second_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=0)
 
     assert first_roll == second_roll == 6
+
+
+def test_seeded_d10_roll_changes_when_counter_advances() -> None:
+    """Seeded roll helper should produce sequence as counter advances."""
+
+    first_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=0)
+    second_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=1)
+
+    assert first_roll != second_roll
