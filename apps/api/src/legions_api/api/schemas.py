@@ -25,6 +25,7 @@ class UnitPayload(BaseModel):
     move_allowance: int
     tq: int
     cohesion_hits: int
+    is_routed: bool
     exerts_zoc: bool
     move_profile_id: str | None
     stacking_category: str
@@ -107,6 +108,7 @@ class TQCheckOutcomePayload(BaseModel):
     roll: int
     passed: bool
     applied_cohesion_hits: int
+    became_routed: bool
 
 
 class ActionResponsePayload(BaseModel):

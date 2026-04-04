@@ -52,6 +52,7 @@ class TQCheckOutcome:
     roll: int
     passed: bool
     applied_cohesion_hits: int
+    became_routed: bool
 
 
 @dataclass(frozen=True, slots=True)

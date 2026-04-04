@@ -2,6 +2,9 @@
 
 from fastapi.testclient import TestClient
 
+from legions_api.api.routes import game as game_routes
+from legions_api.core.bootstrap import create_demo_state
+from legions_api.core.results import ActionResult, TQCheckOutcome
 from legions_api.main import app
 
 
@@ -71,3 +74,50 @@ def test_new_game_accepts_ruleset_selection() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["ruleset"] == "simple"
+
+
+def test_game_action_response_exposes_tq_roll_metadata(monkeypatch) -> None:
+    """Action endpoint should include resolved TQ outcome roll for UI explanation."""
+
+    client = TestClient(app)
+
+    demo_state = create_demo_state()
+
+    def fake_resolve_move(state, action):
+        return ActionResult(
+            ok=True,
+            reason="ok",
+            state=demo_state,
+            tq_check_outcomes=(
+                TQCheckOutcome(
+                    unit_id="b1",
+                    location=demo_state.units["b1"].position,
+                    source="stacking",
+                    required=True,
+                    formula="tq-2",
+                    drm=-1,
+                    target=4,
+                    roll=7,
+                    passed=False,
+                    applied_cohesion_hits=1,
+                    became_routed=True,
+                ),
+            ),
+        )
+
+    monkeypatch.setattr(game_routes, "resolve_move", fake_resolve_move)
+
+    response = client.post(
+        "/game/action",
+        json={"unit_id": "r1", "destination": {"q": 1, "r": 0}},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert len(payload["tq_check_outcomes"]) == 1
+    outcome = payload["tq_check_outcomes"][0]
+    assert outcome["roll"] == 7
+    assert outcome["target"] == 4
+    assert outcome["passed"] is False
+    assert outcome["became_routed"] is True

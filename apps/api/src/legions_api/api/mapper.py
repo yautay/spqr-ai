@@ -28,6 +28,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             move_allowance=unit.move_allowance,
             tq=unit.tq,
             cohesion_hits=unit.cohesion_hits,
+            is_routed=unit.is_routed,
             exerts_zoc=unit.exerts_zoc,
             move_profile_id=unit.move_profile_id,
             stacking_category=unit.stacking_category,
@@ -105,4 +106,5 @@ def _to_tq_check_outcome_payload(outcome: TQCheckOutcome) -> TQCheckOutcomePaylo
         roll=outcome.roll,
         passed=outcome.passed,
         applied_cohesion_hits=outcome.applied_cohesion_hits,
+        became_routed=outcome.became_routed,
     )

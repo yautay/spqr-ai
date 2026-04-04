@@ -274,9 +274,15 @@ def _resolve_pending_tq_checks(
         next_counter += 1
         passed = roll <= check.target
         applied_cohesion_hits = 0
+        became_routed = False
         if not passed:
             applied_cohesion_hits = 1
-            current_units[check.unit_id] = unit.with_added_cohesion_hits(applied_cohesion_hits)
+            failed_unit = unit.with_added_cohesion_hits(applied_cohesion_hits)
+            if not failed_unit.is_routed:
+                failed_unit = failed_unit.with_routed(True)
+                became_routed = True
+
+            current_units[check.unit_id] = failed_unit
 
         outcomes.append(
             TQCheckOutcome(
@@ -290,6 +296,7 @@ def _resolve_pending_tq_checks(
                 roll=roll,
                 passed=passed,
                 applied_cohesion_hits=applied_cohesion_hits,
+                became_routed=became_routed,
             )
         )
 

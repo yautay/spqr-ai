@@ -25,6 +25,7 @@ class Unit:
     move_allowance: int = 1
     tq: int = 7
     cohesion_hits: int = 0
+    is_routed: bool = False
     exerts_zoc: bool = True
     move_profile_id: str | None = None
     stacking_category: str = "basic"
@@ -39,6 +40,7 @@ class Unit:
             move_allowance=self.move_allowance,
             tq=self.tq,
             cohesion_hits=self.cohesion_hits,
+            is_routed=self.is_routed,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
@@ -54,6 +56,23 @@ class Unit:
             move_allowance=self.move_allowance,
             tq=self.tq,
             cohesion_hits=self.cohesion_hits + delta,
+            is_routed=self.is_routed,
+            exerts_zoc=self.exerts_zoc,
+            move_profile_id=self.move_profile_id,
+            stacking_category=self.stacking_category,
+        )
+
+    def with_routed(self, is_routed: bool = True) -> Unit:
+        """Return unit with updated routed status."""
+
+        return Unit(
+            unit_id=self.unit_id,
+            side=self.side,
+            position=self.position,
+            move_allowance=self.move_allowance,
+            tq=self.tq,
+            cohesion_hits=self.cohesion_hits,
+            is_routed=is_routed,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,

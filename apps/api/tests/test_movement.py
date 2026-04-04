@@ -381,6 +381,8 @@ def test_move_applies_cohesion_hits_on_pass_through(monkeypatch: pytest.MonkeyPa
     assert result.tq_check_outcomes[0].unit_id == "r2"
     assert result.tq_check_outcomes[0].roll == 6
     assert result.tq_check_outcomes[0].passed
+    assert not result.tq_check_outcomes[0].became_routed
+    assert not result.state.units["r2"].is_routed
     assert result.state.rng_counter == 1
 
 
@@ -440,6 +442,8 @@ def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPat
     assert result.tq_check_outcomes[0].unit_id == "r2"
     assert result.tq_check_outcomes[0].roll == 6
     assert result.tq_check_outcomes[0].passed
+    assert not result.tq_check_outcomes[0].became_routed
+    assert not result.state.units["r2"].is_routed
     assert result.state.rng_counter == 1
 
 
@@ -488,7 +492,9 @@ def test_resolve_pending_tq_checks_applies_cohesion_on_failed_roll() -> None:
     assert outcomes[0].roll == 6
     assert not outcomes[0].passed
     assert outcomes[0].applied_cohesion_hits == 1
+    assert outcomes[0].became_routed
     assert units["r2"].cohesion_hits == 1
+    assert units["r2"].is_routed
     assert next_counter == 1
 
 
@@ -508,3 +514,34 @@ def test_seeded_d10_roll_changes_when_counter_advances() -> None:
     second_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=1)
 
     assert first_roll != second_roll
+
+
+def test_failed_tq_check_does_not_re_route_already_routed_unit() -> None:
+    """Repeated failed checks should keep routed state and report no new route transition."""
+
+    checks = (
+        PendingTQCheck(
+            unit_id="r2",
+            location=HexCoord(0, 1),
+            source="stacking",
+            required=True,
+            formula="tq-2",
+            drm=0,
+            target=5,
+        ),
+    )
+    units = {
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1, is_routed=True),
+    }
+
+    outcomes, _ = movement_rules._resolve_pending_tq_checks(
+        checks,
+        current_units=units,
+        rng_seed=1,
+        rng_counter=0,
+    )
+
+    assert len(outcomes) == 1
+    assert not outcomes[0].passed
+    assert not outcomes[0].became_routed
+    assert units["r2"].is_routed
