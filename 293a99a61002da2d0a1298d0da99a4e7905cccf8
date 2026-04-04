@@ -1,0 +1,6 @@
+Zmiany od ostatniego git notes (87f8035):
+- Domknieto M1/M1.5/M2: ruch+stacking+TQ, pelny missile flow (LOS, reaction windows, supply/reload), shock+morale+rout/pursuit.
+- Dodano tabelowy pakiet walki: shock_superiority, clash_columns, shock_crt oraz adaptery i walidacje loadera.
+- Rozszerzono API o /game/action/missile, /game/action/missile/reload, /game/action/shock i payloady breakdown dla missile/shock/morale/pursuit.
+- Utrzymano deterministycznosc RNG i rozszerzono testy regresyjne; backend suite przechodzi (101 passed).
+- Zaktualizowano dokumentacje/handoff: roadmap (M1.5 i M2 complete), NEXT_STEPS, AGENT_PLAN, README, decisions.
