@@ -270,3 +270,51 @@ def test_move_can_stop_in_occupied_hex_when_stacking_allows(monkeypatch: pytest.
     assert result.ok
     assert result.state.units["r1"].position == HexCoord(0, 1)
     assert set(result.state.occupant_by_hex[HexCoord(0, 1)]) == {"r1", "r2"}
+
+
+def test_move_through_fails_when_any_occupant_category_disallows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pass-through should fail when occupied hex has mixed categories and one row disallows."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+            HexTile(coord=HexCoord(0, 2)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=2, stacking_category="scout"),
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1, stacking_category="basic"),
+        "r3": Unit(unit_id="r3", side=Side.RED, position=HexCoord(0, 1), move_allowance=1, stacking_category="heavy"),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    custom_stacking_table = StackingVoluntaryTableModel.model_validate(
+        {
+            "table_id": "stacking_voluntary",
+            "version": "test",
+            "rows": [
+                {
+                    "moving_category": "scout",
+                    "stationary_category": "basic",
+                    "may_move_through": True,
+                    "may_stop_in_hex": False,
+                    "moving_unit_cohesion_hits": None,
+                    "stationary_unit_cohesion_hits": None,
+                    "tq_check_drm": None,
+                }
+            ],
+        }
+    )
+
+    monkeypatch.setattr(movement_rules, "load_table", lambda table_id: custom_stacking_table)
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 2)))
+
+    assert not result.ok
+    assert result.reason == "no_valid_path"
