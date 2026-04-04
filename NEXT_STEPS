@@ -13,6 +13,7 @@ Current baseline
 - TQ check outcomes now expose rolled value (`roll`) for UI explanation.
 - TQ rolls now use seeded per-game RNG state (`rng_seed` + advancing `rng_counter`) for deterministic replayable sequences.
 - Failed TQ checks now apply cohesion loss and set stationary units to routed state (`is_routed`).
+- Routed-unit movement now uses mandatory stacking lookup (with `routing_*` moving categories).
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)
@@ -36,4 +37,4 @@ Coding constraints
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Route routed-unit movement through mandatory stacking table and align category mapping for routed interactions.
+- Expand mandatory stacking category maps and import full chart values from source docs.

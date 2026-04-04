@@ -12,7 +12,7 @@ from legions_api.core.results import PendingTQCheck
 from legions_api.core.rules import movement as movement_rules
 from legions_api.core.rules.movement import resolve_move
 from legions_api.core.tables.loader import load_ruleset
-from legions_api.core.tables.models import StackingVoluntaryTableModel
+from legions_api.core.tables.models import StackingMandatoryTableModel, StackingVoluntaryTableModel
 
 
 def test_move_fails_when_unit_starts_in_enemy_zoc() -> None:
@@ -545,3 +545,115 @@ def test_failed_tq_check_does_not_re_route_already_routed_unit() -> None:
     assert not outcomes[0].passed
     assert not outcomes[0].became_routed
     assert units["r2"].is_routed
+
+
+def test_routed_unit_uses_mandatory_stacking_for_pass_through() -> None:
+    """Routed mover should use mandatory stacking chart instead of voluntary rules."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+            HexTile(coord=HexCoord(0, 2)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=2, is_routed=True),
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 2)))
+
+    assert result.ok
+    assert result.state.units["r1"].position == HexCoord(0, 2)
+
+
+def test_routed_unit_cannot_stop_in_occupied_hex_when_mandatory_disallows() -> None:
+    """Mandatory stacking stop constraint should block routed destination occupancy."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1, is_routed=True),
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 1)))
+
+    assert not result.ok
+    assert result.reason == "destination_occupied"
+
+
+def test_routed_unit_can_emit_mandatory_tq_check(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mandatory stacking rows should produce pending and resolved TQ checks."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+            HexTile(coord=HexCoord(0, 2)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=2, is_routed=True),
+        "r2": Unit(unit_id="r2", side=Side.RED, position=HexCoord(0, 1), move_allowance=1),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    custom_mandatory_table = StackingMandatoryTableModel.model_validate(
+        {
+            "table_id": "stacking_mandatory",
+            "version": "test",
+            "rows": [
+                {
+                    "moving_category": "routing_basic",
+                    "stationary_category": "basic",
+                    "may_move_through": True,
+                    "may_stop_in_hex": False,
+                    "moving_unit_cohesion_hits": None,
+                    "stationary_unit_cohesion_hits": None,
+                    "stationary_unit_tq_check": {
+                        "required": True,
+                        "formula": "tq-2",
+                    },
+                }
+            ],
+        }
+    )
+
+    original_load_table = movement_rules.load_table
+
+    monkeypatch.setattr(
+        movement_rules,
+        "load_table",
+        lambda table_id: custom_mandatory_table if table_id == "stacking_mandatory" else original_load_table(table_id),
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 2)))
+
+    assert result.ok
+    assert len(result.pending_tq_checks) == 1
+    assert result.pending_tq_checks[0].formula == "tq-2"
+    assert len(result.tq_check_outcomes) == 1
+    assert result.tq_check_outcomes[0].roll == 6

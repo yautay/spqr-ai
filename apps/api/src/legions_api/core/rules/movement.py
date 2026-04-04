@@ -11,9 +11,9 @@ from legions_api.core.model.unit import Unit
 from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect, TQCheckOutcome
 from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
-from legions_api.core.tables.adapters import StackingOutcome, voluntary_stacking_lookup
+from legions_api.core.tables.adapters import StackingOutcome, mandatory_stacking_lookup, voluntary_stacking_lookup
 from legions_api.core.tables.loader import load_table
-from legions_api.core.tables.models import StackingVoluntaryTableModel
+from legions_api.core.tables.models import StackingMandatoryTableModel, StackingVoluntaryTableModel
 
 
 def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
@@ -32,12 +32,18 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
     if unit.position == action.destination:
         return ActionResult(ok=False, reason="no_op_move", state=state)
 
-    stacking_lookup = _load_voluntary_stacking_lookup()
+    use_mandatory_stacking = unit.is_routed
+    stacking_lookup = _load_stacking_lookup(use_mandatory_stacking)
+    moving_category = _moving_stacking_category(unit, use_mandatory_stacking)
 
     destination_units = state.units_at(action.destination)
     if destination_units:
         may_stop_for_all_occupants = all(
-            _may_stop_in_hex(stacking_lookup, moving_category=unit.stacking_category, stationary_category=stationary.stacking_category)
+            _may_stop_in_hex(
+                stacking_lookup,
+                moving_category=moving_category,
+                stationary_category=_stationary_stacking_category(stationary, use_mandatory_stacking),
+            )
             for stationary in destination_units
         )
         if not may_stop_for_all_occupants:
@@ -54,8 +60,8 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         return all(
             _may_move_through_hex(
                 stacking_lookup,
-                moving_category=unit.stacking_category,
-                stationary_category=state.units[occupant_id].stacking_category,
+                moving_category=moving_category,
+                stationary_category=_stationary_stacking_category(state.units[occupant_id], use_mandatory_stacking),
             )
             for occupant_id in occupant_ids
         )
@@ -79,6 +85,8 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         path=path.path,
         current_units=updated_units,
         stacking_lookup=stacking_lookup,
+        moving_category=moving_category,
+        use_mandatory_stacking=use_mandatory_stacking,
     )
     pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
     tq_check_outcomes, next_rng_counter = _resolve_pending_tq_checks(
@@ -100,14 +108,39 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
     )
 
 
-def _load_voluntary_stacking_lookup() -> dict[tuple[str, str], StackingOutcome]:
-    """Load normalized lookup for voluntary stacking interactions."""
+def _load_stacking_lookup(use_mandatory_stacking: bool) -> dict[tuple[str, str], StackingOutcome]:
+    """Load normalized lookup for voluntary or mandatory stacking interactions."""
+
+    if use_mandatory_stacking:
+        table = load_table("stacking_mandatory")
+        if not isinstance(table, StackingMandatoryTableModel):
+            raise TypeError("stacking_mandatory table did not resolve to StackingMandatoryTableModel")
+
+        return mandatory_stacking_lookup(table)
 
     table = load_table("stacking_voluntary")
     if not isinstance(table, StackingVoluntaryTableModel):
         raise TypeError("stacking_voluntary table did not resolve to StackingVoluntaryTableModel")
 
     return voluntary_stacking_lookup(table)
+
+
+def _moving_stacking_category(unit: Unit, use_mandatory_stacking: bool) -> str:
+    """Resolve moving-unit stacking category for selected chart mode."""
+
+    if use_mandatory_stacking:
+        return f"routing_{unit.stacking_category}"
+
+    return unit.stacking_category
+
+
+def _stationary_stacking_category(unit: Unit, use_mandatory_stacking: bool) -> str:
+    """Resolve stationary-unit stacking category for selected chart mode."""
+
+    if use_mandatory_stacking and unit.is_routed:
+        return f"routing_{unit.stacking_category}"
+
+    return unit.stacking_category
 
 
 def _may_move_through_hex(
@@ -138,6 +171,8 @@ def _resolve_stacking_side_effects(
     path: tuple[HexCoord, ...],
     current_units: dict[str, Unit],
     stacking_lookup: dict[tuple[str, str], StackingOutcome],
+    moving_category: str,
+    use_mandatory_stacking: bool,
 ) -> tuple[tuple[StackingEffect, ...], Unit]:
     """Apply stacking row side effects for occupied hex interactions along movement path."""
 
@@ -160,7 +195,8 @@ def _resolve_stacking_side_effects(
             interaction = "pass_through"
         for occupant_id in occupant_ids:
             stationary_unit = current_units[occupant_id]
-            outcome = stacking_lookup.get((moved_unit.stacking_category, stationary_unit.stacking_category))
+            stationary_category = _stationary_stacking_category(stationary_unit, use_mandatory_stacking)
+            outcome = stacking_lookup.get((moving_category, stationary_category))
             if outcome is None:
                 continue
 
