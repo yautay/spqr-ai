@@ -36,11 +36,11 @@ Status legend:
 
 ## Milestone 2 - Combat and Morale
 
-- [ ] Implement combat resolution pipeline
-- [ ] Implement combat modifiers
-- [ ] Implement morale checks
-- [ ] Implement rout and pursuit behavior
-- [ ] Add regression tests for combat edge cases
+- [x] Implement combat resolution pipeline
+- [x] Implement combat modifiers
+- [x] Implement morale checks
+- [x] Implement rout and pursuit behavior
+- [x] Add regression tests for combat edge cases
 
 ## Milestone 3 - Playable UI Slice
 

@@ -37,8 +37,8 @@ def test_shock_applies_crt_hits_and_advances_rng(monkeypatch: pytest.MonkeyPatch
 
     state = _build_state(
         {
-            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HI"),
-            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI"),
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HI", tq=10),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=10),
         }
     )
     _patch_shock_tables(monkeypatch)
@@ -54,7 +54,7 @@ def test_shock_applies_crt_hits_and_advances_rng(monkeypatch: pytest.MonkeyPatch
     assert result.shock_outcome.defender_hits == 1
     assert result.state.units["r1"].cohesion_hits == 1
     assert result.state.units["b1"].cohesion_hits == 1
-    assert result.state.rng_counter == 1
+    assert result.state.rng_counter == 3
 
 
 def test_shock_applies_superiority_and_explicit_modifier_shifts(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -62,8 +62,8 @@ def test_shock_applies_superiority_and_explicit_modifier_shifts(monkeypatch: pyt
 
     state = _build_state(
         {
-            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HC"),
-            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI"),
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HC", tq=10),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=10),
         }
     )
     _patch_shock_tables(monkeypatch)
@@ -104,6 +104,84 @@ def test_shock_rejects_unknown_modifier(monkeypatch: pytest.MonkeyPatch) -> None
 
     assert not result.ok
     assert result.reason == "unknown_shock_modifier"
+
+
+def test_shock_failed_morale_routes_and_retreated_unit(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Failed morale should mark unit routed and force one-hex retreat."""
+
+    state = _build_state(
+        {
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HC", tq=10),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=3),
+        }
+    )
+    _patch_shock_tables(monkeypatch)
+
+    result = resolve_shock(state, ShockAction(attacker_unit_id="r1", defender_unit_id="b1"))
+
+    assert result.ok
+    assert result.state.units["b1"].is_routed
+    assert result.state.units["b1"].position == HexCoord(2, 0)
+    defender_morale = {entry.unit_id: entry for entry in result.morale_outcomes}["b1"]
+    assert defender_morale.became_routed
+    assert defender_morale.retreated
+    assert not defender_morale.eliminated
+
+
+def test_shock_cavalry_pursuit_moves_into_vacated_hex(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pursuit-capable attacker should move into defender origin after rout retreat."""
+
+    state = _build_state(
+        {
+            "r1": Unit(
+                unit_id="r1",
+                side=Side.RED,
+                position=HexCoord(0, 0),
+                shock_type="HC",
+                tq=10,
+                pursuit_capable=True,
+            ),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=3),
+        }
+    )
+    _patch_shock_tables(monkeypatch)
+
+    result = resolve_shock(state, ShockAction(attacker_unit_id="r1", defender_unit_id="b1"))
+
+    assert result.ok
+    assert result.pursuit_outcome is not None
+    assert result.pursuit_outcome.unit_id == "r1"
+    assert result.pursuit_outcome.destination == HexCoord(1, 0)
+    assert result.state.units["r1"].position == HexCoord(1, 0)
+
+
+def test_shock_eliminates_routed_unit_when_retreat_hex_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Failed morale should eliminate routed unit when retreat hex is off-map or blocked."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, 0)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HC", tq=10),
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=3),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+    _patch_shock_tables(monkeypatch)
+
+    result = resolve_shock(state, ShockAction(attacker_unit_id="r1", defender_unit_id="b1"))
+
+    assert result.ok
+    assert "b1" not in result.state.units
+    defender_morale = {entry.unit_id: entry for entry in result.morale_outcomes}["b1"]
+    assert defender_morale.eliminated
 
 
 def _patch_shock_tables(monkeypatch: pytest.MonkeyPatch) -> None:

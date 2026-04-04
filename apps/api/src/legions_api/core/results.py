@@ -131,6 +131,28 @@ class ShockOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class MoraleOutcome:
+    """Resolved morale check outcome triggered by shock combat."""
+
+    unit_id: str
+    source: Literal["shock"]
+    target: int
+    roll: int
+    passed: bool
+    became_routed: bool
+    retreated: bool
+    eliminated: bool
+
+
+@dataclass(frozen=True, slots=True)
+class PursuitOutcome:
+    """Resolved pursuit move after routed/enemy collapse in shock."""
+
+    unit_id: str
+    destination: HexCoord
+
+
+@dataclass(frozen=True, slots=True)
 class ActionResult:
     """Outcome of attempting to resolve an action."""
 
@@ -142,4 +164,6 @@ class ActionResult:
     tq_check_outcomes: tuple[TQCheckOutcome, ...] = ()
     missile_outcome: MissileOutcome | None = None
     shock_outcome: ShockOutcome | None = None
+    morale_outcomes: tuple[MoraleOutcome, ...] = ()
+    pursuit_outcome: PursuitOutcome | None = None
     events: tuple[MissileEvent, ...] = ()

@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from legions_api.core.actions import ShockAction
 from legions_api.core.model.game_state import GameState
+from legions_api.core.model.hex import HexCoord
+from legions_api.core.model.unit import Unit
 from legions_api.core.random import seeded_d10_roll
-from legions_api.core.results import ActionResult, ShockModifier, ShockOutcome
+from legions_api.core.results import ActionResult, MoraleOutcome, PursuitOutcome, ShockModifier, ShockOutcome
 from legions_api.core.tables.adapters import (
     ShockCRTCellLookup,
     clash_column_lookup,
@@ -82,12 +84,54 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
     crt_columns = sorted(int(column) for column in crt_table.columns)
     final_column = max(crt_columns[0], min(crt_columns[-1], base_column + total_shift))
     roll = seeded_d10_roll(rng_seed=state.rng_seed, rng_counter=state.rng_counter)
+    next_rng_counter = state.rng_counter + 1
     crt_cell = _resolve_crt_cell(crt_table=crt_table, crt_lookup=crt_lookup, column=final_column, roll=roll)
 
     updated_units = dict(state.units)
-    updated_units[attacker.unit_id] = attacker.with_added_cohesion_hits(crt_cell.attacker_hits)
-    updated_units[defender.unit_id] = defender.with_added_cohesion_hits(crt_cell.defender_hits)
-    updated_state = state.with_units(updated_units).with_rng_counter(state.rng_counter + 1)
+    updated_attacker = attacker.with_added_cohesion_hits(crt_cell.attacker_hits)
+    updated_defender = defender.with_added_cohesion_hits(crt_cell.defender_hits)
+    updated_units[attacker.unit_id] = updated_attacker
+    updated_units[defender.unit_id] = updated_defender
+
+    morale_outcomes: list[MoraleOutcome] = []
+    if crt_cell.attacker_hits > 0:
+        morale_outcome, updated_attacker, next_rng_counter = _resolve_morale_check(
+            unit=updated_attacker,
+            rng_seed=state.rng_seed,
+            rng_counter=next_rng_counter,
+        )
+        updated_units[attacker.unit_id] = updated_attacker
+        morale_outcomes.append(morale_outcome)
+
+    if crt_cell.defender_hits > 0:
+        morale_outcome, updated_defender, next_rng_counter = _resolve_morale_check(
+            unit=updated_defender,
+            rng_seed=state.rng_seed,
+            rng_counter=next_rng_counter,
+        )
+        updated_units[defender.unit_id] = updated_defender
+        morale_outcomes.append(morale_outcome)
+
+    retreat_results = _resolve_routs(
+        state=state,
+        attacker_id=attacker.unit_id,
+        defender_id=defender.unit_id,
+        units=updated_units,
+        morale_outcomes=morale_outcomes,
+    )
+    updated_units = retreat_results.units
+    morale_outcomes = retreat_results.morale_outcomes
+
+    pursuit_outcome = _resolve_pursuit(
+        state=state,
+        attacker=updated_attacker,
+        defender=updated_defender,
+        units=updated_units,
+        morale_outcomes=morale_outcomes,
+    )
+    updated_units = pursuit_outcome.units
+
+    updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter)
 
     return ActionResult(
         ok=True,
@@ -107,6 +151,155 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
             defender_hits=crt_cell.defender_hits,
             modifier_breakdown=tuple(modifier_breakdown),
         ),
+        morale_outcomes=tuple(morale_outcomes),
+        pursuit_outcome=pursuit_outcome.outcome,
+    )
+
+
+def _resolve_morale_check(
+    unit: Unit,
+    rng_seed: int,
+    rng_counter: int,
+) -> tuple[MoraleOutcome, Unit, int]:
+    """Resolve one morale check after shock hits are applied."""
+
+    target = max(1, unit.tq - unit.cohesion_hits)
+    roll = seeded_d10_roll(rng_seed=rng_seed, rng_counter=rng_counter)
+    passed = roll <= target
+    became_routed = False
+    updated_unit = unit
+    if not passed:
+        updated_unit = unit.with_added_cohesion_hits(1)
+        if not updated_unit.is_routed:
+            updated_unit = updated_unit.with_routed(True)
+            became_routed = True
+
+    outcome = MoraleOutcome(
+        unit_id=unit.unit_id,
+        source="shock",
+        target=target,
+        roll=roll,
+        passed=passed,
+        became_routed=became_routed,
+        retreated=False,
+        eliminated=False,
+    )
+    return outcome, updated_unit, rng_counter + 1
+
+
+class _RetreatResolution:
+    """Internal container for rout movement resolution updates."""
+
+    def __init__(self, units: dict[str, Unit], morale_outcomes: list[MoraleOutcome]) -> None:
+        self.units = units
+        self.morale_outcomes = morale_outcomes
+
+
+def _resolve_routs(
+    state: GameState,
+    attacker_id: str,
+    defender_id: str,
+    units: dict[str, Unit],
+    morale_outcomes: list[MoraleOutcome],
+) -> _RetreatResolution:
+    """Resolve one-hex rout retreat or elimination for newly routed units."""
+
+    updated_units = dict(units)
+    updated_outcomes = list(morale_outcomes)
+
+    opponents = {
+        attacker_id: defender_id,
+        defender_id: attacker_id,
+    }
+    for index, outcome in enumerate(updated_outcomes):
+        if not outcome.became_routed:
+            continue
+
+        unit = updated_units.get(outcome.unit_id)
+        opponent = updated_units.get(opponents[outcome.unit_id])
+        if unit is None or opponent is None:
+            continue
+
+        destination = _retreat_destination(unit=unit, enemy=opponent)
+        occupied_hexes = {occupant.position for occupant in updated_units.values() if occupant.unit_id != unit.unit_id}
+        if destination is None or not state.scenario_map.contains(destination) or destination in occupied_hexes:
+            del updated_units[unit.unit_id]
+            updated_outcomes[index] = MoraleOutcome(
+                unit_id=outcome.unit_id,
+                source=outcome.source,
+                target=outcome.target,
+                roll=outcome.roll,
+                passed=outcome.passed,
+                became_routed=outcome.became_routed,
+                retreated=False,
+                eliminated=True,
+            )
+            continue
+
+        updated_units[unit.unit_id] = unit.with_position(destination)
+        updated_outcomes[index] = MoraleOutcome(
+            unit_id=outcome.unit_id,
+            source=outcome.source,
+            target=outcome.target,
+            roll=outcome.roll,
+            passed=outcome.passed,
+            became_routed=outcome.became_routed,
+            retreated=True,
+            eliminated=False,
+        )
+
+    return _RetreatResolution(units=updated_units, morale_outcomes=updated_outcomes)
+
+
+def _retreat_destination(unit: Unit, enemy: Unit) -> HexCoord | None:
+    """Compute one-hex retreat destination directly away from enemy unit."""
+
+    delta_q = unit.position.q - enemy.position.q
+    delta_r = unit.position.r - enemy.position.r
+    if delta_q == 0 and delta_r == 0:
+        return None
+
+    return HexCoord(q=unit.position.q + delta_q, r=unit.position.r + delta_r)
+
+
+class _PursuitResolution:
+    """Internal container for pursuit updates after rout resolution."""
+
+    def __init__(self, units: dict[str, Unit], outcome: PursuitOutcome | None) -> None:
+        self.units = units
+        self.outcome = outcome
+
+
+def _resolve_pursuit(
+    state: GameState,
+    attacker: Unit,
+    defender: Unit,
+    units: dict[str, Unit],
+    morale_outcomes: list[MoraleOutcome],
+) -> _PursuitResolution:
+    """Resolve cavalry pursuit move into enemy vacated hex after rout/elimination."""
+
+    updated_units = dict(units)
+    by_unit_id = {outcome.unit_id: outcome for outcome in morale_outcomes}
+    defender_outcome = by_unit_id.get(defender.unit_id)
+    if not attacker.pursuit_capable:
+        return _PursuitResolution(units=updated_units, outcome=None)
+    if attacker.unit_id not in updated_units:
+        return _PursuitResolution(units=updated_units, outcome=None)
+    if defender_outcome is None:
+        return _PursuitResolution(units=updated_units, outcome=None)
+    if defender_outcome.passed:
+        return _PursuitResolution(units=updated_units, outcome=None)
+
+    if defender.position in {unit.position for unit in updated_units.values() if unit.unit_id != attacker.unit_id}:
+        return _PursuitResolution(units=updated_units, outcome=None)
+
+    pursuing_unit = updated_units[attacker.unit_id]
+    updated_units[attacker.unit_id] = pursuing_unit.with_position(defender.position)
+    _ = state
+    return _PursuitResolution(
+        units=updated_units,
+        outcome=PursuitOutcome(unit_id=attacker.unit_id, destination=defender.position),
     )
 
 

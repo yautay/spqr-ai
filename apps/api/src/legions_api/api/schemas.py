@@ -220,6 +220,26 @@ class ShockOutcomePayload(BaseModel):
     modifier_breakdown: list[ShockModifierPayload]
 
 
+class MoraleOutcomePayload(BaseModel):
+    """Resolved morale outcome emitted by shock sequence."""
+
+    unit_id: str
+    source: Literal["shock"]
+    target: int
+    roll: int
+    passed: bool
+    became_routed: bool
+    retreated: bool
+    eliminated: bool
+
+
+class PursuitOutcomePayload(BaseModel):
+    """Pursuit move details after routed enemy retreat/elimination."""
+
+    unit_id: str
+    destination: HexPayload
+
+
 class ActionResponsePayload(BaseModel):
     """Action execution response."""
 
@@ -231,4 +251,6 @@ class ActionResponsePayload(BaseModel):
     tq_check_outcomes: list[TQCheckOutcomePayload]
     missile_outcome: MissileOutcomePayload | None = None
     shock_outcome: ShockOutcomePayload | None = None
+    morale_outcomes: list[MoraleOutcomePayload]
+    pursuit_outcome: PursuitOutcomePayload | None = None
     events: list[MissileEventPayload]

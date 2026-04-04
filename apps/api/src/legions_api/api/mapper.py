@@ -9,7 +9,9 @@ from legions_api.api.schemas import (
     MissileDRMModifierPayload,
     MissileEventPayload,
     MissileOutcomePayload,
+    MoraleOutcomePayload,
     PendingTQCheckPayload,
+    PursuitOutcomePayload,
     ShockModifierPayload,
     ShockOutcomePayload,
     StackingEffectPayload,
@@ -23,7 +25,9 @@ from legions_api.core.results import (
     MissileDRMModifier,
     MissileEvent,
     MissileOutcome,
+    MoraleOutcome,
     PendingTQCheck,
+    PursuitOutcome,
     ShockModifier,
     ShockOutcome,
     StackingEffect,
@@ -85,6 +89,8 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         tq_check_outcomes=[_to_tq_check_outcome_payload(outcome) for outcome in result.tq_check_outcomes],
         missile_outcome=_to_missile_outcome_payload(result.missile_outcome),
         shock_outcome=_to_shock_outcome_payload(result.shock_outcome),
+        morale_outcomes=[_to_morale_outcome_payload(outcome) for outcome in result.morale_outcomes],
+        pursuit_outcome=_to_pursuit_outcome_payload(result.pursuit_outcome),
         events=[_to_missile_event_payload(event) for event in result.events],
     )
 
@@ -209,3 +215,30 @@ def _to_shock_modifier_payload(modifier: ShockModifier) -> ShockModifierPayload:
     """Convert one shock modifier entry to API payload."""
 
     return ShockModifierPayload(id=modifier.id, shift=modifier.shift)
+
+
+def _to_morale_outcome_payload(outcome: MoraleOutcome) -> MoraleOutcomePayload:
+    """Convert morale outcome metadata to API payload."""
+
+    return MoraleOutcomePayload(
+        unit_id=outcome.unit_id,
+        source=outcome.source,
+        target=outcome.target,
+        roll=outcome.roll,
+        passed=outcome.passed,
+        became_routed=outcome.became_routed,
+        retreated=outcome.retreated,
+        eliminated=outcome.eliminated,
+    )
+
+
+def _to_pursuit_outcome_payload(outcome: PursuitOutcome | None) -> PursuitOutcomePayload | None:
+    """Convert pursuit outcome metadata to API payload."""
+
+    if outcome is None:
+        return None
+
+    return PursuitOutcomePayload(
+        unit_id=outcome.unit_id,
+        destination=HexPayload(q=outcome.destination.q, r=outcome.destination.r),
+    )
