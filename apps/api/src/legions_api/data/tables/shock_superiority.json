@@ -1,0 +1,33 @@
+{
+  "table_id": "shock_superiority",
+  "version": "import-1",
+  "notes": "Baseline superiority matrix for current shock pipeline.",
+  "attacker_types": ["HI", "HC", "SK"],
+  "defender_types": ["HI", "HC", "SK"],
+  "matrix": [
+    {
+      "attacker_type": "HI",
+      "results": {
+        "HI": "none",
+        "HC": "defender",
+        "SK": "attacker"
+      }
+    },
+    {
+      "attacker_type": "HC",
+      "results": {
+        "HI": "attacker",
+        "HC": "none",
+        "SK": "attacker"
+      }
+    },
+    {
+      "attacker_type": "SK",
+      "results": {
+        "HI": "defender",
+        "HC": "defender",
+        "SK": "none"
+      }
+    }
+  ]
+}

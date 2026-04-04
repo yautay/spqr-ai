@@ -16,6 +16,9 @@ from legions_api.core.tables.models import MissileTableModel, MovementCostsTable
     "stacking_voluntary",
     "stacking_mandatory",
     "missile_range_results",
+    "shock_superiority",
+    "clash_columns",
+    "shock_crt",
     "rally_table",
     "leader_casualty_table",
 ])
@@ -45,6 +48,9 @@ def test_load_supported_tables_returns_all_known_ids() -> None:
         "stacking_voluntary",
         "stacking_mandatory",
         "missile_range_results",
+        "shock_superiority",
+        "clash_columns",
+        "shock_crt",
         "rally_table",
         "leader_casualty_table",
     }

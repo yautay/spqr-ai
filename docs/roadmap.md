@@ -32,7 +32,7 @@ Status legend:
 - [x] Implement table-driven missile range resolution
 - [x] Implement missile DR modifier lookup and outcome breakdown
 - [x] Implement missile supply transitions (`normal -> low -> no`) and reload attempts
-- [ ] Implement LOS validation and movement-linked reaction windows
+- [x] Implement LOS validation and movement-linked reaction windows
 
 ## Milestone 2 - Combat and Morale
 

@@ -195,6 +195,64 @@ class LeaderCasualtyTableModel(BaseTableModel):
     rows: list[LeaderCasualtyRowModel]
 
 
+class ShockSuperiorityRowModel(BaseModel):
+    """One superiority matrix row from attacker perspective."""
+
+    attacker_type: str
+    results: dict[str, Literal["attacker", "defender", "none"]]
+
+
+class ShockSuperiorityTableModel(BaseTableModel):
+    """Weapon/system superiority lookup table."""
+
+    table_id: Literal["shock_superiority"]
+    attacker_types: list[str]
+    defender_types: list[str]
+    matrix: list[ShockSuperiorityRowModel]
+
+
+class ClashColumnEntryModel(BaseModel):
+    """Base shock CRT column by attacker/defender type and angle."""
+
+    attacker_type: str
+    defender_type: str
+    angle: Literal["front", "flank", "rear"]
+    base_column: int
+
+
+class ClashColumnsTableModel(BaseTableModel):
+    """Base clash-column lookup table."""
+
+    table_id: Literal["clash_columns"]
+    angles: list[Literal["front", "flank", "rear"]]
+    entries: list[ClashColumnEntryModel]
+
+
+class ShockCRTCellModel(BaseModel):
+    """One CRT cell with attacker and defender cohesion-hit outcomes."""
+
+    attacker_hits: int | None
+    defender_hits: int | None
+
+
+class ShockColumnAdjustmentModel(BaseModel):
+    """Named left/right CRT column adjustment metadata."""
+
+    id: str
+    direction: Literal["left", "right"]
+    value: int
+
+
+class ShockCRTTableModel(BaseTableModel):
+    """Shock combat results table with named column adjustments."""
+
+    table_id: Literal["shock_crt"]
+    columns: list[str]
+    rows: list[str]
+    cells: dict[str, dict[str, ShockCRTCellModel]]
+    column_adjustments: list[ShockColumnAdjustmentModel]
+
+
 ParsedTableModel = (
     MovementCostsTableModel
     | StackingVoluntaryTableModel
@@ -202,4 +260,7 @@ ParsedTableModel = (
     | MissileTableModel
     | RallyTableModel
     | LeaderCasualtyTableModel
+    | ShockSuperiorityTableModel
+    | ClashColumnsTableModel
+    | ShockCRTTableModel
 )

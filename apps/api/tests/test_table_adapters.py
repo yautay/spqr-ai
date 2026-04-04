@@ -6,15 +6,22 @@ import pytest
 
 from legions_api.core.model.map import TerrainType
 from legions_api.core.tables.adapters import (
+    clash_column_lookup,
     mandatory_stacking_lookup,
     missile_class_lookup,
     missile_drm_lookup,
     movement_costs_by_profile,
+    shock_column_adjustment_lookup,
+    shock_crt_lookup,
+    shock_superiority_lookup,
     voluntary_stacking_lookup,
 )
 from legions_api.core.tables.models import (
+    ClashColumnsTableModel,
     MissileTableModel,
     MovementCostsTableModel,
+    ShockCRTTableModel,
+    ShockSuperiorityTableModel,
     StackingMandatoryTableModel,
     StackingVoluntaryTableModel,
 )
@@ -229,3 +236,97 @@ def test_missile_drm_lookup_returns_modifier_values() -> None:
 
     assert lookup["target_woods"].drm == 2
     assert lookup["target_sk"].drm == -1
+
+
+def test_shock_superiority_lookup_maps_outcomes_to_shifts() -> None:
+    """Shock superiority adapter should normalize attacker/defender outcomes to shifts."""
+
+    table = ShockSuperiorityTableModel.model_validate(
+        {
+            "table_id": "shock_superiority",
+            "version": "test",
+            "attacker_types": ["HI"],
+            "defender_types": ["HC", "SK"],
+            "matrix": [
+                {
+                    "attacker_type": "HI",
+                    "results": {
+                        "HC": "defender",
+                        "SK": "attacker",
+                    },
+                }
+            ],
+        }
+    )
+
+    lookup = shock_superiority_lookup(table)
+
+    assert lookup[("HI", "HC")] == -1
+    assert lookup[("HI", "SK")] == 1
+
+
+def test_clash_column_lookup_uses_attacker_defender_angle_key() -> None:
+    """Clash adapter should return base column by matchup and angle."""
+
+    table = ClashColumnsTableModel.model_validate(
+        {
+            "table_id": "clash_columns",
+            "version": "test",
+            "angles": ["front", "flank", "rear"],
+            "entries": [
+                {
+                    "attacker_type": "HI",
+                    "defender_type": "HI",
+                    "angle": "front",
+                    "base_column": 5,
+                }
+            ],
+        }
+    )
+
+    lookup = clash_column_lookup(table)
+
+    assert lookup[("HI", "HI", "front")] == 5
+
+
+def test_shock_crt_lookup_parses_int_keyed_cells() -> None:
+    """Shock CRT adapter should normalize string keys to integer lookup keys."""
+
+    table = ShockCRTTableModel.model_validate(
+        {
+            "table_id": "shock_crt",
+            "version": "test",
+            "columns": ["1"],
+            "rows": ["1"],
+            "cells": {"1": {"1": {"attacker_hits": 1, "defender_hits": 2}}},
+            "column_adjustments": [],
+        }
+    )
+
+    lookup = shock_crt_lookup(table)
+
+    assert lookup[(1, 1)].attacker_hits == 1
+    assert lookup[(1, 1)].defender_hits == 2
+
+
+def test_shock_column_adjustment_lookup_converts_direction_to_shift() -> None:
+    """Shock adjustment adapter should convert left/right metadata to signed shifts."""
+
+    table = ShockCRTTableModel.model_validate(
+        {
+            "table_id": "shock_crt",
+            "version": "test",
+            "columns": ["1"],
+            "rows": ["1"],
+            "cells": {"1": {"1": {"attacker_hits": 0, "defender_hits": 0}}},
+            "column_adjustments": [
+                {"id": "charge", "direction": "right", "value": 1},
+                {"id": "rough", "direction": "left", "value": 2},
+            ],
+        }
+    )
+
+    lookup = shock_column_adjustment_lookup(table)
+
+    assert lookup["charge"].shift == 1
+    assert lookup["rough"].shift == -2

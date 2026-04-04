@@ -6,8 +6,11 @@ from dataclasses import dataclass
 
 from legions_api.core.model.map import TerrainType
 from legions_api.core.tables.models import (
+    ClashColumnsTableModel,
     MissileTableModel,
     MovementCostsTableModel,
+    ShockCRTTableModel,
+    ShockSuperiorityTableModel,
     StackingMandatoryTableModel,
     StackingVoluntaryTableModel,
 )
@@ -40,6 +43,22 @@ class MissileDRMLookup:
 
     id: str
     drm: int
+
+
+@dataclass(frozen=True, slots=True)
+class ShockCRTCellLookup:
+    """Normalized CRT cell values for one roll/column pair."""
+
+    attacker_hits: int
+    defender_hits: int
+
+
+@dataclass(frozen=True, slots=True)
+class ShockColumnAdjustmentLookup:
+    """Normalized named shock column shift."""
+
+    id: str
+    shift: int
 
 
 def movement_costs_by_profile(table: MovementCostsTableModel) -> dict[str, dict[TerrainType, int]]:
@@ -150,5 +169,69 @@ def missile_drm_lookup(table: MissileTableModel) -> dict[str, MissileDRMLookup]:
             raise ValueError(f"duplicate missile DR modifier id: {modifier.id!r}")
 
         lookup[modifier.id] = MissileDRMLookup(id=modifier.id, drm=modifier.drm)
+
+    return lookup
+
+
+def shock_superiority_lookup(table: ShockSuperiorityTableModel) -> dict[tuple[str, str], int]:
+    """Build superiority lookup keyed by (attacker_type, defender_type)."""
+
+    lookup: dict[tuple[str, str], int] = {}
+    mapping = {"attacker": 1, "defender": -1, "none": 0}
+    for row in table.matrix:
+        for defender_type, outcome in row.results.items():
+            key = (row.attacker_type, defender_type)
+            if key in lookup:
+                raise ValueError(f"duplicate shock superiority row: attacker={key[0]!r}, defender={key[1]!r}")
+
+            lookup[key] = mapping[outcome]
+
+    return lookup
+
+
+def clash_column_lookup(table: ClashColumnsTableModel) -> dict[tuple[str, str, str], int]:
+    """Build clash-column lookup keyed by (attacker_type, defender_type, angle)."""
+
+    lookup: dict[tuple[str, str, str], int] = {}
+    for entry in table.entries:
+        key = (entry.attacker_type, entry.defender_type, entry.angle)
+        if key in lookup:
+            raise ValueError(f"duplicate clash column row: attacker={key[0]!r}, defender={key[1]!r}, angle={key[2]!r}")
+
+        lookup[key] = entry.base_column
+
+    return lookup
+
+
+def shock_crt_lookup(table: ShockCRTTableModel) -> dict[tuple[int, int], ShockCRTCellLookup]:
+    """Build CRT lookup keyed by (column, roll)."""
+
+    lookup: dict[tuple[int, int], ShockCRTCellLookup] = {}
+    for raw_column, rows in table.cells.items():
+        column = int(raw_column)
+        for raw_roll, cell in rows.items():
+            roll = int(raw_roll)
+            key = (column, roll)
+            if key in lookup:
+                raise ValueError(f"duplicate shock CRT cell: column={column}, roll={roll}")
+
+            lookup[key] = ShockCRTCellLookup(
+                attacker_hits=cell.attacker_hits or 0,
+                defender_hits=cell.defender_hits or 0,
+            )
+
+    return lookup
+
+
+def shock_column_adjustment_lookup(table: ShockCRTTableModel) -> dict[str, ShockColumnAdjustmentLookup]:
+    """Build lookup for named column adjustments from CRT metadata."""
+
+    lookup: dict[str, ShockColumnAdjustmentLookup] = {}
+    for row in table.column_adjustments:
+        if row.id in lookup:
+            raise ValueError(f"duplicate shock column adjustment id: {row.id!r}")
+
+        shift = row.value if row.direction == "right" else -row.value
+        lookup[row.id] = ShockColumnAdjustmentLookup(id=row.id, shift=shift)
 
     return lookup

@@ -1,0 +1,76 @@
+{
+  "table_id": "shock_crt",
+  "version": "import-1",
+  "notes": "Baseline shock CRT with sparse roll breakpoints per column.",
+  "columns": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+  "rows": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+  "cells": {
+    "1": {
+      "1": {"attacker_hits": 1, "defender_hits": 0},
+      "4": {"attacker_hits": 1, "defender_hits": 0},
+      "7": {"attacker_hits": 0, "defender_hits": 0},
+      "10": {"attacker_hits": 0, "defender_hits": 1}
+    },
+    "2": {
+      "1": {"attacker_hits": 1, "defender_hits": 0},
+      "4": {"attacker_hits": 0, "defender_hits": 0},
+      "7": {"attacker_hits": 0, "defender_hits": 1},
+      "10": {"attacker_hits": 0, "defender_hits": 1}
+    },
+    "3": {
+      "1": {"attacker_hits": 1, "defender_hits": 0},
+      "4": {"attacker_hits": 0, "defender_hits": 1},
+      "7": {"attacker_hits": 0, "defender_hits": 1},
+      "10": {"attacker_hits": 0, "defender_hits": 2}
+    },
+    "4": {
+      "1": {"attacker_hits": 0, "defender_hits": 1},
+      "4": {"attacker_hits": 0, "defender_hits": 1},
+      "7": {"attacker_hits": 0, "defender_hits": 2},
+      "10": {"attacker_hits": 1, "defender_hits": 2}
+    },
+    "5": {
+      "1": {"attacker_hits": 0, "defender_hits": 1},
+      "4": {"attacker_hits": 0, "defender_hits": 2},
+      "7": {"attacker_hits": 1, "defender_hits": 2},
+      "10": {"attacker_hits": 1, "defender_hits": 3}
+    },
+    "6": {
+      "1": {"attacker_hits": 0, "defender_hits": 2},
+      "4": {"attacker_hits": 1, "defender_hits": 2},
+      "7": {"attacker_hits": 1, "defender_hits": 3},
+      "10": {"attacker_hits": 1, "defender_hits": 3}
+    },
+    "7": {
+      "1": {"attacker_hits": 1, "defender_hits": 2},
+      "4": {"attacker_hits": 1, "defender_hits": 3},
+      "7": {"attacker_hits": 1, "defender_hits": 3},
+      "10": {"attacker_hits": 2, "defender_hits": 4}
+    },
+    "8": {
+      "1": {"attacker_hits": 1, "defender_hits": 3},
+      "4": {"attacker_hits": 1, "defender_hits": 3},
+      "7": {"attacker_hits": 2, "defender_hits": 4},
+      "10": {"attacker_hits": 2, "defender_hits": 4}
+    },
+    "9": {
+      "1": {"attacker_hits": 1, "defender_hits": 3},
+      "4": {"attacker_hits": 2, "defender_hits": 4},
+      "7": {"attacker_hits": 2, "defender_hits": 4},
+      "10": {"attacker_hits": 2, "defender_hits": 5}
+    },
+    "10": {
+      "1": {"attacker_hits": 2, "defender_hits": 4},
+      "4": {"attacker_hits": 2, "defender_hits": 4},
+      "7": {"attacker_hits": 2, "defender_hits": 5},
+      "10": {"attacker_hits": 2, "defender_hits": 6}
+    }
+  },
+  "column_adjustments": [
+    {"id": "superiority_attacker", "direction": "right", "value": 1},
+    {"id": "superiority_defender", "direction": "left", "value": 1},
+    {"id": "attacker_charging", "direction": "right", "value": 1},
+    {"id": "defender_rough", "direction": "left", "value": 1},
+    {"id": "attacker_disordered", "direction": "left", "value": 1}
+  ]
+}

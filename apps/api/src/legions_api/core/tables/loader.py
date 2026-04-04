@@ -11,11 +11,14 @@ from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetDefinition, RulesetMode, RulesetOptions
 from legions_api.core.tables.adapters import movement_costs_by_profile
 from legions_api.core.tables.models import (
+    ClashColumnsTableModel,
     LeaderCasualtyTableModel,
     MissileTableModel,
     MovementCostsTableModel,
     ParsedTableModel,
     RallyTableModel,
+    ShockCRTTableModel,
+    ShockSuperiorityTableModel,
     StackingMandatoryTableModel,
     StackingVoluntaryTableModel,
 )
@@ -28,6 +31,9 @@ TableId = Literal[
     "stacking_voluntary",
     "stacking_mandatory",
     "missile_range_results",
+    "shock_superiority",
+    "clash_columns",
+    "shock_crt",
     "rally_table",
     "leader_casualty_table",
 ]
@@ -37,6 +43,9 @@ _SUPPORTED_TABLE_IDS: tuple[TableId, ...] = (
     "stacking_voluntary",
     "stacking_mandatory",
     "missile_range_results",
+    "shock_superiority",
+    "clash_columns",
+    "shock_crt",
     "rally_table",
     "leader_casualty_table",
 )
@@ -131,6 +140,12 @@ def load_table(table_id: TableId) -> ParsedTableModel:
         missile_table = MissileTableModel.model_validate(raw)
         _validate_missile_table(missile_table)
         return missile_table
+    if table_id == "shock_superiority":
+        return ShockSuperiorityTableModel.model_validate(raw)
+    if table_id == "clash_columns":
+        return ClashColumnsTableModel.model_validate(raw)
+    if table_id == "shock_crt":
+        return ShockCRTTableModel.model_validate(raw)
     if table_id == "rally_table":
         return RallyTableModel.model_validate(raw)
     return LeaderCasualtyTableModel.model_validate(raw)

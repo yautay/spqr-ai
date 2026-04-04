@@ -1,0 +1,43 @@
+{
+  "table_id": "clash_columns",
+  "version": "import-1",
+  "notes": "Baseline clash columns by unit type matchup and attack angle.",
+  "angles": ["front", "flank", "rear"],
+  "entries": [
+    {"attacker_type": "HI", "defender_type": "HI", "angle": "front", "base_column": 5},
+    {"attacker_type": "HI", "defender_type": "HI", "angle": "flank", "base_column": 6},
+    {"attacker_type": "HI", "defender_type": "HI", "angle": "rear", "base_column": 7},
+
+    {"attacker_type": "HI", "defender_type": "HC", "angle": "front", "base_column": 4},
+    {"attacker_type": "HI", "defender_type": "HC", "angle": "flank", "base_column": 5},
+    {"attacker_type": "HI", "defender_type": "HC", "angle": "rear", "base_column": 6},
+
+    {"attacker_type": "HI", "defender_type": "SK", "angle": "front", "base_column": 7},
+    {"attacker_type": "HI", "defender_type": "SK", "angle": "flank", "base_column": 8},
+    {"attacker_type": "HI", "defender_type": "SK", "angle": "rear", "base_column": 9},
+
+    {"attacker_type": "HC", "defender_type": "HI", "angle": "front", "base_column": 6},
+    {"attacker_type": "HC", "defender_type": "HI", "angle": "flank", "base_column": 7},
+    {"attacker_type": "HC", "defender_type": "HI", "angle": "rear", "base_column": 8},
+
+    {"attacker_type": "HC", "defender_type": "HC", "angle": "front", "base_column": 5},
+    {"attacker_type": "HC", "defender_type": "HC", "angle": "flank", "base_column": 6},
+    {"attacker_type": "HC", "defender_type": "HC", "angle": "rear", "base_column": 7},
+
+    {"attacker_type": "HC", "defender_type": "SK", "angle": "front", "base_column": 8},
+    {"attacker_type": "HC", "defender_type": "SK", "angle": "flank", "base_column": 9},
+    {"attacker_type": "HC", "defender_type": "SK", "angle": "rear", "base_column": 10},
+
+    {"attacker_type": "SK", "defender_type": "HI", "angle": "front", "base_column": 2},
+    {"attacker_type": "SK", "defender_type": "HI", "angle": "flank", "base_column": 3},
+    {"attacker_type": "SK", "defender_type": "HI", "angle": "rear", "base_column": 4},
+
+    {"attacker_type": "SK", "defender_type": "HC", "angle": "front", "base_column": 2},
+    {"attacker_type": "SK", "defender_type": "HC", "angle": "flank", "base_column": 3},
+    {"attacker_type": "SK", "defender_type": "HC", "angle": "rear", "base_column": 4},
+
+    {"attacker_type": "SK", "defender_type": "SK", "angle": "front", "base_column": 4},
+    {"attacker_type": "SK", "defender_type": "SK", "angle": "flank", "base_column": 5},
+    {"attacker_type": "SK", "defender_type": "SK", "angle": "rear", "base_column": 6}
+  ]
+}
