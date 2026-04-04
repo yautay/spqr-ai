@@ -23,6 +23,7 @@ class Unit:
     side: Side
     position: HexCoord
     move_allowance: int = 1
+    tq: int = 7
     cohesion_hits: int = 0
     exerts_zoc: bool = True
     move_profile_id: str | None = None
@@ -36,6 +37,7 @@ class Unit:
             side=self.side,
             position=position,
             move_allowance=self.move_allowance,
+            tq=self.tq,
             cohesion_hits=self.cohesion_hits,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
@@ -50,6 +52,7 @@ class Unit:
             side=self.side,
             position=self.position,
             move_allowance=self.move_allowance,
+            tq=self.tq,
             cohesion_hits=self.cohesion_hits + delta,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,

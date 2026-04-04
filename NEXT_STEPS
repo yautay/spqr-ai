@@ -9,6 +9,7 @@ Current baseline
 - Game state supports multi-unit occupancy and voluntary stacking stop-in-hex when table rows allow it.
 - Movement now applies voluntary stacking side effects (cohesion hits) and emits stacking effect metadata with TQ-check fields.
 - Movement action results now include pending TQ check requests derived from stacking effects.
+- Pending TQ checks now include computed targets using unit TQ, formula offsets, and DRM.
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)
@@ -32,4 +33,4 @@ Coding constraints
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Implement TQ check resolution pipeline and consume emitted stacking effect metadata (DRM/formula) in core action flow.
+- Execute pending TQ checks (dice resolution + pass/fail outcomes) and apply resulting cohesion/rout effects.

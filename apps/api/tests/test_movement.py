@@ -375,6 +375,7 @@ def test_move_applies_cohesion_hits_on_pass_through(monkeypatch: pytest.MonkeyPa
     assert len(result.pending_tq_checks) == 1
     assert result.pending_tq_checks[0].unit_id == "r2"
     assert result.pending_tq_checks[0].drm == -1
+    assert result.pending_tq_checks[0].target == 6
 
 
 def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -428,3 +429,20 @@ def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPat
     assert len(result.pending_tq_checks) == 1
     assert result.pending_tq_checks[0].unit_id == "r2"
     assert result.pending_tq_checks[0].drm == 0
+    assert result.pending_tq_checks[0].target == 7
+
+
+def test_parse_tq_formula_offset_supports_common_forms() -> None:
+    """TQ formula parser should handle tq, tq+N and tq-N forms."""
+
+    assert movement_rules._parse_tq_formula_offset(None) == 0
+    assert movement_rules._parse_tq_formula_offset("tq") == 0
+    assert movement_rules._parse_tq_formula_offset("tq+2") == 2
+    assert movement_rules._parse_tq_formula_offset("tq-3") == -3
+
+
+def test_parse_tq_formula_offset_rejects_unknown_form() -> None:
+    """Unsupported formulas should fail fast for data quality."""
+
+    with pytest.raises(ValueError, match="unsupported tq formula"):
+        movement_rules._parse_tq_formula_offset("tq*2")

@@ -23,6 +23,7 @@ class UnitPayload(BaseModel):
     side: Side
     position: HexPayload
     move_allowance: int
+    tq: int
     cohesion_hits: int
     exerts_zoc: bool
     move_profile_id: str | None
@@ -90,6 +91,7 @@ class PendingTQCheckPayload(BaseModel):
     required: bool
     formula: str | None
     drm: int | None
+    target: int
 
 
 class ActionResponsePayload(BaseModel):

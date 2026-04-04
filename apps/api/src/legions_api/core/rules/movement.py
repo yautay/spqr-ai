@@ -80,7 +80,7 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         current_units=updated_units,
         stacking_lookup=stacking_lookup,
     )
-    pending_tq_checks = _collect_pending_tq_checks(movement_effects)
+    pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
     updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
 
     return ActionResult(
@@ -181,7 +181,10 @@ def _resolve_stacking_side_effects(
     return tuple(effects), moved_unit
 
 
-def _collect_pending_tq_checks(effects: tuple[StackingEffect, ...]) -> tuple[PendingTQCheck, ...]:
+def _collect_pending_tq_checks(
+    effects: tuple[StackingEffect, ...],
+    current_units: dict[str, Unit],
+) -> tuple[PendingTQCheck, ...]:
     """Collect deferred TQ checks from stacking effects."""
 
     checks: list[PendingTQCheck] = []
@@ -194,6 +197,16 @@ def _collect_pending_tq_checks(effects: tuple[StackingEffect, ...]) -> tuple[Pen
         if not has_tq_data:
             continue
 
+        stationary_unit = current_units.get(effect.stationary_unit_id)
+        if stationary_unit is None:
+            continue
+
+        target = _resolve_tq_target(
+            base_tq=stationary_unit.tq,
+            formula=effect.stationary_unit_tq_check_formula,
+            drm=effect.tq_check_drm,
+        )
+
         checks.append(
             PendingTQCheck(
                 unit_id=effect.stationary_unit_id,
@@ -202,7 +215,33 @@ def _collect_pending_tq_checks(effects: tuple[StackingEffect, ...]) -> tuple[Pen
                 required=effect.stationary_unit_tq_check_required,
                 formula=effect.stationary_unit_tq_check_formula,
                 drm=effect.tq_check_drm,
+                target=target,
             )
         )
 
     return tuple(checks)
+
+
+def _resolve_tq_target(base_tq: int, formula: str | None, drm: int | None) -> int:
+    """Resolve TQ target from base value, formula offset, and DRM."""
+
+    formula_offset = _parse_tq_formula_offset(formula)
+    drm_offset = drm or 0
+    return base_tq + formula_offset + drm_offset
+
+
+def _parse_tq_formula_offset(formula: str | None) -> int:
+    """Parse compact TQ formula like 'tq', 'tq+2', or 'tq-1'."""
+
+    if formula is None:
+        return 0
+
+    raw_formula = formula.strip().lower()
+    if raw_formula == "tq":
+        return 0
+    if raw_formula.startswith("tq+"):
+        return int(raw_formula[3:])
+    if raw_formula.startswith("tq-"):
+        return -int(raw_formula[3:])
+
+    raise ValueError(f"unsupported tq formula: {formula!r}")

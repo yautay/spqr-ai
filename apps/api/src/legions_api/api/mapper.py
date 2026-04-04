@@ -25,6 +25,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             side=unit.side,
             position=HexPayload(q=unit.position.q, r=unit.position.r),
             move_allowance=unit.move_allowance,
+            tq=unit.tq,
             cohesion_hits=unit.cohesion_hits,
             exerts_zoc=unit.exerts_zoc,
             move_profile_id=unit.move_profile_id,
@@ -84,4 +85,5 @@ def _to_pending_tq_check_payload(check: PendingTQCheck) -> PendingTQCheckPayload
         required=check.required,
         formula=check.formula,
         drm=check.drm,
+        target=check.target,
     )

@@ -35,6 +35,7 @@ class PendingTQCheck:
     required: bool
     formula: str | None
     drm: int | None
+    target: int
 
 
 @dataclass(frozen=True, slots=True)
