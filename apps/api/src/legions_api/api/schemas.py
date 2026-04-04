@@ -81,6 +81,17 @@ class StackingEffectPayload(BaseModel):
     tq_check_drm: int | None
 
 
+class PendingTQCheckPayload(BaseModel):
+    """Deferred TQ check request payload."""
+
+    unit_id: str
+    location: HexPayload
+    source: str
+    required: bool
+    formula: str | None
+    drm: int | None
+
+
 class ActionResponsePayload(BaseModel):
     """Action execution response."""
 
@@ -88,3 +99,4 @@ class ActionResponsePayload(BaseModel):
     reason: str
     state: GameStatePayload
     effects: list[StackingEffectPayload]
+    pending_tq_checks: list[PendingTQCheckPayload]

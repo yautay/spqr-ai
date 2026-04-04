@@ -8,6 +8,7 @@ Current baseline
 - Movement pathfinding now supports occupied-hex pass-through checks via voluntary stacking table categories.
 - Game state supports multi-unit occupancy and voluntary stacking stop-in-hex when table rows allow it.
 - Movement now applies voluntary stacking side effects (cohesion hits) and emits stacking effect metadata with TQ-check fields.
+- Movement action results now include pending TQ check requests derived from stacking effects.
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)

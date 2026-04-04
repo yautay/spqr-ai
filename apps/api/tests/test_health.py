@@ -45,6 +45,7 @@ def test_game_action_rejects_illegal_move() -> None:
     assert payload["ok"] is False
     assert payload["reason"] in {"destination_out_of_map", "no_valid_path"}
     assert payload["effects"] == []
+    assert payload["pending_tq_checks"] == []
 
 
 def test_rulesets_endpoint_returns_original_and_simple() -> None:

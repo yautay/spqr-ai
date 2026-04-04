@@ -6,12 +6,13 @@ from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
     HexPayload,
+    PendingTQCheckPayload,
     StackingEffectPayload,
     TilePayload,
     UnitPayload,
 )
 from legions_api.core.model.game_state import GameState
-from legions_api.core.results import ActionResult, StackingEffect
+from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect
 
 
 def to_game_state_payload(state: GameState) -> GameStatePayload:
@@ -52,6 +53,7 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         reason=result.reason,
         state=to_game_state_payload(result.state),
         effects=[_to_stacking_effect_payload(effect) for effect in result.effects],
+        pending_tq_checks=[_to_pending_tq_check_payload(check) for check in result.pending_tq_checks],
     )
 
 
@@ -69,4 +71,17 @@ def _to_stacking_effect_payload(effect: StackingEffect) -> StackingEffectPayload
         stationary_unit_tq_check_required=effect.stationary_unit_tq_check_required,
         stationary_unit_tq_check_formula=effect.stationary_unit_tq_check_formula,
         tq_check_drm=effect.tq_check_drm,
+    )
+
+
+def _to_pending_tq_check_payload(check: PendingTQCheck) -> PendingTQCheckPayload:
+    """Convert pending TQ check metadata to API payload."""
+
+    return PendingTQCheckPayload(
+        unit_id=check.unit_id,
+        location=HexPayload(q=check.location.q, r=check.location.r),
+        source=check.source,
+        required=check.required,
+        formula=check.formula,
+        drm=check.drm,
     )

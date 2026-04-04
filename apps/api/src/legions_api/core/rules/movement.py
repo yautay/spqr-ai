@@ -8,7 +8,7 @@ from legions_api.core.actions import MoveAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
-from legions_api.core.results import ActionResult, StackingEffect
+from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect
 from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
 from legions_api.core.tables.adapters import StackingOutcome, voluntary_stacking_lookup
@@ -80,9 +80,16 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         current_units=updated_units,
         stacking_lookup=stacking_lookup,
     )
+    pending_tq_checks = _collect_pending_tq_checks(movement_effects)
     updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
 
-    return ActionResult(ok=True, reason="ok", state=state.with_units(updated_units), effects=movement_effects)
+    return ActionResult(
+        ok=True,
+        reason="ok",
+        state=state.with_units(updated_units),
+        effects=movement_effects,
+        pending_tq_checks=pending_tq_checks,
+    )
 
 
 def _load_voluntary_stacking_lookup() -> dict[tuple[str, str], StackingOutcome]:
@@ -172,3 +179,30 @@ def _resolve_stacking_side_effects(
             )
 
     return tuple(effects), moved_unit
+
+
+def _collect_pending_tq_checks(effects: tuple[StackingEffect, ...]) -> tuple[PendingTQCheck, ...]:
+    """Collect deferred TQ checks from stacking effects."""
+
+    checks: list[PendingTQCheck] = []
+    for effect in effects:
+        has_tq_data = (
+            effect.stationary_unit_tq_check_required
+            or effect.stationary_unit_tq_check_formula is not None
+            or effect.tq_check_drm is not None
+        )
+        if not has_tq_data:
+            continue
+
+        checks.append(
+            PendingTQCheck(
+                unit_id=effect.stationary_unit_id,
+                location=effect.location,
+                source=effect.effect_type,
+                required=effect.stationary_unit_tq_check_required,
+                formula=effect.stationary_unit_tq_check_formula,
+                drm=effect.tq_check_drm,
+            )
+        )
+
+    return tuple(checks)

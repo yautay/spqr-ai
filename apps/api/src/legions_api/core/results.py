@@ -26,6 +26,18 @@ class StackingEffect:
 
 
 @dataclass(frozen=True, slots=True)
+class PendingTQCheck:
+    """Deferred TQ check request produced by action side effects."""
+
+    unit_id: str
+    location: HexCoord
+    source: Literal["stacking"]
+    required: bool
+    formula: str | None
+    drm: int | None
+
+
+@dataclass(frozen=True, slots=True)
 class ActionResult:
     """Outcome of attempting to resolve an action."""
 
@@ -33,3 +45,4 @@ class ActionResult:
     reason: str
     state: GameState
     effects: tuple[StackingEffect, ...] = ()
+    pending_tq_checks: tuple[PendingTQCheck, ...] = ()

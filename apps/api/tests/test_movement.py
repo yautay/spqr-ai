@@ -372,6 +372,9 @@ def test_move_applies_cohesion_hits_on_pass_through(monkeypatch: pytest.MonkeyPa
     assert result.effects[0].moving_unit_cohesion_hits == 1
     assert result.effects[0].stationary_unit_cohesion_hits == 2
     assert result.effects[0].tq_check_drm == -1
+    assert len(result.pending_tq_checks) == 1
+    assert result.pending_tq_checks[0].unit_id == "r2"
+    assert result.pending_tq_checks[0].drm == -1
 
 
 def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -422,3 +425,6 @@ def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPat
     assert len(result.effects) == 1
     assert result.effects[0].interaction == "stop_in_hex"
     assert result.effects[0].location == HexCoord(0, 1)
+    assert len(result.pending_tq_checks) == 1
+    assert result.pending_tq_checks[0].unit_id == "r2"
+    assert result.pending_tq_checks[0].drm == 0
