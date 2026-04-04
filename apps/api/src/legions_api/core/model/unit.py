@@ -39,6 +39,8 @@ class Unit:
     stacking_category: str = "basic"
     missile_class_id: str | None = None
     missile_supply: MissileSupply = MissileSupply.NORMAL
+    shock_type: str = "HI"
+    pursuit_capable: bool = False
 
     def with_position(self, position: HexCoord) -> Unit:
         """Return the same unit placed in another coordinate."""
@@ -56,6 +58,8 @@ class Unit:
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
             missile_supply=self.missile_supply,
+            shock_type=self.shock_type,
+            pursuit_capable=self.pursuit_capable,
         )
 
     def with_added_cohesion_hits(self, delta: int) -> Unit:
@@ -74,6 +78,8 @@ class Unit:
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
             missile_supply=self.missile_supply,
+            shock_type=self.shock_type,
+            pursuit_capable=self.pursuit_capable,
         )
 
     def with_routed(self, is_routed: bool = True) -> Unit:
@@ -94,6 +100,8 @@ class Unit:
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
             missile_supply=self.missile_supply,
+            shock_type=self.shock_type,
+            pursuit_capable=self.pursuit_capable,
         )
 
     def with_missile_supply(self, missile_supply: MissileSupply) -> Unit:
@@ -112,4 +120,6 @@ class Unit:
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
             missile_supply=missile_supply,
+            shock_type=self.shock_type,
+            pursuit_capable=self.pursuit_capable,
         )

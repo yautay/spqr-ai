@@ -10,6 +10,8 @@ from legions_api.api.schemas import (
     MissileEventPayload,
     MissileOutcomePayload,
     PendingTQCheckPayload,
+    ShockModifierPayload,
+    ShockOutcomePayload,
     StackingEffectPayload,
     TilePayload,
     TQCheckOutcomePayload,
@@ -22,6 +24,8 @@ from legions_api.core.results import (
     MissileEvent,
     MissileOutcome,
     PendingTQCheck,
+    ShockModifier,
+    ShockOutcome,
     StackingEffect,
     TQCheckOutcome,
 )
@@ -45,6 +49,8 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             stacking_category=unit.stacking_category,
             missile_class_id=unit.missile_class_id,
             missile_supply=unit.missile_supply,
+            shock_type=unit.shock_type,
+            pursuit_capable=unit.pursuit_capable,
         )
         for unit in sorted_units
     ]
@@ -78,6 +84,7 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         pending_tq_checks=[_to_pending_tq_check_payload(check) for check in result.pending_tq_checks],
         tq_check_outcomes=[_to_tq_check_outcome_payload(outcome) for outcome in result.tq_check_outcomes],
         missile_outcome=_to_missile_outcome_payload(result.missile_outcome),
+        shock_outcome=_to_shock_outcome_payload(result.shock_outcome),
         events=[_to_missile_event_payload(event) for event in result.events],
     )
 
@@ -174,3 +181,31 @@ def _to_missile_event_payload(event: MissileEvent) -> MissileEventPayload:
         supply_before=event.supply_before,
         supply_after=event.supply_after,
     )
+
+
+def _to_shock_outcome_payload(outcome: ShockOutcome | None) -> ShockOutcomePayload | None:
+    """Convert shock outcome metadata to API payload."""
+
+    if outcome is None:
+        return None
+
+    return ShockOutcomePayload(
+        attacker_unit_id=outcome.attacker_unit_id,
+        defender_unit_id=outcome.defender_unit_id,
+        angle=outcome.angle,
+        attacker_type=outcome.attacker_type,
+        defender_type=outcome.defender_type,
+        base_column=outcome.base_column,
+        total_shift=outcome.total_shift,
+        final_column=outcome.final_column,
+        roll=outcome.roll,
+        attacker_hits=outcome.attacker_hits,
+        defender_hits=outcome.defender_hits,
+        modifier_breakdown=[_to_shock_modifier_payload(entry) for entry in outcome.modifier_breakdown],
+    )
+
+
+def _to_shock_modifier_payload(modifier: ShockModifier) -> ShockModifierPayload:
+    """Convert one shock modifier entry to API payload."""
+
+    return ShockModifierPayload(id=modifier.id, shift=modifier.shift)

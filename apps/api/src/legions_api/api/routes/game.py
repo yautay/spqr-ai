@@ -16,12 +16,14 @@ from legions_api.api.schemas import (
     NewGamePayload,
     RulesetsPayload,
     SetPhasePayload,
+    ShockActionPayload,
 )
 from legions_api.api.state_store import GameStateStore
-from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction
+from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.rules.missile import resolve_missile, resolve_reload
 from legions_api.core.rules.movement import resolve_move
+from legions_api.core.rules.shock import resolve_shock
 from legions_api.core.tables.loader import available_rulesets
 
 router = APIRouter(prefix="/game", tags=["game"])
@@ -132,5 +134,39 @@ async def missile_reload_action(
         logger.debug("Missile reload resolved: unit={}", payload.unit_id)
     else:
         logger.debug("Missile reload rejected: unit={} reason={}", payload.unit_id, result.reason)
+
+    return to_action_response_payload(result)
+
+
+@router.post("/action/shock", response_model=ActionResponsePayload)
+async def shock_action(
+    payload: ShockActionPayload,
+    store: GameStateStore = Depends(get_game_store),
+) -> ActionResponsePayload:
+    """Apply shock action and return updated state payload."""
+
+    action = ShockAction(
+        attacker_unit_id=payload.attacker_unit_id,
+        defender_unit_id=payload.defender_unit_id,
+        angle=payload.angle,
+        modifier_ids=tuple(payload.modifier_ids),
+    )
+    result = resolve_shock(store.state, action)
+    if result.ok:
+        store.replace(result.state)
+        logger.debug(
+            "Shock resolved: attacker={} defender={} angle={} modifiers={}",
+            payload.attacker_unit_id,
+            payload.defender_unit_id,
+            payload.angle,
+            payload.modifier_ids,
+        )
+    else:
+        logger.debug(
+            "Shock rejected: attacker={} defender={} reason={}",
+            payload.attacker_unit_id,
+            payload.defender_unit_id,
+            result.reason,
+        )
 
     return to_action_response_payload(result)

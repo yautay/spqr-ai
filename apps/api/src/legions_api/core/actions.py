@@ -32,3 +32,13 @@ class ReloadMissileAction:
     """Attempt to reload missile supply for one unit."""
 
     unit_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ShockAction:
+    """Resolve one shock combat attack between adjacent enemy units."""
+
+    attacker_unit_id: str
+    defender_unit_id: str
+    angle: Literal["front", "flank", "rear"] = "front"
+    modifier_ids: tuple[str, ...] = ()

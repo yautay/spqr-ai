@@ -34,6 +34,8 @@ class UnitPayload(BaseModel):
     stacking_category: str
     missile_class_id: str | None
     missile_supply: MissileSupply
+    shock_type: str
+    pursuit_capable: bool
 
 
 class TilePayload(BaseModel):
@@ -76,6 +78,15 @@ class MissileReloadActionPayload(BaseModel):
     """Missile reload command payload."""
 
     unit_id: str
+
+
+class ShockActionPayload(BaseModel):
+    """Shock combat command payload."""
+
+    attacker_unit_id: str
+    defender_unit_id: str
+    angle: Literal["front", "flank", "rear"] = "front"
+    modifier_ids: list[str] = Field(default_factory=list)
 
 
 class NewGamePayload(BaseModel):
@@ -185,6 +196,30 @@ class MissileEventPayload(BaseModel):
     supply_after: str | None
 
 
+class ShockModifierPayload(BaseModel):
+    """One shock column-shift contribution for breakdown UI."""
+
+    id: str
+    shift: int
+
+
+class ShockOutcomePayload(BaseModel):
+    """Resolved shock attack details."""
+
+    attacker_unit_id: str
+    defender_unit_id: str
+    angle: Literal["front", "flank", "rear"]
+    attacker_type: str
+    defender_type: str
+    base_column: int
+    total_shift: int
+    final_column: int
+    roll: int
+    attacker_hits: int
+    defender_hits: int
+    modifier_breakdown: list[ShockModifierPayload]
+
+
 class ActionResponsePayload(BaseModel):
     """Action execution response."""
 
@@ -195,4 +230,5 @@ class ActionResponsePayload(BaseModel):
     pending_tq_checks: list[PendingTQCheckPayload]
     tq_check_outcomes: list[TQCheckOutcomePayload]
     missile_outcome: MissileOutcomePayload | None = None
+    shock_outcome: ShockOutcomePayload | None = None
     events: list[MissileEventPayload]

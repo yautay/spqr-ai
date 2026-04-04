@@ -105,6 +105,32 @@ class MissileEvent:
 
 
 @dataclass(frozen=True, slots=True)
+class ShockModifier:
+    """One shock column-shift contribution."""
+
+    id: str
+    shift: int
+
+
+@dataclass(frozen=True, slots=True)
+class ShockOutcome:
+    """Resolved shock combat details."""
+
+    attacker_unit_id: str
+    defender_unit_id: str
+    angle: Literal["front", "flank", "rear"]
+    attacker_type: str
+    defender_type: str
+    base_column: int
+    total_shift: int
+    final_column: int
+    roll: int
+    attacker_hits: int
+    defender_hits: int
+    modifier_breakdown: tuple[ShockModifier, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class ActionResult:
     """Outcome of attempting to resolve an action."""
 
@@ -115,4 +141,5 @@ class ActionResult:
     pending_tq_checks: tuple[PendingTQCheck, ...] = ()
     tq_check_outcomes: tuple[TQCheckOutcome, ...] = ()
     missile_outcome: MissileOutcome | None = None
+    shock_outcome: ShockOutcome | None = None
     events: tuple[MissileEvent, ...] = ()
