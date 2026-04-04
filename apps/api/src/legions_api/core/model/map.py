@@ -26,6 +26,8 @@ class HexTile:
     terrain: TerrainType = TerrainType.CLEAR
     move_cost: int = 1
     passable: bool = True
+    elevation_level: int = 0
+    blocks_line_of_sight: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +36,7 @@ class MapEdge:
 
     blocks_movement: bool = False
     movement_cost_delta: int = 0
+    blocks_line_of_sight: bool = False
 
 
 EdgeKey = tuple[HexCoord, HexCoord]

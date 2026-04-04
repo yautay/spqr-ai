@@ -8,6 +8,7 @@ from legions_api.core.actions import MoveAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
+from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect, TQCheckOutcome
 from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
@@ -324,7 +325,7 @@ def _resolve_pending_tq_checks(
         if unit is None:
             continue
 
-        roll = _seeded_d10_roll(rng_seed=rng_seed, rng_counter=next_counter)
+        roll = seeded_d10_roll(rng_seed=rng_seed, rng_counter=next_counter)
         next_counter += 1
         passed = roll <= check.target
         applied_cohesion_hits = 0
@@ -355,10 +356,3 @@ def _resolve_pending_tq_checks(
         )
 
     return tuple(outcomes), next_counter
-
-
-def _seeded_d10_roll(rng_seed: int, rng_counter: int) -> int:
-    """Return deterministic seeded d10 roll for current game RNG state."""
-
-    value = (1664525 * rng_seed + 1013904223 * rng_counter) % (2**32)
-    return (value % 10) + 1

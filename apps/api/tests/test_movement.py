@@ -6,6 +6,7 @@ from legions_api.core.actions import MoveAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
+from legions_api.core.random import seeded_d10_roll
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.unit import Side, Unit
 from legions_api.core.results import PendingTQCheck
@@ -527,8 +528,8 @@ def test_resolve_pending_tq_checks_applies_cohesion_on_failed_roll() -> None:
 def test_seeded_d10_roll_is_deterministic_for_same_seed_and_counter() -> None:
     """Seeded roll helper should stay stable for identical RNG state."""
 
-    first_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=0)
-    second_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=0)
+    first_roll = seeded_d10_roll(rng_seed=1, rng_counter=0)
+    second_roll = seeded_d10_roll(rng_seed=1, rng_counter=0)
 
     assert first_roll == second_roll == 6
 
@@ -536,8 +537,8 @@ def test_seeded_d10_roll_is_deterministic_for_same_seed_and_counter() -> None:
 def test_seeded_d10_roll_changes_when_counter_advances() -> None:
     """Seeded roll helper should produce sequence as counter advances."""
 
-    first_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=0)
-    second_roll = movement_rules._seeded_d10_roll(rng_seed=1, rng_counter=1)
+    first_roll = seeded_d10_roll(rng_seed=1, rng_counter=0)
+    second_roll = seeded_d10_roll(rng_seed=1, rng_counter=1)
 
     assert first_roll != second_roll
 

@@ -20,11 +20,19 @@ Status legend:
 
 ## Milestone 1 - Core Movement Loop
 
-- [~] Define game state models (hex, unit, leader, turn)
+- [x] Define game state models (hex, unit baseline, deterministic RNG state)
 - [x] Implement coordinate and hex utility module
 - [x] Implement movement rules
 - [x] Implement zones of control (ZOC)
 - [x] Implement action validation entry point
+- [x] Implement stacking side effects and TQ checks from table lookups
+
+## Milestone 1.5 - Missile Baseline
+
+- [x] Implement table-driven missile range resolution
+- [x] Implement missile DR modifier lookup and outcome breakdown
+- [x] Implement missile supply transitions (`normal -> low -> no`) and reload attempts
+- [ ] Implement LOS validation and movement-linked reaction windows
 
 ## Milestone 2 - Combat and Morale
 

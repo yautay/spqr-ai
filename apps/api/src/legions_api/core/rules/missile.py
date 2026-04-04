@@ -5,6 +5,7 @@ from __future__ import annotations
 from legions_api.core.actions import MissileAction, ReloadMissileAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.unit import MissileSupply
+from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, MissileDRMModifier, MissileEvent, MissileOutcome
 from legions_api.core.tables.adapters import missile_class_lookup, missile_drm_lookup
 from legions_api.core.tables.loader import load_table
@@ -65,7 +66,7 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
     if table_strength is None:
         return ActionResult(ok=False, reason="target_out_of_range", state=state)
 
-    base_roll = _seeded_d10_roll(rng_seed=state.rng_seed, rng_counter=state.rng_counter)
+    base_roll = seeded_d10_roll(rng_seed=state.rng_seed, rng_counter=state.rng_counter)
     modified_roll = base_roll + total_drm
     hit = modified_roll <= table_strength
     applied_cohesion_hits = 1 if hit else 0
@@ -151,7 +152,7 @@ def resolve_reload(state: GameState, action: ReloadMissileAction) -> ActionResul
     if unit.missile_supply == MissileSupply.NORMAL:
         return ActionResult(ok=False, reason="missile_supply_full", state=state)
 
-    roll = _seeded_d10_roll(rng_seed=state.rng_seed, rng_counter=state.rng_counter)
+    roll = seeded_d10_roll(rng_seed=state.rng_seed, rng_counter=state.rng_counter)
     target = 7 if unit.missile_supply == MissileSupply.LOW else 6
     success = roll <= target
 
@@ -203,10 +204,3 @@ def _improve_supply(supply: MissileSupply) -> MissileSupply:
     if supply == MissileSupply.LOW:
         return MissileSupply.NORMAL
     return MissileSupply.NORMAL
-
-
-def _seeded_d10_roll(rng_seed: int, rng_counter: int) -> int:
-    """Return deterministic seeded d10 roll for current game RNG state."""
-
-    value = (1664525 * rng_seed + 1013904223 * rng_counter) % (2**32)
-    return (value % 10) + 1
