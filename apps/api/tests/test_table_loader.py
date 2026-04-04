@@ -6,7 +6,9 @@ import pytest
 
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.tables import loader as table_loader
 from legions_api.core.tables.loader import TableId, load_ruleset, load_supported_tables, load_table
+from legions_api.core.tables.models import MovementCostsTableModel
 
 
 @pytest.mark.parametrize("table_id", [
@@ -61,3 +63,85 @@ def test_ruleset_uses_table_driven_movement_profile_lookup() -> None:
     assert simple.default_movement_profile_id == "simple_standard"
     assert original.movement_cost_for_terrain(TerrainType.ROUGH) == 2
     assert simple.movement_cost_for_terrain(TerrainType.ROUGH) == 1
+
+
+def test_load_ruleset_fails_when_movement_profile_misses_terrain(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ruleset loading should fail fast when movement profile is incomplete."""
+
+    incomplete_table = MovementCostsTableModel.model_validate(
+        {
+            "table_id": "movement_costs",
+            "version": "test",
+            "terrain_types": ["clear", "rough", "woods", "road", "water"],
+            "unit_profiles": [
+                {
+                    "unit_profile_id": "original_standard",
+                    "aliases": [],
+                    "base_ma": 4,
+                    "extended_ma": None,
+                    "terrain_costs": {
+                        "clear": {"mp": 1, "cohesion_hits": 0},
+                        "rough": {"mp": 2, "cohesion_hits": 0},
+                        "woods": {"mp": 2, "cohesion_hits": 0},
+                        "road": {"mp": 1, "cohesion_hits": 0}
+                    },
+                    "elevation": {
+                        "up_one": {"mp": 1, "cohesion_hits": 0},
+                        "up_two_or_more": {"mp": 2, "cohesion_hits": 1}
+                    },
+                    "facing_change": {
+                        "mp_per_vertex": 1,
+                        "cohesion_hits_per_vertex_in_rough": 0
+                    }
+                }
+            ]
+        }
+    )
+
+    load_ruleset.cache_clear()
+    monkeypatch.setattr(table_loader, "load_table", lambda table_id: incomplete_table)
+
+    with pytest.raises(ValueError, match="misses terrain costs"):
+        load_ruleset(RulesetMode.ORIGINAL)
+
+
+def test_load_ruleset_fails_for_unknown_profile_terrain(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Ruleset loading should reject movement profiles with unknown terrain ids."""
+
+    invalid_terrain_table = MovementCostsTableModel.model_validate(
+        {
+            "table_id": "movement_costs",
+            "version": "test",
+            "terrain_types": ["clear", "rough", "woods", "road", "water", "lava"],
+            "unit_profiles": [
+                {
+                    "unit_profile_id": "original_standard",
+                    "aliases": [],
+                    "base_ma": 4,
+                    "extended_ma": None,
+                    "terrain_costs": {
+                        "clear": {"mp": 1, "cohesion_hits": 0},
+                        "rough": {"mp": 2, "cohesion_hits": 0},
+                        "woods": {"mp": 2, "cohesion_hits": 0},
+                        "road": {"mp": 1, "cohesion_hits": 0},
+                        "water": {"mp": 99, "cohesion_hits": None},
+                        "lava": {"mp": 9, "cohesion_hits": 3}
+                    },
+                    "elevation": {
+                        "up_one": {"mp": 1, "cohesion_hits": 0},
+                        "up_two_or_more": {"mp": 2, "cohesion_hits": 1}
+                    },
+                    "facing_change": {
+                        "mp_per_vertex": 1,
+                        "cohesion_hits_per_vertex_in_rough": 0
+                    }
+                }
+            ]
+        }
+    )
+
+    load_ruleset.cache_clear()
+    monkeypatch.setattr(table_loader, "load_table", lambda table_id: invalid_terrain_table)
+
+    with pytest.raises(ValueError, match="unknown terrain"):
+        load_ruleset(RulesetMode.ORIGINAL)
