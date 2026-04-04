@@ -28,6 +28,7 @@ def test_game_state_endpoint_returns_tiles_and_units() -> None:
 
     assert response.status_code == 200
     payload = response.json()
+    assert payload["turn_phase"] in {"orders", "rout_and_reload"}
     assert payload["active_side"] in {"red", "blue"}
     assert len(payload["tiles"]) > 0
     assert len(payload["units"]) > 0
@@ -79,6 +80,18 @@ def test_new_game_accepts_ruleset_selection() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["ruleset"] == "simple"
+
+
+def test_phase_endpoint_updates_turn_phase() -> None:
+    """Phase endpoint should update serialized turn phase marker."""
+
+    client = TestClient(app)
+
+    response = client.post("/game/phase", json={"phase": "rout_and_reload"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["turn_phase"] == "rout_and_reload"
 
 
 def test_game_action_response_exposes_tq_roll_metadata(monkeypatch) -> None:

@@ -3,12 +3,12 @@
 import pytest
 
 from legions_api.core.actions import MoveAction
-from legions_api.core.model.game_state import GameState
+from legions_api.core.model.game_state import GameState, ReactionWindow
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
-from legions_api.core.random import seeded_d10_roll
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.unit import Side, Unit
+from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import PendingTQCheck
 from legions_api.core.rules import movement as movement_rules
 from legions_api.core.rules.movement import resolve_move
@@ -41,6 +41,66 @@ def test_move_fails_when_unit_starts_in_enemy_zoc() -> None:
 
     assert not result.ok
     assert result.reason == "unit_pinned_by_enemy_zoc"
+
+
+def test_move_opens_reaction_window_event_on_entry_trigger() -> None:
+    """Movement should expose reaction window event when target enters enemy missile range."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, 0)),
+            HexTile(coord=HexCoord(2, 0)),
+            HexTile(coord=HexCoord(3, 0)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1),
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(3, 0), move_allowance=1, missile_class_id="J"),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(1, 0)))
+
+    assert result.ok
+    assert [event.event_type for event in result.events] == ["reaction_window_opened"]
+    assert result.events[0].unit_id == "b1"
+    assert result.events[0].target_unit_id == "r1"
+    assert result.events[0].reaction_trigger == "entry"
+    assert result.state.open_reaction_windows == (
+        ReactionWindow(firing_unit_id="b1", target_unit_id="r1", reaction_trigger="entry"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("previous_position", "current_position", "expected"),
+    [
+        (HexCoord(4, 0), HexCoord(2, 0), "entry"),
+        (HexCoord(2, 0), HexCoord(4, 0), "retire"),
+        (HexCoord(2, 1), HexCoord(2, 0), "return"),
+        (HexCoord(4, 0), HexCoord(5, 0), None),
+    ],
+)
+def test_resolve_reaction_trigger_detects_expected_window(
+    previous_position: HexCoord,
+    current_position: HexCoord,
+    expected: str | None,
+) -> None:
+    """Reaction trigger helper should classify entry/retire/return transitions."""
+
+    trigger = movement_rules._resolve_reaction_trigger(
+        enemy_position=HexCoord(0, 0),
+        previous_position=previous_position,
+        current_position=current_position,
+        max_range=3,
+    )
+
+    assert trigger == expected
 
 
 def test_move_rejects_no_op_before_destination_occupied_check() -> None:

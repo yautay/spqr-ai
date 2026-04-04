@@ -15,6 +15,7 @@ from legions_api.api.schemas import (
     MoveActionPayload,
     NewGamePayload,
     RulesetsPayload,
+    SetPhasePayload,
 )
 from legions_api.api.state_store import GameStateStore
 from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction
@@ -50,6 +51,19 @@ async def game_state(store: GameStateStore = Depends(get_game_store)) -> GameSta
     """Return current in-memory game state."""
 
     return to_game_state_payload(store.state)
+
+
+@router.post("/phase", response_model=GameStatePayload)
+async def set_phase(
+    payload: SetPhasePayload,
+    store: GameStateStore = Depends(get_game_store),
+) -> GameStatePayload:
+    """Set minimal in-memory phase marker for development actions."""
+
+    state = store.state.with_turn_phase(payload.phase)
+    store.replace(state)
+    logger.debug("Phase set to {}", payload.phase.value)
+    return to_game_state_payload(state)
 
 
 @router.post("/action", response_model=ActionResponsePayload)

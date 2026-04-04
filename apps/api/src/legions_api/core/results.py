@@ -86,7 +86,14 @@ class MissileOutcome:
 class MissileEvent:
     """Domain event emitted by missile fire/reload resolution."""
 
-    event_type: Literal["missile_fired", "reaction_fire", "reload_attempt", "supply_changed"]
+    event_type: Literal[
+        "missile_fired",
+        "reaction_fire",
+        "reload_attempt",
+        "supply_changed",
+        "reaction_window_opened",
+        "reaction_window_spent",
+    ]
     unit_id: str
     target_unit_id: str | None = None
     reaction_trigger: Literal["entry", "retire", "return"] | None = None

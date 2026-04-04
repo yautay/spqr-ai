@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+from itertools import pairwise
 from typing import Literal
 
 from legions_api.core.actions import MoveAction
-from legions_api.core.model.game_state import GameState
+from legions_api.core.model.game_state import GameState, ReactionTrigger, ReactionWindow
 from legions_api.core.model.hex import HexCoord
-from legions_api.core.model.unit import Unit
+from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
-from legions_api.core.results import ActionResult, PendingTQCheck, StackingEffect, TQCheckOutcome
+from legions_api.core.results import ActionResult, MissileEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
 from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
-from legions_api.core.tables.adapters import StackingOutcome, mandatory_stacking_lookup, voluntary_stacking_lookup
+from legions_api.core.tables.adapters import (
+    StackingOutcome,
+    mandatory_stacking_lookup,
+    missile_class_lookup,
+    voluntary_stacking_lookup,
+)
 from legions_api.core.tables.loader import load_table
-from legions_api.core.tables.models import StackingMandatoryTableModel, StackingVoluntaryTableModel
+from legions_api.core.tables.models import MissileTableModel, StackingMandatoryTableModel, StackingVoluntaryTableModel
 
 _ROUTING_CATEGORY_MAP: dict[str, str] = {
     "basic": "routing_basic",
@@ -107,7 +113,21 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
             rng_counter=state.rng_counter,
         )
         updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
-        updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter)
+        reaction_windows = _collect_reaction_windows(state=state, moving_unit=unit, movement_path=path.path)
+        reaction_events = tuple(
+            MissileEvent(
+                event_type="reaction_window_opened",
+                unit_id=window.firing_unit_id,
+                target_unit_id=window.target_unit_id,
+                reaction_trigger=window.reaction_trigger,
+            )
+            for window in reaction_windows
+        )
+        updated_state = (
+            state.with_units(updated_units)
+            .with_rng_counter(next_rng_counter)
+            .with_reaction_windows(open_reaction_windows=reaction_windows)
+        )
     except ValueError:
         return ActionResult(ok=False, reason="stacking_category_unmapped", state=state)
 
@@ -118,6 +138,7 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         effects=movement_effects,
         pending_tq_checks=pending_tq_checks,
         tq_check_outcomes=tq_check_outcomes,
+        events=reaction_events,
     )
 
 
@@ -356,3 +377,77 @@ def _resolve_pending_tq_checks(
         )
 
     return tuple(outcomes), next_counter
+
+
+def _collect_reaction_windows(state: GameState, moving_unit: Unit, movement_path: tuple[HexCoord, ...]) -> tuple[ReactionWindow, ...]:
+    """Collect reaction windows opened for enemy missile units by one movement path."""
+
+    if len(movement_path) < 2:
+        return ()
+
+    table = load_table("missile_range_results")
+    if not isinstance(table, MissileTableModel):
+        return ()
+
+    class_lookup = missile_class_lookup(table)
+    windows: list[ReactionWindow] = []
+    seen: set[ReactionWindow] = set()
+
+    for enemy_unit in state.units.values():
+        if enemy_unit.side == moving_unit.side:
+            continue
+        if enemy_unit.missile_class_id is None:
+            continue
+        if enemy_unit.missile_supply == MissileSupply.NO:
+            continue
+
+        class_row = class_lookup.get(enemy_unit.missile_class_id)
+        if class_row is None or not class_row.strengths_by_range:
+            continue
+
+        max_range = max(class_row.strengths_by_range)
+        for previous, current in pairwise(movement_path):
+            trigger = _resolve_reaction_trigger(
+                enemy_position=enemy_unit.position,
+                previous_position=previous,
+                current_position=current,
+                max_range=max_range,
+            )
+            if trigger is None:
+                continue
+
+            window = ReactionWindow(
+                firing_unit_id=enemy_unit.unit_id,
+                target_unit_id=moving_unit.unit_id,
+                reaction_trigger=trigger,
+            )
+            if window in seen:
+                continue
+
+            seen.add(window)
+            windows.append(window)
+
+    return tuple(windows)
+
+
+def _resolve_reaction_trigger(
+    enemy_position: HexCoord,
+    previous_position: HexCoord,
+    current_position: HexCoord,
+    max_range: int,
+) -> ReactionTrigger | None:
+    """Resolve reaction trigger opened by one movement step for one enemy missile unit."""
+
+    previous_distance = enemy_position.distance_to(previous_position)
+    current_distance = enemy_position.distance_to(current_position)
+    was_in_range = previous_distance <= max_range
+    is_in_range = current_distance <= max_range
+
+    if not was_in_range and is_in_range:
+        return "entry"
+    if was_in_range and not is_in_range:
+        return "retire"
+    if was_in_range and is_in_range and previous_distance != current_distance:
+        return "return"
+
+    return None

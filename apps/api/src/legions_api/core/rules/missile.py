@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from legions_api.core.actions import MissileAction, ReloadMissileAction
-from legions_api.core.model.game_state import GameState
+from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.unit import MissileSupply
 from legions_api.core.random import seeded_d10_roll
@@ -25,7 +25,7 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
     if target_unit is None:
         return ActionResult(ok=False, reason="target_unit_not_found", state=state)
 
-    if firing_unit.side != state.active_side:
+    if action.fire_mode == "active" and firing_unit.side != state.active_side:
         return ActionResult(ok=False, reason="wrong_active_side", state=state)
 
     if firing_unit.side == target_unit.side:
@@ -39,6 +39,24 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
 
     if action.fire_mode == "reaction" and action.reaction_trigger is None:
         return ActionResult(ok=False, reason="missing_reaction_trigger", state=state)
+
+    if action.fire_mode == "reaction" and firing_unit.side == state.active_side:
+        return ActionResult(ok=False, reason="wrong_reaction_side", state=state)
+
+    if action.fire_mode == "reaction" and action.reaction_trigger is not None:
+        if state.is_reaction_window_spent(
+            firing_unit_id=firing_unit.unit_id,
+            target_unit_id=target_unit.unit_id,
+            reaction_trigger=action.reaction_trigger,
+        ):
+            return ActionResult(ok=False, reason="reaction_window_spent", state=state)
+
+        if not state.is_reaction_window_open(
+            firing_unit_id=firing_unit.unit_id,
+            target_unit_id=target_unit.unit_id,
+            reaction_trigger=action.reaction_trigger,
+        ):
+            return ActionResult(ok=False, reason="reaction_window_unavailable", state=state)
 
     if firing_unit.missile_supply == MissileSupply.NO:
         return ActionResult(ok=False, reason="missile_supply_empty", state=state)
@@ -121,6 +139,20 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
         )
 
     updated_state = state.with_units(updated_units).with_rng_counter(state.rng_counter + 1)
+    if action.fire_mode == "reaction" and action.reaction_trigger is not None:
+        updated_state = updated_state.mark_reaction_window_spent(
+            firing_unit_id=firing_unit.unit_id,
+            target_unit_id=target_unit.unit_id,
+            reaction_trigger=action.reaction_trigger,
+        )
+        events.append(
+            MissileEvent(
+                event_type="reaction_window_spent",
+                unit_id=firing_unit.unit_id,
+                target_unit_id=target_unit.unit_id,
+                reaction_trigger=action.reaction_trigger,
+            )
+        )
 
     return ActionResult(
         ok=True,
@@ -151,6 +183,9 @@ def resolve_reload(state: GameState, action: ReloadMissileAction) -> ActionResul
     unit = state.units.get(action.unit_id)
     if unit is None:
         return ActionResult(ok=False, reason="firing_unit_not_found", state=state)
+
+    if state.turn_phase != TurnPhase.ROUT_AND_RELOAD:
+        return ActionResult(ok=False, reason="wrong_turn_phase", state=state)
 
     if unit.side != state.active_side:
         return ActionResult(ok=False, reason="wrong_active_side", state=state)

@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from legions_api.core.model.game_state import TurnPhase
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.unit import MissileSupply, Side
@@ -48,6 +49,7 @@ class GameStatePayload(BaseModel):
     """Serializable game state payload."""
 
     ruleset: RulesetMode
+    turn_phase: TurnPhase
     tiles: list[TilePayload]
     active_side: Side
     units: list[UnitPayload]
@@ -80,6 +82,12 @@ class NewGamePayload(BaseModel):
     """New game creation options."""
 
     ruleset: RulesetMode = RulesetMode.ORIGINAL
+
+
+class SetPhasePayload(BaseModel):
+    """Minimal phase transition payload for development flow."""
+
+    phase: TurnPhase
 
 
 class RulesetsPayload(BaseModel):
@@ -159,7 +167,14 @@ class MissileOutcomePayload(BaseModel):
 class MissileEventPayload(BaseModel):
     """Domain event emitted by missile and reload resolution."""
 
-    event_type: Literal["missile_fired", "reaction_fire", "reload_attempt", "supply_changed"]
+    event_type: Literal[
+        "missile_fired",
+        "reaction_fire",
+        "reload_attempt",
+        "supply_changed",
+        "reaction_window_opened",
+        "reaction_window_spent",
+    ]
     unit_id: str
     target_unit_id: str | None
     reaction_trigger: Literal["entry", "retire", "return"] | None

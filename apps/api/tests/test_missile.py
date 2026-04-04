@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from legions_api.core.actions import MissileAction, ReloadMissileAction
-from legions_api.core.model.game_state import GameState
+from legions_api.core.model.game_state import GameState, ReactionWindow, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
@@ -99,6 +99,32 @@ def test_reaction_fire_requires_trigger(monkeypatch: pytest.MonkeyPatch) -> None
 
     assert not result.ok
     assert result.reason == "missing_reaction_trigger"
+
+
+def test_reaction_fire_rejects_missing_window(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reaction fire should fail when no movement-opened window is available."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
+        },
+        active_side=Side.BLUE,
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=8))
+
+    result = resolve_missile(
+        state,
+        MissileAction(
+            firing_unit_id="r1",
+            target_unit_id="b1",
+            fire_mode="reaction",
+            reaction_trigger="entry",
+        ),
+    )
+
+    assert not result.ok
+    assert result.reason == "reaction_window_unavailable"
 
 
 def test_missile_rejects_target_out_of_range(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -290,7 +316,11 @@ def test_reaction_fire_emits_reaction_and_supply_events(monkeypatch: pytest.Monk
         units={
             "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
             "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
-        }
+        },
+        active_side=Side.BLUE,
+        open_reaction_windows=(
+            ReactionWindow(firing_unit_id="r1", target_unit_id="b1", reaction_trigger="entry"),
+        ),
     )
     monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=8))
 
@@ -308,7 +338,40 @@ def test_reaction_fire_emits_reaction_and_supply_events(monkeypatch: pytest.Monk
     assert result.missile_outcome is not None
     assert result.missile_outcome.fire_mode == "reaction"
     assert result.missile_outcome.reaction_trigger == "entry"
-    assert [event.event_type for event in result.events] == ["missile_fired", "reaction_fire", "supply_changed"]
+    assert [event.event_type for event in result.events] == [
+        "missile_fired",
+        "reaction_fire",
+        "supply_changed",
+        "reaction_window_spent",
+    ]
+
+
+def test_reaction_fire_rejects_spent_window(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reaction fire should fail when same window was already consumed."""
+
+    spent_window = ReactionWindow(firing_unit_id="r1", target_unit_id="b1", reaction_trigger="entry")
+    state = _build_state(
+        units={
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), missile_class_id="A"),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
+        },
+        active_side=Side.BLUE,
+        spent_reaction_windows=(spent_window,),
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=8))
+
+    result = resolve_missile(
+        state,
+        MissileAction(
+            firing_unit_id="r1",
+            target_unit_id="b1",
+            fire_mode="reaction",
+            reaction_trigger="entry",
+        ),
+    )
+
+    assert not result.ok
+    assert result.reason == "reaction_window_spent"
 
 
 def test_fire_reload_sequence_updates_supply_and_events(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -330,14 +393,45 @@ def test_fire_reload_sequence_updates_supply_and_events(monkeypatch: pytest.Monk
     assert second_fire.ok
     assert second_fire.state.units["r1"].missile_supply == MissileSupply.NO
 
-    reload = resolve_reload(second_fire.state, ReloadMissileAction(unit_id="r1"))
+    reload_state = second_fire.state.with_turn_phase(TurnPhase.ROUT_AND_RELOAD)
+    reload = resolve_reload(reload_state, ReloadMissileAction(unit_id="r1"))
     assert reload.ok
     assert reload.state.units["r1"].missile_supply == MissileSupply.LOW
     assert [event.event_type for event in reload.events] == ["reload_attempt", "supply_changed"]
     assert reload.events[0].success is True
 
 
-def _build_state(units: dict[str, Unit], tiles: list[HexTile] | None = None) -> GameState:
+def test_reload_rejects_outside_reload_phase(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Reload should fail outside rout-and-reload phase."""
+
+    state = _build_state(
+        units={
+            "r1": Unit(
+                unit_id="r1",
+                side=Side.RED,
+                position=HexCoord(0, 0),
+                missile_class_id="A",
+                missile_supply=MissileSupply.LOW,
+            )
+        },
+        turn_phase=TurnPhase.ORDERS,
+    )
+    monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=8))
+
+    result = resolve_reload(state, ReloadMissileAction(unit_id="r1"))
+
+    assert not result.ok
+    assert result.reason == "wrong_turn_phase"
+
+
+def _build_state(
+    units: dict[str, Unit],
+    tiles: list[HexTile] | None = None,
+    active_side: Side = Side.RED,
+    turn_phase: TurnPhase = TurnPhase.ORDERS,
+    open_reaction_windows: tuple[ReactionWindow, ...] = (),
+    spent_reaction_windows: tuple[ReactionWindow, ...] = (),
+) -> GameState:
     """Create a tiny deterministic battlefield for missile tests."""
 
     scenario_tiles = tiles or [
@@ -349,8 +443,11 @@ def _build_state(units: dict[str, Unit], tiles: list[HexTile] | None = None) -> 
     return GameState.from_units(
         scenario_map=scenario_map,
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
-        active_side=Side.RED,
+        active_side=active_side,
         units=units,
+        turn_phase=turn_phase,
+        open_reaction_windows=open_reaction_windows,
+        spent_reaction_windows=spent_reaction_windows,
     )
 
 

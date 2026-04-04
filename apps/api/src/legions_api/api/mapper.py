@@ -58,7 +58,13 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
         )
         for tile in sorted_tiles
     ]
-    return GameStatePayload(ruleset=state.ruleset.mode, tiles=tiles, active_side=state.active_side, units=units)
+    return GameStatePayload(
+        ruleset=state.ruleset.mode,
+        turn_phase=state.turn_phase,
+        tiles=tiles,
+        active_side=state.active_side,
+        units=units,
+    )
 
 
 def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
