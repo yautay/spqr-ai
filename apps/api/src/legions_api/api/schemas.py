@@ -24,6 +24,7 @@ class UnitPayload(BaseModel):
     position: HexPayload
     move_allowance: int
     exerts_zoc: bool
+    move_profile_id: str | None
 
 
 class TilePayload(BaseModel):

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from legions_api.core.tables.loader import TableId, load_supported_tables, load_table
+from legions_api.core.model.map import TerrainType
+from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.tables.loader import TableId, load_ruleset, load_supported_tables, load_table
 
 
 @pytest.mark.parametrize("table_id", [
@@ -44,3 +46,18 @@ def test_load_supported_tables_returns_all_known_ids() -> None:
         "rally_table",
         "leader_casualty_table",
     }
+
+
+def test_ruleset_uses_table_driven_movement_profile_lookup() -> None:
+    """Rulesets should resolve terrain costs through configured movement profiles."""
+
+    load_table.cache_clear()
+    load_ruleset.cache_clear()
+
+    original = load_ruleset(RulesetMode.ORIGINAL)
+    simple = load_ruleset(RulesetMode.SIMPLE)
+
+    assert original.default_movement_profile_id == "original_standard"
+    assert simple.default_movement_profile_id == "simple_standard"
+    assert original.movement_cost_for_terrain(TerrainType.ROUGH) == 2
+    assert simple.movement_cost_for_terrain(TerrainType.ROUGH) == 1

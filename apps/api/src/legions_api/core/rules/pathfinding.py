@@ -7,7 +7,7 @@ from heapq import heappop, heappush
 
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
-from legions_api.core.model.unit import Side
+from legions_api.core.model.unit import Side, Unit
 from legions_api.core.rules.zoc import enemy_zoc_hexes
 
 
@@ -32,7 +32,7 @@ class PathResult:
     reason: str
 
 
-def shortest_path(state: GameState, side: Side, start: HexCoord, goal: HexCoord, policy: MovementPolicy) -> PathResult:
+def shortest_path(state: GameState, side: Side, unit: Unit, start: HexCoord, goal: HexCoord, policy: MovementPolicy) -> PathResult:
     """Run A* over scenario graph while honoring occupancy and optional ZOC constraints."""
 
     if not state.scenario_map.contains(goal):
@@ -66,7 +66,14 @@ def shortest_path(state: GameState, side: Side, start: HexCoord, goal: HexCoord,
             if not policy.allow_enter_enemy_zoc and neighbor in enemy_zoc:
                 continue
 
-            step_cost = state.scenario_map.movement_cost(current, neighbor)
+            destination_tile = state.scenario_map.tile_at(neighbor)
+            if destination_tile is None:
+                continue
+
+            move_profile_id = unit.move_profile_id or state.ruleset.default_movement_profile_id
+            terrain_cost = state.ruleset.movement_cost_for_terrain(destination_tile.terrain, profile_id=move_profile_id)
+            edge_cost = state.scenario_map.movement_cost(current, neighbor)
+            step_cost = max(1, terrain_cost + (edge_cost - destination_tile.move_cost))
             new_cost = current_cost + step_cost
             if new_cost > policy.max_cost:
                 continue

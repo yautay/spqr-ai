@@ -17,6 +17,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             position=HexPayload(q=unit.position.q, r=unit.position.r),
             move_allowance=unit.move_allowance,
             exerts_zoc=unit.exerts_zoc,
+            move_profile_id=unit.move_profile_id,
         )
         for unit in sorted_units
     ]

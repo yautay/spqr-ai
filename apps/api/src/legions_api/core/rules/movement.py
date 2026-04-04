@@ -34,6 +34,7 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
     path = shortest_path(
         state=state,
         side=unit.side,
+        unit=unit,
         start=unit.position,
         goal=action.destination,
         policy=MovementPolicy(max_cost=unit.move_allowance, ignore_occupied=False, allow_enter_enemy_zoc=True),

@@ -4,12 +4,6 @@
     "zoc_locks_movement": true
   },
   "movement": {
-    "terrain_costs": {
-      "clear": 1,
-      "rough": 2,
-      "woods": 2,
-      "road": 1,
-      "water": 99
-    }
+    "default_profile_id": "original_standard"
   }
 }

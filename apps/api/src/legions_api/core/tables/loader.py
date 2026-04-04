@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetDefinition, RulesetMode, RulesetOptions
+from legions_api.core.tables.adapters import movement_costs_by_profile
 from legions_api.core.tables.models import (
     LeaderCasualtyTableModel,
     MissileTableModel,
@@ -49,13 +50,30 @@ def load_ruleset(mode: RulesetMode) -> RulesetDefinition:
     raw = json.loads(file_path.read_text(encoding="utf-8"))
 
     raw_mode = RulesetMode(raw["ruleset"])
-    terrain_costs = {
-        TerrainType(terrain_name): int(cost)
-        for terrain_name, cost in raw["movement"]["terrain_costs"].items()
-    }
+    movement_profile_id = str(raw["movement"]["default_profile_id"])
+    movement_costs_table = load_table("movement_costs")
+    if not isinstance(movement_costs_table, MovementCostsTableModel):
+        raise TypeError("movement_costs table did not resolve to MovementCostsTableModel")
+
+    costs_by_profile = movement_costs_by_profile(movement_costs_table)
+    if movement_profile_id not in costs_by_profile:
+        raise ValueError(f"unknown movement profile {movement_profile_id!r} for ruleset {raw_mode.value!r}")
+
+    required_terrains = set(TerrainType)
+    for profile_id, terrain_costs in costs_by_profile.items():
+        missing_terrains = required_terrains.difference(terrain_costs)
+        if missing_terrains:
+            missing_names = ", ".join(sorted(str(terrain) for terrain in missing_terrains))
+            raise ValueError(f"movement profile {profile_id!r} misses terrain costs: {missing_names}")
+
     options = RulesetOptions(zoc_locks_movement=bool(raw["options"]["zoc_locks_movement"]))
 
-    return RulesetDefinition(mode=raw_mode, options=options, terrain_move_costs=terrain_costs)
+    return RulesetDefinition(
+        mode=raw_mode,
+        options=options,
+        default_movement_profile_id=movement_profile_id,
+        movement_costs_by_profile=costs_by_profile,
+    )
 
 
 def _load_json_file(path: Path) -> dict[str, Any]:

@@ -3,7 +3,8 @@ Legions - NEXT STEPS for next AI session
 Current baseline
 - Typed parser and loader for rules tables are implemented.
 - API startup now validates and loads supported rules tables.
-- Table data is still mostly template-level and needs real values from source charts.
+- Movement resolution now uses table-driven terrain MP profiles selected by ruleset.
+- Movement baseline data exists in `movement_costs.json`; elevation/facing values are placeholders.
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)
@@ -27,4 +28,4 @@ Coding constraints
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Finish `movement_costs.json` with full terrain/elevation/facing values and wire movement resolver to use profile-based costs.
+- Finish importing exact movement chart values from source docs and then implement stacking resolution using stacking tables.

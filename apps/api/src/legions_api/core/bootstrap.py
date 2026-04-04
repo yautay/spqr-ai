@@ -20,47 +20,47 @@ def create_demo_state(mode: RulesetMode = RulesetMode.ORIGINAL) -> GameState:
             HexTile(
                 coord=HexCoord(0, 0),
                 terrain=TerrainType.CLEAR,
-                move_cost=ruleset.terrain_move_costs[TerrainType.CLEAR],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.CLEAR),
             ),
             HexTile(
                 coord=HexCoord(1, 0),
                 terrain=TerrainType.CLEAR,
-                move_cost=ruleset.terrain_move_costs[TerrainType.CLEAR],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.CLEAR),
             ),
             HexTile(
                 coord=HexCoord(1, -1),
                 terrain=TerrainType.ROUGH,
-                move_cost=ruleset.terrain_move_costs[TerrainType.ROUGH],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.ROUGH),
             ),
             HexTile(
                 coord=HexCoord(0, -1),
                 terrain=TerrainType.CLEAR,
-                move_cost=ruleset.terrain_move_costs[TerrainType.CLEAR],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.CLEAR),
             ),
             HexTile(
                 coord=HexCoord(-1, 0),
                 terrain=TerrainType.WOODS,
-                move_cost=ruleset.terrain_move_costs[TerrainType.WOODS],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.WOODS),
             ),
             HexTile(
                 coord=HexCoord(-1, 1),
                 terrain=TerrainType.CLEAR,
-                move_cost=ruleset.terrain_move_costs[TerrainType.CLEAR],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.CLEAR),
             ),
             HexTile(
                 coord=HexCoord(0, 1),
                 terrain=TerrainType.CLEAR,
-                move_cost=ruleset.terrain_move_costs[TerrainType.CLEAR],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.CLEAR),
             ),
             HexTile(
                 coord=HexCoord(2, -1),
                 terrain=TerrainType.CLEAR,
-                move_cost=ruleset.terrain_move_costs[TerrainType.CLEAR],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.CLEAR),
             ),
             HexTile(
                 coord=HexCoord(2, 0),
                 terrain=TerrainType.CLEAR,
-                move_cost=ruleset.terrain_move_costs[TerrainType.CLEAR],
+                move_cost=ruleset.movement_cost_for_terrain(TerrainType.CLEAR),
             ),
         ]
     )

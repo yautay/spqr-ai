@@ -31,6 +31,7 @@ def test_pathfinding_avoids_blocked_edge() -> None:
     result = shortest_path(
         state=state,
         side=Side.RED,
+        unit=units["r1"],
         start=HexCoord(0, 0),
         goal=HexCoord(1, 0),
         policy=MovementPolicy(max_cost=3),
@@ -64,6 +65,7 @@ def test_pathfinding_respects_occupied_hexes() -> None:
     result = shortest_path(
         state=state,
         side=Side.RED,
+        unit=units["r1"],
         start=HexCoord(0, 0),
         goal=HexCoord(0, 1),
         policy=MovementPolicy(max_cost=2),
