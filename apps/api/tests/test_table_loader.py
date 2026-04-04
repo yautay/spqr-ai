@@ -8,7 +8,7 @@ from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.tables import loader as table_loader
 from legions_api.core.tables.loader import TableId, load_ruleset, load_supported_tables, load_table
-from legions_api.core.tables.models import MovementCostsTableModel
+from legions_api.core.tables.models import MissileTableModel, MovementCostsTableModel
 
 
 @pytest.mark.parametrize("table_id", [
@@ -164,4 +164,84 @@ def test_validate_stacking_pair_matrix_rejects_missing_pairs() -> None:
         table_loader._validate_stacking_pair_matrix(
             table_id="stacking_voluntary",
             keys=[("basic", "basic"), ("basic", "scout"), ("scout", "basic")],
+        )
+
+
+def test_missile_table_validator_rejects_duplicate_class_ids() -> None:
+    """Missile table validation should fail when class ids are duplicated."""
+
+    table = MissileTableModel.model_validate(
+        {
+            "table_id": "missile_range_results",
+            "version": "test",
+            "missile_classes": [
+                {"missile_class_id": "A", "name": "archer", "strength_by_range": {"1": 7}},
+                {"missile_class_id": "A", "name": "archer2", "strength_by_range": {"1": 6}},
+            ],
+            "dr_modifiers": [{"id": "target_woods", "drm": 2}],
+        }
+    )
+
+    with pytest.raises(ValueError, match="duplicate missile class ids"):
+        table_loader._validate_missile_table(table)
+
+
+def test_missile_table_validator_rejects_duplicate_modifier_ids() -> None:
+    """Missile table validation should fail when DR modifier ids are duplicated."""
+
+    table = MissileTableModel.model_validate(
+        {
+            "table_id": "missile_range_results",
+            "version": "test",
+            "missile_classes": [
+                {"missile_class_id": "A", "name": "archer", "strength_by_range": {"1": 7}}
+            ],
+            "dr_modifiers": [
+                {"id": "target_woods", "drm": 2},
+                {"id": "target_woods", "drm": 1},
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError, match="duplicate DR modifier ids"):
+        table_loader._validate_missile_table(table)
+
+
+def test_missile_class_model_rejects_non_contiguous_ranges() -> None:
+    """Missile class ranges should be contiguous from 1 to max range."""
+
+    with pytest.raises(ValueError, match="must define contiguous ranges"):
+        MissileTableModel.model_validate(
+            {
+                "table_id": "missile_range_results",
+                "version": "test",
+                "missile_classes": [
+                    {
+                        "missile_class_id": "A",
+                        "name": "archer",
+                        "strength_by_range": {"1": 7, "3": 5},
+                    }
+                ],
+                "dr_modifiers": [{"id": "target_woods", "drm": 2}],
+            }
+        )
+
+
+def test_missile_class_model_rejects_non_numeric_ranges() -> None:
+    """Missile class ranges should be numeric range bands."""
+
+    with pytest.raises(ValueError, match="non-numeric range band"):
+        MissileTableModel.model_validate(
+            {
+                "table_id": "missile_range_results",
+                "version": "test",
+                "missile_classes": [
+                    {
+                        "missile_class_id": "A",
+                        "name": "archer",
+                        "strength_by_range": {"adjacent": 7},
+                    }
+                ],
+                "dr_modifiers": [{"id": "target_woods", "drm": 2}],
+            }
         )

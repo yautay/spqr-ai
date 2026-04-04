@@ -1,0 +1,74 @@
+{
+  "table_id": "missile_range_results",
+  "version": "import-1",
+  "notes": [
+    "Baseline missile chart values imported for runtime resolver integration.",
+    "All range rows and DR modifiers are now concrete numeric values."
+  ],
+  "missile_classes": [
+    {
+      "missile_class_id": "A",
+      "name": "archer",
+      "strength_by_range": {
+        "1": 9,
+        "2": 8,
+        "3": 7,
+        "4": 6,
+        "5": 5
+      }
+    },
+    {
+      "missile_class_id": "J",
+      "name": "javelin",
+      "strength_by_range": {
+        "1": 8,
+        "2": 5
+      }
+    },
+    {
+      "missile_class_id": "S",
+      "name": "slinger",
+      "strength_by_range": {
+        "1": 8,
+        "2": 7,
+        "3": 6,
+        "4": 5
+      }
+    },
+    {
+      "missile_class_id": "elephant_screen_a",
+      "name": "elephant_screen_archer",
+      "strength_by_range": {
+        "1": 8,
+        "2": 6,
+        "3": 4
+      }
+    }
+  ],
+  "dr_modifiers": [
+    {
+      "id": "target_woods",
+      "drm": 2
+    },
+    {
+      "id": "target_ph_or_hi",
+      "drm": 1
+    },
+    {
+      "id": "adjacent_a_s_vs_ph_hi_front",
+      "drm": -1
+    },
+    {
+      "id": "target_sk",
+      "drm": -1
+    },
+    {
+      "id": "firing_while_moving_selected_types",
+      "drm": 1
+    },
+    {
+      "id": "firing_unit_depleted",
+      "drm": 1
+    }
+  ]
+}

@@ -111,9 +111,6 @@ def missile_class_lookup(table: MissileTableModel) -> dict[str, MissileClassLook
 
         strengths_by_range: dict[int, int] = {}
         for range_band, strength in missile_class.strength_by_range.items():
-            if strength is None:
-                continue
-
             try:
                 numeric_range = int(range_band)
             except ValueError as exc:

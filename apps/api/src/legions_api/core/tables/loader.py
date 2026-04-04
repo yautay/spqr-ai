@@ -128,7 +128,9 @@ def load_table(table_id: TableId) -> ParsedTableModel:
         )
         return mandatory_table
     if table_id == "missile_range_results":
-        return MissileTableModel.model_validate(raw)
+        missile_table = MissileTableModel.model_validate(raw)
+        _validate_missile_table(missile_table)
+        return missile_table
     if table_id == "rally_table":
         return RallyTableModel.model_validate(raw)
     return LeaderCasualtyTableModel.model_validate(raw)
@@ -173,3 +175,34 @@ def _validate_stacking_pair_matrix(table_id: str, keys: list[tuple[str, str]]) -
     if missing:
         missing_names = ", ".join(f"{moving}/{stationary}" for moving, stationary in missing)
         raise ValueError(f"{table_id} misses category pairs: {missing_names}")
+
+
+def _validate_missile_table(table: MissileTableModel) -> None:
+    """Validate uniqueness and contiguous coverage constraints in missile table."""
+
+    class_ids: list[str] = []
+    for missile_class in table.missile_classes:
+        class_ids.append(missile_class.missile_class_id)
+
+    _validate_unique_names(table_id=table.table_id, label="missile class ids", values=class_ids)
+
+    modifier_ids: list[str] = [modifier.id for modifier in table.dr_modifiers]
+    _validate_unique_names(table_id=table.table_id, label="DR modifier ids", values=modifier_ids)
+
+
+def _validate_unique_names(table_id: str, label: str, values: list[str]) -> None:
+    """Validate that string values are unique and non-empty."""
+
+    seen: set[str] = set()
+    duplicates: list[str] = []
+    for value in values:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError(f"{table_id} contains empty value in {label}")
+        if normalized in seen:
+            duplicates.append(normalized)
+        seen.add(normalized)
+
+    if duplicates:
+        duplicate_names = ", ".join(duplicates)
+        raise ValueError(f"{table_id} has duplicate {label}: {duplicate_names}")

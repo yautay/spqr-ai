@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class BaseTableModel(BaseModel):
@@ -108,14 +108,48 @@ class MissileClassModel(BaseModel):
 
     missile_class_id: str
     name: str
-    strength_by_range: dict[str, int | None]
+    strength_by_range: dict[str, int]
+
+    @model_validator(mode="after")
+    def validate_ranges(self) -> MissileClassModel:
+        """Enforce numeric positive range keys with contiguous coverage."""
+
+        if not self.strength_by_range:
+            raise ValueError(f"missile class {self.missile_class_id!r} has no range entries")
+
+        numeric_ranges: list[int] = []
+        for raw_range in self.strength_by_range:
+            try:
+                numeric_range = int(raw_range)
+            except ValueError as exc:
+                raise ValueError(
+                    f"missile class {self.missile_class_id!r} uses non-numeric range band {raw_range!r}"
+                ) from exc
+
+            if numeric_range <= 0:
+                raise ValueError(
+                    f"missile class {self.missile_class_id!r} uses non-positive range band {numeric_range}"
+                )
+
+            numeric_ranges.append(numeric_range)
+
+        numeric_ranges.sort()
+        expected_ranges = list(range(1, numeric_ranges[-1] + 1))
+        if numeric_ranges != expected_ranges:
+            expected = ", ".join(str(value) for value in expected_ranges)
+            actual = ", ".join(str(value) for value in numeric_ranges)
+            raise ValueError(
+                f"missile class {self.missile_class_id!r} must define contiguous ranges {expected}; got {actual}"
+            )
+
+        return self
 
 
 class MissileDRModifierModel(BaseModel):
     """Missile die-roll modifier row."""
 
     id: str
-    drm: int | None
+    drm: int
 
 
 class MissileTableModel(BaseTableModel):
