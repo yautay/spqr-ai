@@ -18,6 +18,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             move_allowance=unit.move_allowance,
             exerts_zoc=unit.exerts_zoc,
             move_profile_id=unit.move_profile_id,
+            stacking_category=unit.stacking_category,
         )
         for unit in sorted_units
     ]

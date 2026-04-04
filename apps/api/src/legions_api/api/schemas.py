@@ -25,6 +25,7 @@ class UnitPayload(BaseModel):
     move_allowance: int
     exerts_zoc: bool
     move_profile_id: str | None
+    stacking_category: str
 
 
 class TilePayload(BaseModel):

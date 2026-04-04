@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from heapq import heappop, heappush
 
@@ -32,7 +33,15 @@ class PathResult:
     reason: str
 
 
-def shortest_path(state: GameState, side: Side, unit: Unit, start: HexCoord, goal: HexCoord, policy: MovementPolicy) -> PathResult:
+def shortest_path(
+    state: GameState,
+    side: Side,
+    unit: Unit,
+    start: HexCoord,
+    goal: HexCoord,
+    policy: MovementPolicy,
+    can_traverse_occupied_hex: Callable[[HexCoord], bool] | None = None,
+) -> PathResult:
     """Run A* over scenario graph while honoring occupancy and optional ZOC constraints."""
 
     if not state.scenario_map.contains(goal):
@@ -62,7 +71,8 @@ def shortest_path(state: GameState, side: Side, unit: Unit, start: HexCoord, goa
 
         for neighbor in state.scenario_map.neighbors(current):
             if not policy.ignore_occupied and neighbor != goal and neighbor in state.occupant_by_hex:
-                continue
+                if can_traverse_occupied_hex is None or not can_traverse_occupied_hex(neighbor):
+                    continue
             if not policy.allow_enter_enemy_zoc and neighbor in enemy_zoc:
                 continue
 
