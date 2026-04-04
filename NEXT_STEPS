@@ -6,6 +6,7 @@ Current baseline
 - Movement resolution now uses table-driven terrain MP profiles selected by ruleset.
 - Movement baseline data exists in `movement_costs.json`; elevation/facing values are placeholders.
 - Movement pathfinding now supports occupied-hex pass-through checks via voluntary stacking table categories.
+- Game state supports multi-unit occupancy and voluntary stacking stop-in-hex when table rows allow it.
 
 Priority order
 1) Fill Original data tables with real values (do this incrementally per table)
@@ -29,4 +30,4 @@ Coding constraints
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Add full stacking stop-in-hex resolution (multi-unit occupancy/state model) and apply cohesion/TQ side effects from stacking outcomes.
+- Apply stacking side effects (cohesion hits, TQ checks/DRM) during pass-through and stop-in-hex resolution.

@@ -18,7 +18,7 @@ class GameState:
     ruleset: RulesetDefinition
     active_side: Side
     units: dict[str, Unit]
-    occupant_by_hex: dict[HexCoord, str]
+    occupant_by_hex: dict[HexCoord, tuple[str, ...]]
 
     @classmethod
     def from_units(
@@ -30,27 +30,40 @@ class GameState:
     ) -> GameState:
         """Create state and build occupancy index from units."""
 
-        occupant_by_hex: dict[HexCoord, str] = {}
+        occupant_by_hex: dict[HexCoord, list[str]] = {}
         for unit_id, unit in units.items():
             if not scenario_map.contains(unit.position):
                 raise ValueError(f"unit {unit_id} starts outside passable map")
-            if unit.position in occupant_by_hex:
-                raise ValueError(f"duplicate occupant in hex {unit.position}")
-            occupant_by_hex[unit.position] = unit_id
+            occupants = occupant_by_hex.setdefault(unit.position, [])
+            occupants.append(unit_id)
+
+        frozen_occupants = {
+            coord: tuple(unit_ids)
+            for coord, unit_ids in occupant_by_hex.items()
+        }
 
         return cls(
             scenario_map=scenario_map,
             ruleset=ruleset,
             active_side=active_side,
             units=units,
-            occupant_by_hex=occupant_by_hex,
+            occupant_by_hex=frozen_occupants,
         )
 
     def unit_at(self, coord: HexCoord) -> Unit | None:
         """Return unit occupying coordinate, if any."""
 
-        unit_id = self.occupant_by_hex.get(coord)
-        return self.units.get(unit_id) if unit_id is not None else None
+        unit_ids = self.occupant_by_hex.get(coord)
+        if not unit_ids:
+            return None
+
+        return self.units[unit_ids[0]]
+
+    def units_at(self, coord: HexCoord) -> tuple[Unit, ...]:
+        """Return all units occupying coordinate, preserving insertion order."""
+
+        unit_ids = self.occupant_by_hex.get(coord, ())
+        return tuple(self.units[unit_id] for unit_id in unit_ids)
 
     def with_units(self, units: dict[str, Unit]) -> GameState:
         """Return a copy with replaced units dictionary."""

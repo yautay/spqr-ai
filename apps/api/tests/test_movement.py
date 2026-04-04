@@ -225,8 +225,8 @@ def test_move_can_pass_through_occupied_hex_when_stacking_allows(monkeypatch: py
     assert result.ok
 
 
-def test_move_reports_stacking_stop_not_supported_when_table_allows_stop(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Destination stacking stop is table-allowed but not yet implemented in state model."""
+def test_move_can_stop_in_occupied_hex_when_stacking_allows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Destination stacking stop should succeed when table allows moving/stationary category pair."""
 
     scenario_map = build_irregular_map(
         tiles=[
@@ -267,5 +267,6 @@ def test_move_reports_stacking_stop_not_supported_when_table_allows_stop(monkeyp
 
     result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 1)))
 
-    assert not result.ok
-    assert result.reason == "stacking_stop_not_supported"
+    assert result.ok
+    assert result.state.units["r1"].position == HexCoord(0, 1)
+    assert set(result.state.occupant_by_hex[HexCoord(0, 1)]) == {"r1", "r2"}

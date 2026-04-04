@@ -31,24 +31,31 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
 
     stacking_lookup = _load_voluntary_stacking_lookup()
 
-    destination_unit = state.unit_at(action.destination)
-    if destination_unit is not None:
-        destination_outcome = stacking_lookup.get((unit.stacking_category, destination_unit.stacking_category))
-        if destination_outcome is not None and destination_outcome.may_stop_in_hex:
-            return ActionResult(ok=False, reason="stacking_stop_not_supported", state=state)
-        return ActionResult(ok=False, reason="destination_occupied", state=state)
+    destination_units = state.units_at(action.destination)
+    if destination_units:
+        may_stop_for_all_occupants = all(
+            _may_stop_in_hex(stacking_lookup, moving_category=unit.stacking_category, stationary_category=stationary.stacking_category)
+            for stationary in destination_units
+        )
+        if not may_stop_for_all_occupants:
+            return ActionResult(ok=False, reason="destination_occupied", state=state)
 
     if state.ruleset.options.zoc_locks_movement and is_in_enemy_zoc(state, unit.side, unit.position):
         return ActionResult(ok=False, reason="unit_pinned_by_enemy_zoc", state=state)
 
     def can_traverse_occupied_hex(destination: HexCoord) -> bool:
-        occupant_id = state.occupant_by_hex.get(destination)
-        if occupant_id is None:
+        occupant_ids = state.occupant_by_hex.get(destination)
+        if occupant_ids is None:
             return True
 
-        stationary_unit = state.units[occupant_id]
-        outcome = stacking_lookup.get((unit.stacking_category, stationary_unit.stacking_category))
-        return bool(outcome is not None and outcome.may_move_through)
+        return all(
+            _may_move_through_hex(
+                stacking_lookup,
+                moving_category=unit.stacking_category,
+                stationary_category=state.units[occupant_id].stacking_category,
+            )
+            for occupant_id in occupant_ids
+        )
 
     path = shortest_path(
         state=state,
@@ -76,3 +83,25 @@ def _load_voluntary_stacking_lookup() -> dict[tuple[str, str], StackingOutcome]:
         raise TypeError("stacking_voluntary table did not resolve to StackingVoluntaryTableModel")
 
     return voluntary_stacking_lookup(table)
+
+
+def _may_move_through_hex(
+    lookup: dict[tuple[str, str], StackingOutcome],
+    moving_category: str,
+    stationary_category: str,
+) -> bool:
+    """Return whether moving category may pass through stationary category."""
+
+    outcome = lookup.get((moving_category, stationary_category))
+    return bool(outcome is not None and outcome.may_move_through)
+
+
+def _may_stop_in_hex(
+    lookup: dict[tuple[str, str], StackingOutcome],
+    moving_category: str,
+    stationary_category: str,
+) -> bool:
+    """Return whether moving category may stop in stationary category hex."""
+
+    outcome = lookup.get((moving_category, stationary_category))
+    return bool(outcome is not None and outcome.may_stop_in_hex)
