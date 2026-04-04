@@ -15,6 +15,12 @@ from legions_api.core.tables.adapters import StackingOutcome, mandatory_stacking
 from legions_api.core.tables.loader import load_table
 from legions_api.core.tables.models import StackingMandatoryTableModel, StackingVoluntaryTableModel
 
+_ROUTING_CATEGORY_MAP: dict[str, str] = {
+    "basic": "routing_basic",
+    "scout": "routing_scout",
+    "heavy": "routing_heavy",
+}
+
 
 def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
     """Validate and resolve a move action under current movement and ZOC rules."""
@@ -33,70 +39,76 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         return ActionResult(ok=False, reason="no_op_move", state=state)
 
     use_mandatory_stacking = unit.is_routed
-    stacking_lookup = _load_stacking_lookup(use_mandatory_stacking)
-    moving_category = _moving_stacking_category(unit, use_mandatory_stacking)
+    try:
+        stacking_lookup = _load_stacking_lookup(use_mandatory_stacking)
+        moving_category = _moving_stacking_category(unit, use_mandatory_stacking)
+    except ValueError:
+        return ActionResult(ok=False, reason="stacking_category_unmapped", state=state)
 
-    destination_units = state.units_at(action.destination)
-    if destination_units:
-        may_stop_for_all_occupants = all(
-            _may_stop_in_hex(
-                stacking_lookup,
-                moving_category=moving_category,
-                stationary_category=_stationary_stacking_category(stationary, use_mandatory_stacking),
+    try:
+        destination_units = state.units_at(action.destination)
+        if destination_units:
+            may_stop_for_all_occupants = all(
+                _may_stop_in_hex(
+                    stacking_lookup,
+                    moving_category=moving_category,
+                    stationary_category=_stationary_stacking_category(stationary, use_mandatory_stacking),
+                )
+                for stationary in destination_units
             )
-            for stationary in destination_units
-        )
-        if not may_stop_for_all_occupants:
-            return ActionResult(ok=False, reason="destination_occupied", state=state)
+            if not may_stop_for_all_occupants:
+                return ActionResult(ok=False, reason="destination_occupied", state=state)
 
-    if state.ruleset.options.zoc_locks_movement and is_in_enemy_zoc(state, unit.side, unit.position):
-        return ActionResult(ok=False, reason="unit_pinned_by_enemy_zoc", state=state)
+        if state.ruleset.options.zoc_locks_movement and is_in_enemy_zoc(state, unit.side, unit.position):
+            return ActionResult(ok=False, reason="unit_pinned_by_enemy_zoc", state=state)
 
-    def can_traverse_occupied_hex(destination: HexCoord) -> bool:
-        occupant_ids = state.occupant_by_hex.get(destination)
-        if occupant_ids is None:
-            return True
+        def can_traverse_occupied_hex(destination: HexCoord) -> bool:
+            occupant_ids = state.occupant_by_hex.get(destination)
+            if occupant_ids is None:
+                return True
 
-        return all(
-            _may_move_through_hex(
-                stacking_lookup,
-                moving_category=moving_category,
-                stationary_category=_stationary_stacking_category(state.units[occupant_id], use_mandatory_stacking),
+            return all(
+                _may_move_through_hex(
+                    stacking_lookup,
+                    moving_category=moving_category,
+                    stationary_category=_stationary_stacking_category(state.units[occupant_id], use_mandatory_stacking),
+                )
+                for occupant_id in occupant_ids
             )
-            for occupant_id in occupant_ids
+
+        path = shortest_path(
+            state=state,
+            side=unit.side,
+            unit=unit,
+            start=unit.position,
+            goal=action.destination,
+            policy=MovementPolicy(max_cost=unit.move_allowance, ignore_occupied=False, allow_enter_enemy_zoc=True),
+            can_traverse_occupied_hex=can_traverse_occupied_hex,
         )
+        if not path.found:
+            return ActionResult(ok=False, reason="no_valid_path", state=state)
 
-    path = shortest_path(
-        state=state,
-        side=unit.side,
-        unit=unit,
-        start=unit.position,
-        goal=action.destination,
-        policy=MovementPolicy(max_cost=unit.move_allowance, ignore_occupied=False, allow_enter_enemy_zoc=True),
-        can_traverse_occupied_hex=can_traverse_occupied_hex,
-    )
-    if not path.found:
-        return ActionResult(ok=False, reason="no_valid_path", state=state)
-
-    updated_units = dict(state.units)
-    movement_effects, moved_unit = _resolve_stacking_side_effects(
-        unit=unit,
-        destination=action.destination,
-        path=path.path,
-        current_units=updated_units,
-        stacking_lookup=stacking_lookup,
-        moving_category=moving_category,
-        use_mandatory_stacking=use_mandatory_stacking,
-    )
-    pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
-    tq_check_outcomes, next_rng_counter = _resolve_pending_tq_checks(
-        pending_tq_checks,
-        current_units=updated_units,
-        rng_seed=state.rng_seed,
-        rng_counter=state.rng_counter,
-    )
-    updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
-    updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter)
+        updated_units = dict(state.units)
+        movement_effects, moved_unit = _resolve_stacking_side_effects(
+            unit=unit,
+            destination=action.destination,
+            path=path.path,
+            current_units=updated_units,
+            stacking_lookup=stacking_lookup,
+            moving_category=moving_category,
+            use_mandatory_stacking=use_mandatory_stacking,
+        )
+        pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
+        tq_check_outcomes, next_rng_counter = _resolve_pending_tq_checks(
+            pending_tq_checks,
+            current_units=updated_units,
+            rng_seed=state.rng_seed,
+            rng_counter=state.rng_counter,
+        )
+        updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
+        updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter)
+    except ValueError:
+        return ActionResult(ok=False, reason="stacking_category_unmapped", state=state)
 
     return ActionResult(
         ok=True,
@@ -129,7 +141,10 @@ def _moving_stacking_category(unit: Unit, use_mandatory_stacking: bool) -> str:
     """Resolve moving-unit stacking category for selected chart mode."""
 
     if use_mandatory_stacking:
-        return f"routing_{unit.stacking_category}"
+        mapped_category = _ROUTING_CATEGORY_MAP.get(unit.stacking_category)
+        if mapped_category is None:
+            raise ValueError(f"unsupported routed stacking category: {unit.stacking_category!r}")
+        return mapped_category
 
     return unit.stacking_category
 
@@ -138,7 +153,10 @@ def _stationary_stacking_category(unit: Unit, use_mandatory_stacking: bool) -> s
     """Resolve stationary-unit stacking category for selected chart mode."""
 
     if use_mandatory_stacking and unit.is_routed:
-        return f"routing_{unit.stacking_category}"
+        mapped_category = _ROUTING_CATEGORY_MAP.get(unit.stacking_category)
+        if mapped_category is None:
+            raise ValueError(f"unsupported routed stacking category: {unit.stacking_category!r}")
+        return mapped_category
 
     return unit.stacking_category
 

@@ -683,3 +683,35 @@ def test_routed_unit_can_emit_mandatory_tq_check(monkeypatch: pytest.MonkeyPatch
     assert result.pending_tq_checks[0].formula == "tq-2"
     assert len(result.tq_check_outcomes) == 1
     assert result.tq_check_outcomes[0].roll == 6
+
+
+def test_routed_move_rejects_unmapped_stacking_category() -> None:
+    """Routed move should fail fast for categories missing mandatory map."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+        ]
+    )
+    units = {
+        "r1": Unit(
+            unit_id="r1",
+            side=Side.RED,
+            position=HexCoord(0, 0),
+            move_allowance=1,
+            is_routed=True,
+            stacking_category="unknown",
+        ),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 1)))
+
+    assert not result.ok
+    assert result.reason == "stacking_category_unmapped"
