@@ -5,7 +5,7 @@ import GameBoard from "./components/map/GameBoard.vue";
 import UnitDetailsPanel from "./components/panels/UnitDetailsPanel.vue";
 import { useGameStore } from "./stores/gameStore";
 import { useUiStore } from "./stores/uiStore";
-import type { RulesetMode } from "./types/game";
+import type { HexPayload, RulesetMode } from "./types/game";
 
 const gameStore = useGameStore();
 const uiStore = useUiStore();
@@ -19,6 +19,13 @@ const selectedUnit = computed(() => {
   }
 
   return gameStore.unitsById[uiStore.selectedUnitId] ?? null;
+});
+const selectedUnitLegalMoves = computed(() => {
+  if (!uiStore.selectedUnitId) {
+    return [];
+  }
+
+  return gameStore.legalMovesByUnit[uiStore.selectedUnitId] ?? [];
 });
 const hoveredUnit = computed(() => {
   if (!uiStore.hoveredUnitId) {
@@ -42,6 +49,25 @@ watch(
   { immediate: true }
 );
 
+watch(
+  () => uiStore.selectedUnitId,
+  async (unitId) => {
+    uiStore.setSelectedDestination(null);
+    if (!unitId) {
+      gameStore.clearLegalMoves();
+      return;
+    }
+
+    const unit = gameStore.unitsById[unitId];
+    if (!unit || unit.side !== boardState.value?.active_side) {
+      gameStore.clearLegalMoves(unitId);
+      return;
+    }
+
+    await gameStore.loadLegalMoves(unitId);
+  }
+);
+
 async function handleNewGame(): Promise<void> {
   await gameStore.startNewGame(selectedRuleset.value);
   uiStore.resetSelections();
@@ -62,6 +88,28 @@ function handleUnitHover(unitId: string | null): void {
 
 function handleHexHover(coord: { q: number; r: number } | null): void {
   uiStore.setHoveredHex(coord);
+}
+
+async function handleHexClick(coord: HexPayload): Promise<void> {
+  if (!uiStore.selectedUnitId) {
+    return;
+  }
+
+  const destinationOption = selectedUnitLegalMoves.value.find(
+    (option) => option.destination.q === coord.q && option.destination.r === coord.r
+  );
+  if (!destinationOption) {
+    return;
+  }
+
+  uiStore.setSelectedDestination(coord);
+  const result = await gameStore.moveUnit(uiStore.selectedUnitId, coord);
+  if (!result?.ok) {
+    return;
+  }
+
+  uiStore.setSelectedDestination(null);
+  await gameStore.loadLegalMoves(uiStore.selectedUnitId);
 }
 </script>
 
@@ -101,8 +149,10 @@ function handleHexHover(coord: { q: number; r: number } | null): void {
             :selected-unit-id="uiStore.selectedUnitId"
             :hovered-unit-id="uiStore.hoveredUnitId"
             :hovered-hex="uiStore.hoveredHex"
+            :legal-moves="selectedUnitLegalMoves"
             @unit-click="handleUnitClick"
             @unit-hover="handleUnitHover"
+            @hex-click="handleHexClick"
             @hex-hover="handleHexHover"
           />
         </div>
