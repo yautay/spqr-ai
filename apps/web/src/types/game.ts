@@ -214,6 +214,34 @@ export interface ShockPreviewResponsePayload {
   preview: ShockPreviewPayload | null;
 }
 
+export interface AIActionDescriptorPayload {
+  action_type: "move" | "missile" | "reload" | "shock";
+  summary: string;
+  unit_id: string | null;
+  destination: HexPayload | null;
+  firing_unit_id: string | null;
+  target_unit_id: string | null;
+  attacker_unit_id: string | null;
+  defender_unit_id: string | null;
+  angle: "front" | "flank" | "rear" | null;
+}
+
+export interface AICandidateScorePayload {
+  action_type: "move" | "missile" | "reload" | "shock";
+  summary: string;
+  score: number;
+}
+
+export interface AIMoveResponsePayload {
+  ok: boolean;
+  reason: string;
+  considered_actions: number;
+  elapsed_ms: number;
+  selected_action: AIActionDescriptorPayload | null;
+  top_candidates: AICandidateScorePayload[];
+  action_result: ActionResponsePayload | null;
+}
+
 export interface MoraleOutcomePayload {
   unit_id: string;
   source: "shock";

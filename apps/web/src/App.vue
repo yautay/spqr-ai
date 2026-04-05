@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { connectGameEventsStream, type GameEventsSocketHandle } from "./api/gameEventsWs";
+import AIPanel from "./components/panels/AIPanel.vue";
 import GameBoard from "./components/map/GameBoard.vue";
 import ActionPreviewPanel from "./components/panels/ActionPreviewPanel.vue";
 import EventLogPanel from "./components/panels/EventLogPanel.vue";
@@ -257,6 +258,25 @@ async function handleSetPhase(): Promise<void> {
 
   logStore.append("info", "Phase updated", `Turn phase set to ${selectedPhase.value}.`);
 }
+
+async function handleRunAiMove(): Promise<void> {
+  const response = await gameStore.runAiMove({
+    time_budget_ms: 150,
+    max_candidates: 96,
+  });
+  if (!response) {
+    logStore.append("error", "AI move error", gameStore.error ?? "AI move request failed.");
+    return;
+  }
+
+  if (response.selected_action) {
+    logStore.append("info", "AI selected", response.selected_action.summary);
+  }
+
+  if (response.action_result && response.selected_action) {
+    logStore.appendActionResult(response.selected_action.action_type, response.action_result);
+  }
+}
 </script>
 
 <template>
@@ -301,6 +321,7 @@ async function handleSetPhase(): Promise<void> {
             @resolve-shock="handleResolveShock"
             @reload-missile="handleReloadMissile"
           />
+          <AIPanel :ai-move-response="gameStore.lastAiMoveResponse" :is-submitting="gameStore.isSubmitting" @run-ai-move="handleRunAiMove" />
         </aside>
         <div class="board-layout">
           <GameBoard
@@ -387,7 +408,7 @@ h1 {
 .side-panel {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-auto-rows: min-content;
   gap: 0.9rem;
 }
 

@@ -12,9 +12,11 @@ import {
   fetchLegalMoves,
   fetchRulesets,
   fetchShockPreview,
+  requestAiMove,
   setTurnPhase,
 } from "../api/gameApi";
 import type {
+  AIMoveResponsePayload,
   ActionResponsePayload,
   GameStatePayload,
   LegalMoveOptionPayload,
@@ -37,6 +39,7 @@ export const useGameStore = defineStore("game", () => {
   const shockPreview = ref<ShockPreviewPayload | null>(null);
   const missilePreviewReason = ref<string | null>(null);
   const shockPreviewReason = ref<string | null>(null);
+  const lastAiMoveResponse = ref<AIMoveResponsePayload | null>(null);
 
   const unitsById = computed<Record<string, UnitPayload>>(() => {
     if (!state.value) {
@@ -79,6 +82,7 @@ export const useGameStore = defineStore("game", () => {
       state.value = await createNewGame(ruleset);
       legalMovesByUnit.value = {};
       lastActionResult.value = null;
+      lastAiMoveResponse.value = null;
       clearCombatPreviews();
     } catch (caughtError) {
       error.value = caughtError instanceof Error ? caughtError.message : "Failed to create a new game.";
@@ -154,6 +158,27 @@ export const useGameStore = defineStore("game", () => {
     shockPreviewReason.value = null;
   }
 
+  async function runAiMove(payload?: { time_budget_ms?: number; max_candidates?: number }): Promise<AIMoveResponsePayload | null> {
+    isSubmitting.value = true;
+    error.value = null;
+    try {
+      const response = await requestAiMove(payload);
+      lastAiMoveResponse.value = response;
+      if (response.action_result) {
+        state.value = response.action_result.state;
+        lastActionResult.value = response.action_result;
+      }
+      legalMovesByUnit.value = {};
+      clearCombatPreviews();
+      return response;
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : "AI move request failed.";
+      return null;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
   function clearLegalMoves(unitId?: string): void {
     if (!unitId) {
       legalMovesByUnit.value = {};
@@ -227,6 +252,7 @@ export const useGameStore = defineStore("game", () => {
     shockPreview,
     missilePreviewReason,
     shockPreviewReason,
+    lastAiMoveResponse,
     unitsById,
     initialize,
     refreshState,
@@ -236,6 +262,7 @@ export const useGameStore = defineStore("game", () => {
     loadMissilePreview,
     loadShockPreview,
     clearCombatPreviews,
+    runAiMove,
     clearLegalMoves,
     moveUnit,
     fireMissile,

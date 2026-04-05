@@ -1,5 +1,6 @@
 import { apiRequest } from "./httpClient";
 import type {
+  AIMoveResponsePayload,
   ActionResponsePayload,
   GameStatePayload,
   LegalMovesPayload,
@@ -100,5 +101,15 @@ export async function fetchShockPreview(payload: {
   return apiRequest<ShockPreviewResponsePayload>("/game/preview/shock", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function requestAiMove(payload?: {
+  time_budget_ms?: number;
+  max_candidates?: number;
+}): Promise<AIMoveResponsePayload> {
+  return apiRequest<AIMoveResponsePayload>("/ai/move", {
+    method: "POST",
+    body: JSON.stringify(payload ?? {}),
   });
 }
