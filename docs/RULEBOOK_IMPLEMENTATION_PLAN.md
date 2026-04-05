@@ -94,6 +94,11 @@ Geometry note:
 - phalanx units require a footprint-aware geometry model so they can later occupy `2` hexes and project `3` front and `3` rear hexes around an `8`-hex outer ring,
 - movement, ZOC, and shock helpers should depend on shared geometry primitives rather than bespoke facing math in each rules module.
 
+Implementation staging note:
+
+- the first wide-unit milestone should make occupancy, adjacency, ZOC, and shock angle footprint-aware,
+- if wide-unit movement, LOS, or missile range are not yet fully footprint-aware, runtime should reject those actions explicitly instead of silently resolving them from a one-hex anchor.
+
 Pathfinding note:
 
 - movement legality should use graph search with rule-aware policy,

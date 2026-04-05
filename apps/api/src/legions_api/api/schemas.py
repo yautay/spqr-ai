@@ -26,6 +26,7 @@ class UnitPayload(BaseModel):
     unit_id: str
     side: Side
     position: HexPayload
+    position_b: HexPayload | None = None
     facing: int
     unit_class: str | None
     size: int

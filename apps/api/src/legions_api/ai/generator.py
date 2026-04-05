@@ -5,6 +5,7 @@ from __future__ import annotations
 from legions_api.ai.types import AICandidateAction
 from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
 from legions_api.core.model.game_state import GameState, TurnPhase
+from legions_api.core.rules.facing import is_adjacent_to_unit
 from legions_api.core.rules.missile import resolve_missile, resolve_reload
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.rules.shock import resolve_shock
@@ -84,7 +85,7 @@ def _generate_shock_actions(state: GameState, max_actions: int | None = None) ->
     )
     for unit in active_units:
         for target_unit in enemy_units:
-            if unit.position.distance_to(target_unit.position) != 1:
+            if not is_adjacent_to_unit(attacker=unit, defender=target_unit):
                 continue
 
             shock_action = ShockAction(

@@ -10,7 +10,7 @@ from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, DomainEvent, MoraleOutcome, PursuitOutcome, ShockModifier, ShockOutcome, ShockPreview
-from legions_api.core.rules.facing import relative_angle
+from legions_api.core.rules.facing import contact_hex, is_adjacent_to_unit, relative_angle, wide_frontage_anchor
 from legions_api.core.tables.adapters import (
     ShockCRTCellLookup,
     clash_column_lookup,
@@ -238,13 +238,13 @@ def _build_shock_context(state: GameState, action: ShockAction) -> tuple[_ShockR
     if attacker.unit_id in state.activation.shocked_unit_ids:
         return None, "unit_already_shocked_this_activation"
 
-    if active_leader.position.distance_to(attacker.position) > active_leader.command_range:
+    if active_leader.position.distance_to(wide_frontage_anchor(attacker)) > active_leader.command_range:
         return None, "unit_out_of_command_range"
 
     if attacker.side == defender.side:
         return None, "target_not_enemy"
 
-    if attacker.position.distance_to(defender.position) != 1:
+    if not is_adjacent_to_unit(attacker=attacker, defender=defender):
         return None, "shock_not_adjacent"
 
     superiority_table = load_table("shock_superiority")
@@ -409,12 +409,17 @@ def _resolve_routs(
 def _retreat_destination(unit: Unit, enemy: Unit) -> HexCoord | None:
     """Compute one-hex retreat destination directly away from enemy unit."""
 
-    delta_q = unit.position.q - enemy.position.q
-    delta_r = unit.position.r - enemy.position.r
+    contact = contact_hex(attacker=enemy, defender=unit)
+    if contact is None:
+        return None
+
+    anchor = wide_frontage_anchor(unit)
+    delta_q = anchor.q - contact.q
+    delta_r = anchor.r - contact.r
     if delta_q == 0 and delta_r == 0:
         return None
 
-    return HexCoord(q=unit.position.q + delta_q, r=unit.position.r + delta_r)
+    return HexCoord(q=anchor.q + delta_q, r=anchor.r + delta_r)
 
 
 class _PursuitResolution:
@@ -446,7 +451,8 @@ def _resolve_pursuit(
     if defender_outcome.passed:
         return _PursuitResolution(units=updated_units, outcome=None)
 
-    if defender.position in {unit.position for unit in updated_units.values() if unit.unit_id != attacker.unit_id}:
+    occupied_hexes = {occupied for unit in updated_units.values() if unit.unit_id != attacker.unit_id for occupied in unit.occupied_hexes}
+    if defender.position in occupied_hexes:
         return _PursuitResolution(units=updated_units, outcome=None)
 
     pursuing_unit = updated_units[attacker.unit_id]

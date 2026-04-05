@@ -10,6 +10,7 @@ from legions_api.core.model.map import TerrainType
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, DomainEvent, MissileDRMModifier, MissileOutcome, MissilePreview
+from legions_api.core.rules.facing import wide_frontage_anchor
 from legions_api.core.rules.los import has_line_of_sight
 from legions_api.core.tables.adapters import MissileClassLookup, missile_class_lookup, missile_drm_lookup
 from legions_api.core.tables.loader import load_table
@@ -244,8 +245,11 @@ def _build_missile_context(state: GameState, action: MissileAction) -> tuple[_Mi
             return None, "no_orders_remaining"
         if firing_unit.unit_id in state.activation.fired_unit_ids:
             return None, "unit_already_fired_this_activation"
-        if active_leader.position.distance_to(firing_unit.position) > active_leader.command_range:
+        if active_leader.position.distance_to(wide_frontage_anchor(firing_unit)) > active_leader.command_range:
             return None, "unit_out_of_command_range"
+
+    if firing_unit.is_wide or target_unit.is_wide:
+        return None, "wide_unit_missile_not_implemented"
 
     if firing_unit.side == target_unit.side:
         return None, "target_not_enemy"

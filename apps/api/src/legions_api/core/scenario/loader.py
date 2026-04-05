@@ -121,6 +121,7 @@ def load_scenario_state(scenario_id: str, mode: RulesetMode = RulesetMode.ORIGIN
                     q=_as_int(_as_dict(unit_payload["position"])["q"]),
                     r=_as_int(_as_dict(unit_payload["position"])["r"]),
                 ),
+                position_b=_decode_optional_hex(unit_payload.get("position_b")),
                 facing=_parse_facing(unit_payload.get("facing", Facing.DEG_0.value)),
                 unit_class=_as_optional_str(unit_payload.get("class")),
                 size=_as_int(unit_payload.get("size", 0)),
@@ -284,6 +285,16 @@ def _as_optional_str(value: object) -> str | None:
     if value is None:
         return None
     return _as_str(value)
+
+
+def _decode_optional_hex(value: object) -> HexCoord | None:
+    """Decode optional axial hex payload."""
+
+    if value is None:
+        return None
+
+    payload = _as_dict(value)
+    return HexCoord(q=_as_int(payload["q"]), r=_as_int(payload["r"]))
 
 
 def _parse_facing(value: object) -> Facing:

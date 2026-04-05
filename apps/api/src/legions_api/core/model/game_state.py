@@ -88,10 +88,11 @@ class GameState:
         leader_lookup = _normalize_leaders(active_side=active_side, units=units, leaders=leaders)
         occupant_by_hex: dict[HexCoord, list[str]] = {}
         for unit_id, unit in units.items():
-            if not scenario_map.contains(unit.position):
-                raise ValueError(f"unit {unit_id} starts outside passable map")
-            occupants = occupant_by_hex.setdefault(unit.position, [])
-            occupants.append(unit_id)
+            for occupied_hex in unit.occupied_hexes:
+                if not scenario_map.contains(occupied_hex):
+                    raise ValueError(f"unit {unit_id} starts outside passable map")
+                occupants = occupant_by_hex.setdefault(occupied_hex, [])
+                occupants.append(unit_id)
 
         for leader_id, leader in leader_lookup.items():
             if not scenario_map.contains(leader.position):

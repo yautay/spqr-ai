@@ -60,6 +60,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             unit_id=unit.unit_id,
             side=unit.side,
             position=HexPayload(q=unit.position.q, r=unit.position.r),
+            position_b=HexPayload(q=unit.position_b.q, r=unit.position_b.r) if unit.position_b is not None else None,
             facing=unit.facing,
             unit_class=unit.unit_class,
             size=unit.size,

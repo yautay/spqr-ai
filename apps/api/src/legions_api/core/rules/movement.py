@@ -13,6 +13,7 @@ from legions_api.core.model.leader import Leader
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, DomainEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
+from legions_api.core.rules.facing import wide_frontage_anchor
 from legions_api.core.rules.pathfinding import MovementPolicy, PathResult, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
 from legions_api.core.tables.adapters import (
@@ -162,6 +163,9 @@ def _validate_move_path(
 
     if unit.side != state.active_side:
         return None, "wrong_active_side"
+
+    if unit.is_wide:
+        return None, "wide_unit_movement_not_implemented"
 
     if state.turn_phase != TurnPhase.ORDERS:
         return None, "wrong_turn_phase"
@@ -559,6 +563,6 @@ def _resolve_reaction_trigger(
 
 
 def _is_within_command_range(leader: Leader, unit: Unit) -> bool:
-    """Return whether unit lies within simple leader command radius."""
+    """Return whether unit lies within command radius from its frontage."""
 
-    return leader.position.distance_to(unit.position) <= leader.command_range
+    return leader.position.distance_to(wide_frontage_anchor(unit)) <= leader.command_range

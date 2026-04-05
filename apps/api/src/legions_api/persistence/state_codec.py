@@ -65,6 +65,7 @@ def encode_state(state: GameState) -> dict[str, object]:
                 "unit_id": unit.unit_id,
                 "side": unit.side.value,
                 "position": {"q": unit.position.q, "r": unit.position.r},
+                "position_b": {"q": unit.position_b.q, "r": unit.position_b.r} if unit.position_b is not None else None,
                 "facing": int(unit.facing),
                 "unit_class": unit.unit_class,
                 "size": unit.size,
@@ -148,6 +149,7 @@ def decode_state(payload: dict[str, object]) -> GameState:
                 q=_as_int(_as_dict(_as_dict(unit)["position"])["q"]),
                 r=_as_int(_as_dict(_as_dict(unit)["position"])["r"]),
             ),
+            position_b=_decode_optional_hex(_as_dict(unit).get("position_b")),
             facing=_parse_facing(_as_dict(unit).get("facing", Facing.DEG_0.value)),
             unit_class=_as_optional_str(_as_dict(unit).get("unit_class")),
             size=_as_int(_as_dict(unit).get("size", 0)),
@@ -259,6 +261,16 @@ def _as_optional_str(value: object) -> str | None:
     if value is None:
         return None
     return _as_str(value)
+
+
+def _decode_optional_hex(value: object) -> HexCoord | None:
+    """Decode optional axial hex payload."""
+
+    if value is None:
+        return None
+
+    raw = _as_dict(value)
+    return HexCoord(q=_as_int(raw["q"]), r=_as_int(raw["r"]))
 
 
 def _as_str(value: object) -> str:

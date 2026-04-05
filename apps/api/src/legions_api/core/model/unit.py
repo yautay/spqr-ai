@@ -41,6 +41,7 @@ class Unit:
     unit_id: str
     side: Side
     position: HexCoord
+    position_b: HexCoord | None = None
     facing: Facing = Facing.DEG_0
     unit_class: str | None = None
     size: int = 0
@@ -64,6 +65,7 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=position,
+            position_b=self.position_b,
             facing=self.facing,
             unit_class=self.unit_class,
             size=self.size,
@@ -88,6 +90,7 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            position_b=self.position_b,
             facing=self.facing,
             unit_class=self.unit_class,
             size=self.size,
@@ -114,6 +117,7 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            position_b=self.position_b,
             facing=self.facing,
             unit_class=self.unit_class,
             size=self.size,
@@ -138,6 +142,7 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            position_b=self.position_b,
             facing=self.facing,
             unit_class=self.unit_class,
             size=self.size,
@@ -162,6 +167,7 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            position_b=self.position_b,
             facing=facing,
             unit_class=self.unit_class,
             size=self.size,
@@ -186,6 +192,7 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            position_b=self.position_b,
             facing=self.facing,
             unit_class=self.unit_class,
             size=self.size,
@@ -194,6 +201,45 @@ class Unit:
             cohesion_hits=self.cohesion_hits,
             is_routed=self.is_routed,
             is_depleted=is_depleted,
+            exerts_zoc=self.exerts_zoc,
+            move_profile_id=self.move_profile_id,
+            stacking_category=self.stacking_category,
+            missile_class_id=self.missile_class_id,
+            missile_supply=self.missile_supply,
+            shock_type=self.shock_type,
+            pursuit_capable=self.pursuit_capable,
+        )
+
+    @property
+    def occupied_hexes(self) -> tuple[HexCoord, ...]:
+        """Return the current footprint occupied by this unit."""
+
+        if self.position_b is None:
+            return (self.position,)
+        return (self.position, self.position_b)
+
+    @property
+    def is_wide(self) -> bool:
+        """Return True when the unit occupies two hexes."""
+
+        return self.position_b is not None
+
+    def with_footprint(self, position: HexCoord, position_b: HexCoord | None) -> Unit:
+        """Return unit relocated with updated footprint."""
+
+        return Unit(
+            unit_id=self.unit_id,
+            side=self.side,
+            position=position,
+            position_b=position_b,
+            facing=self.facing,
+            unit_class=self.unit_class,
+            size=self.size,
+            move_allowance=self.move_allowance,
+            tq=self.tq,
+            cohesion_hits=self.cohesion_hits,
+            is_routed=self.is_routed,
+            is_depleted=self.is_depleted,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,

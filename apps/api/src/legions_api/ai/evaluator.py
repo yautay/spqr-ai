@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.unit import Side
+from legions_api.core.rules.facing import wide_frontage_anchor
 
 
 def evaluate_state(state: GameState, perspective: Side) -> float:
@@ -37,7 +38,8 @@ def _formation_pressure_bonus(own_units, enemy_units) -> float:
 
     total_distance = 0
     for unit in own_units:
-        nearest_enemy_distance = min(unit.position.distance_to(enemy.position) for enemy in enemy_units)
+        unit_anchor = wide_frontage_anchor(unit)
+        nearest_enemy_distance = min(unit_anchor.distance_to(wide_frontage_anchor(enemy)) for enemy in enemy_units)
         total_distance += nearest_enemy_distance
 
     average_distance = total_distance / len(own_units)

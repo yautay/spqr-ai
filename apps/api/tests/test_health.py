@@ -50,6 +50,7 @@ def test_game_state_endpoint_returns_tiles_and_units() -> None:
     assert "is_depleted" in first_unit
     assert "shock_type" in first_unit
     assert "pursuit_capable" in first_unit
+    assert "position_b" in first_unit
     first_leader = payload["leaders"][0]
     assert "initiative" in first_leader
     assert "command_range" in first_leader
