@@ -107,6 +107,21 @@ class RulesetsPayload(BaseModel):
     rulesets: list[RulesetMode]
 
 
+class LegalMoveOptionPayload(BaseModel):
+    """One legal destination with deterministic movement path preview."""
+
+    destination: HexPayload
+    total_cost: int
+    path: list[HexPayload]
+
+
+class LegalMovesPayload(BaseModel):
+    """Legal move options for one unit under current game state."""
+
+    unit_id: str
+    options: list[LegalMoveOptionPayload]
+
+
 class StackingEffectPayload(BaseModel):
     """Stacking side-effect metadata generated during movement."""
 

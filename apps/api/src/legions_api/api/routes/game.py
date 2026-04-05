@@ -6,10 +6,11 @@ from fastapi import APIRouter, Body, Depends
 from loguru import logger
 
 from legions_api.api.dependencies import get_game_store
-from legions_api.api.mapper import to_action_response_payload, to_game_state_payload
+from legions_api.api.mapper import to_action_response_payload, to_game_state_payload, to_legal_moves_payload
 from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
+    LegalMovesPayload,
     MissileActionPayload,
     MissileReloadActionPayload,
     MoveActionPayload,
@@ -22,7 +23,7 @@ from legions_api.api.state_store import GameStateStore
 from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.rules.missile import resolve_missile, resolve_reload
-from legions_api.core.rules.movement import resolve_move
+from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.rules.shock import resolve_shock
 from legions_api.core.tables.loader import available_rulesets
 
@@ -53,6 +54,14 @@ async def game_state(store: GameStateStore = Depends(get_game_store)) -> GameSta
     """Return current in-memory game state."""
 
     return to_game_state_payload(store.state)
+
+
+@router.get("/legal-moves/{unit_id}", response_model=LegalMovesPayload)
+async def legal_moves(unit_id: str, store: GameStateStore = Depends(get_game_store)) -> LegalMovesPayload:
+    """Return legal move destinations and path preview metadata for one unit."""
+
+    options = list_legal_move_options(store.state, unit_id)
+    return to_legal_moves_payload(unit_id=unit_id, options=options)
 
 
 @router.post("/phase", response_model=GameStatePayload)

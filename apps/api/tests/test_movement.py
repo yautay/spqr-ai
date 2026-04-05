@@ -11,7 +11,7 @@ from legions_api.core.model.unit import Side, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import PendingTQCheck
 from legions_api.core.rules import movement as movement_rules
-from legions_api.core.rules.movement import resolve_move
+from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.tables.loader import load_ruleset
 from legions_api.core.tables.models import StackingMandatoryTableModel, StackingVoluntaryTableModel
 
@@ -170,6 +170,59 @@ def test_move_succeeds_when_path_cost_within_allowance() -> None:
 
     assert result.ok
     assert result.state.units["r1"].position == HexCoord(1, 1)
+
+
+def test_list_legal_move_options_returns_preview_paths_for_active_unit() -> None:
+    """Legal move listing should return deterministic destination and path preview payload."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, 0)),
+            HexTile(coord=HexCoord(0, 1)),
+            HexTile(coord=HexCoord(1, 1)),
+        ]
+    )
+    units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=2)}
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    options = list_legal_move_options(state, "r1")
+
+    assert len(options) == 3
+    assert options[0].destination == HexCoord(0, 1)
+    assert options[0].path[0] == HexCoord(0, 0)
+    assert options[0].path[-1] == options[0].destination
+    assert options[0].total_cost > 0
+
+
+def test_list_legal_move_options_returns_empty_for_inactive_side_unit() -> None:
+    """Legal move listing should return no options for unit that is not on active side."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, 0)),
+        ]
+    )
+    units = {
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1),
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), move_allowance=1),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.BLUE,
+        units=units,
+    )
+
+    options = list_legal_move_options(state, "r1")
+
+    assert options == ()
 
 
 def test_simple_ruleset_does_not_lock_movement_in_enemy_zoc() -> None:

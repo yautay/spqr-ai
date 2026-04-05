@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from itertools import pairwise
 from typing import Literal
 
@@ -11,7 +12,7 @@ from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, MissileEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
-from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
+from legions_api.core.rules.pathfinding import MovementPolicy, PathResult, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
 from legions_api.core.tables.adapters import (
     StackingOutcome,
@@ -29,81 +30,71 @@ _ROUTING_CATEGORY_MAP: dict[str, str] = {
 }
 
 
+@dataclass(frozen=True, slots=True)
+class LegalMoveOption:
+    """One legal move destination with deterministic path preview metadata."""
+
+    destination: HexCoord
+    total_cost: int
+    path: tuple[HexCoord, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _MoveValidationContext:
+    """Precomputed movement validation artifacts reused by resolution and preview APIs."""
+
+    unit: Unit
+    use_mandatory_stacking: bool
+    stacking_lookup: dict[tuple[str, str], StackingOutcome]
+    moving_category: str
+    path_result: PathResult
+
+
+def list_legal_move_options(state: GameState, unit_id: str) -> tuple[LegalMoveOption, ...]:
+    """Return legal movement destinations for one unit from current state."""
+
+    unit = state.units.get(unit_id)
+    if unit is None or unit.side != state.active_side:
+        return ()
+
+    options: list[LegalMoveOption] = []
+    sorted_coords = sorted(state.scenario_map.tiles, key=lambda coord: (coord.q, coord.r))
+    for destination in sorted_coords:
+        if destination == unit.position:
+            continue
+
+        context, _ = _validate_move_path(state, MoveAction(unit_id=unit_id, destination=destination))
+        if context is None:
+            continue
+
+        options.append(
+            LegalMoveOption(
+                destination=destination,
+                total_cost=context.path_result.total_cost,
+                path=context.path_result.path,
+            )
+        )
+
+    return tuple(options)
+
+
 def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
     """Validate and resolve a move action under current movement and ZOC rules."""
 
-    unit = state.units.get(action.unit_id)
-    if unit is None:
-        return ActionResult(ok=False, reason="unit_not_found", state=state)
-
-    if unit.side != state.active_side:
-        return ActionResult(ok=False, reason="wrong_active_side", state=state)
-
-    if not state.scenario_map.contains(action.destination):
-        return ActionResult(ok=False, reason="destination_out_of_map", state=state)
-
-    if unit.position == action.destination:
-        return ActionResult(ok=False, reason="no_op_move", state=state)
-
-    use_mandatory_stacking = unit.is_routed
-    try:
-        stacking_lookup = _load_stacking_lookup(use_mandatory_stacking)
-        moving_category = _moving_stacking_category(unit, use_mandatory_stacking)
-    except ValueError:
-        return ActionResult(ok=False, reason="stacking_category_unmapped", state=state)
+    validation, reason = _validate_move_path(state, action)
+    if validation is None:
+        return ActionResult(ok=False, reason=reason, state=state)
 
     try:
-        destination_units = state.units_at(action.destination)
-        if destination_units:
-            may_stop_for_all_occupants = all(
-                _may_stop_in_hex(
-                    stacking_lookup,
-                    moving_category=moving_category,
-                    stationary_category=_stationary_stacking_category(stationary, use_mandatory_stacking),
-                )
-                for stationary in destination_units
-            )
-            if not may_stop_for_all_occupants:
-                return ActionResult(ok=False, reason="destination_occupied", state=state)
-
-        if state.ruleset.options.zoc_locks_movement and is_in_enemy_zoc(state, unit.side, unit.position):
-            return ActionResult(ok=False, reason="unit_pinned_by_enemy_zoc", state=state)
-
-        def can_traverse_occupied_hex(destination: HexCoord) -> bool:
-            occupant_ids = state.occupant_by_hex.get(destination)
-            if occupant_ids is None:
-                return True
-
-            return all(
-                _may_move_through_hex(
-                    stacking_lookup,
-                    moving_category=moving_category,
-                    stationary_category=_stationary_stacking_category(state.units[occupant_id], use_mandatory_stacking),
-                )
-                for occupant_id in occupant_ids
-            )
-
-        path = shortest_path(
-            state=state,
-            side=unit.side,
-            unit=unit,
-            start=unit.position,
-            goal=action.destination,
-            policy=MovementPolicy(max_cost=unit.move_allowance, ignore_occupied=False, allow_enter_enemy_zoc=True),
-            can_traverse_occupied_hex=can_traverse_occupied_hex,
-        )
-        if not path.found:
-            return ActionResult(ok=False, reason="no_valid_path", state=state)
-
         updated_units = dict(state.units)
         movement_effects, moved_unit = _resolve_stacking_side_effects(
-            unit=unit,
+            unit=validation.unit,
             destination=action.destination,
-            path=path.path,
+            path=validation.path_result.path,
             current_units=updated_units,
-            stacking_lookup=stacking_lookup,
-            moving_category=moving_category,
-            use_mandatory_stacking=use_mandatory_stacking,
+            stacking_lookup=validation.stacking_lookup,
+            moving_category=validation.moving_category,
+            use_mandatory_stacking=validation.use_mandatory_stacking,
         )
         pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
         tq_check_outcomes, next_rng_counter = _resolve_pending_tq_checks(
@@ -112,8 +103,12 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
             rng_seed=state.rng_seed,
             rng_counter=state.rng_counter,
         )
-        updated_units[unit.unit_id] = moved_unit.with_position(action.destination)
-        reaction_windows = _collect_reaction_windows(state=state, moving_unit=unit, movement_path=path.path)
+        updated_units[validation.unit.unit_id] = moved_unit.with_position(action.destination)
+        reaction_windows = _collect_reaction_windows(
+            state=state,
+            moving_unit=validation.unit,
+            movement_path=validation.path_result.path,
+        )
         reaction_events = tuple(
             MissileEvent(
                 event_type="reaction_window_opened",
@@ -139,6 +134,89 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
         pending_tq_checks=pending_tq_checks,
         tq_check_outcomes=tq_check_outcomes,
         events=reaction_events,
+    )
+
+
+def _validate_move_path(
+    state: GameState,
+    action: MoveAction,
+) -> tuple[_MoveValidationContext | None, str]:
+    """Validate move command and compute deterministic path metadata when legal."""
+
+    unit = state.units.get(action.unit_id)
+    if unit is None:
+        return None, "unit_not_found"
+
+    if unit.side != state.active_side:
+        return None, "wrong_active_side"
+
+    if not state.scenario_map.contains(action.destination):
+        return None, "destination_out_of_map"
+
+    if unit.position == action.destination:
+        return None, "no_op_move"
+
+    use_mandatory_stacking = unit.is_routed
+    try:
+        stacking_lookup = _load_stacking_lookup(use_mandatory_stacking)
+        moving_category = _moving_stacking_category(unit, use_mandatory_stacking)
+    except ValueError:
+        return None, "stacking_category_unmapped"
+
+    try:
+        destination_units = state.units_at(action.destination)
+        if destination_units:
+            may_stop_for_all_occupants = all(
+                _may_stop_in_hex(
+                    stacking_lookup,
+                    moving_category=moving_category,
+                    stationary_category=_stationary_stacking_category(stationary, use_mandatory_stacking),
+                )
+                for stationary in destination_units
+            )
+            if not may_stop_for_all_occupants:
+                return None, "destination_occupied"
+
+        if state.ruleset.options.zoc_locks_movement and is_in_enemy_zoc(state, unit.side, unit.position):
+            return None, "unit_pinned_by_enemy_zoc"
+
+        def can_traverse_occupied_hex(destination: HexCoord) -> bool:
+            occupant_ids = state.occupant_by_hex.get(destination)
+            if occupant_ids is None:
+                return True
+
+            return all(
+                _may_move_through_hex(
+                    stacking_lookup,
+                    moving_category=moving_category,
+                    stationary_category=_stationary_stacking_category(state.units[occupant_id], use_mandatory_stacking),
+                )
+                for occupant_id in occupant_ids
+            )
+
+        path_result = shortest_path(
+            state=state,
+            side=unit.side,
+            unit=unit,
+            start=unit.position,
+            goal=action.destination,
+            policy=MovementPolicy(max_cost=unit.move_allowance, ignore_occupied=False, allow_enter_enemy_zoc=True),
+            can_traverse_occupied_hex=can_traverse_occupied_hex,
+        )
+        if not path_result.found:
+            return None, "no_valid_path"
+    except ValueError:
+        return None, "stacking_category_unmapped"
+
+    return (
+        _MoveValidationContext(
+            unit=unit,
+            use_mandatory_stacking=use_mandatory_stacking,
+            stacking_lookup=stacking_lookup,
+            moving_category=moving_category,
+            path_result=path_result,
+        ),
+        "ok",
     )
 
 

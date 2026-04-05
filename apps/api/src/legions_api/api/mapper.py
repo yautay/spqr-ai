@@ -6,6 +6,8 @@ from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
     HexPayload,
+    LegalMoveOptionPayload,
+    LegalMovesPayload,
     MissileDRMModifierPayload,
     MissileEventPayload,
     MissileOutcomePayload,
@@ -20,6 +22,7 @@ from legions_api.api.schemas import (
     UnitPayload,
 )
 from legions_api.core.model.game_state import GameState
+from legions_api.core.rules.movement import LegalMoveOption
 from legions_api.core.results import (
     ActionResult,
     MissileDRMModifier,
@@ -92,6 +95,22 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         morale_outcomes=[_to_morale_outcome_payload(outcome) for outcome in result.morale_outcomes],
         pursuit_outcome=_to_pursuit_outcome_payload(result.pursuit_outcome),
         events=[_to_missile_event_payload(event) for event in result.events],
+    )
+
+
+def to_legal_moves_payload(unit_id: str, options: tuple[LegalMoveOption, ...]) -> LegalMovesPayload:
+    """Convert legal move options to transport payload."""
+
+    return LegalMovesPayload(
+        unit_id=unit_id,
+        options=[
+            LegalMoveOptionPayload(
+                destination=HexPayload(q=option.destination.q, r=option.destination.r),
+                total_cost=option.total_cost,
+                path=[HexPayload(q=coord.q, r=coord.r) for coord in option.path],
+            )
+            for option in options
+        ],
     )
 
 

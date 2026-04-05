@@ -80,6 +80,24 @@ def test_rulesets_endpoint_returns_original_and_simple() -> None:
     assert set(payload["rulesets"]) == {"original", "simple"}
 
 
+def test_legal_moves_endpoint_returns_preview_options() -> None:
+    """Legal moves endpoint should return destination and path metadata for active unit."""
+
+    client = TestClient(app)
+
+    response = client.get("/game/legal-moves/r1")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["unit_id"] == "r1"
+    assert len(payload["options"]) > 0
+    first_option = payload["options"][0]
+    assert "destination" in first_option
+    assert "total_cost" in first_option
+    assert "path" in first_option
+    assert len(first_option["path"]) > 1
+
+
 def test_new_game_accepts_ruleset_selection() -> None:
     """New game endpoint applies selected ruleset to state payload."""
 
