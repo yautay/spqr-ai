@@ -9,6 +9,7 @@ from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import Side, Unit
 from legions_api.core.rules import shock as shock_rules
 from legions_api.core.rules.shock import resolve_shock
@@ -173,6 +174,7 @@ def test_shock_eliminates_routed_unit_when_retreat_hex_unavailable(monkeypatch: 
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -262,6 +264,7 @@ def _build_state(units: dict[str, Unit]) -> GameState:
     )
     return GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,

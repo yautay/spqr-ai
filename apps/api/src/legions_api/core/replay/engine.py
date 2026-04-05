@@ -70,7 +70,8 @@ def _apply_event(state: GameState, replay_event: ReplayEvent) -> GameState:
     payload = replay_event.payload
     if replay_event.event_type == "game_reset":
         ruleset_value = payload.get("ruleset", RulesetMode.ORIGINAL.value)
-        return create_demo_state(mode=RulesetMode(str(ruleset_value)))
+        scenario_id = str(payload.get("scenario_id", "demo"))
+        return create_demo_state(mode=RulesetMode(str(ruleset_value)), scenario_id=scenario_id)
 
     if replay_event.event_type == "activation_advanced":
         next_state, _ = advance_activation_step(state)

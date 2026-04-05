@@ -4,6 +4,7 @@ from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, MapEdge, build_irregular_map, edge_key
 from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import Side, Unit
 from legions_api.core.rules.los import has_line_of_sight
 from legions_api.core.tables.loader import load_ruleset
@@ -64,6 +65,7 @@ def _build_state(
     }
     return GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,

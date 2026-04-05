@@ -7,6 +7,7 @@ from legions_api.core.model.game_state import GameState, ReactionWindow
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import Side, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import PendingTQCheck
@@ -32,6 +33,7 @@ def test_move_fails_when_unit_starts_in_enemy_zoc() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -60,6 +62,7 @@ def test_move_opens_reaction_window_event_on_entry_trigger() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -108,6 +111,7 @@ def test_move_rejects_no_op_before_destination_occupied_check() -> None:
     units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1)}
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -135,6 +139,7 @@ def test_routed_enemy_unit_does_not_pin_with_zoc() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -159,6 +164,7 @@ def test_move_succeeds_when_path_cost_within_allowance() -> None:
     units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=2)}
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -184,6 +190,7 @@ def test_list_legal_move_options_returns_preview_paths_for_active_unit() -> None
     units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=2)}
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -213,6 +220,7 @@ def test_list_legal_move_options_returns_empty_for_inactive_side_unit() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.BLUE,
         units=units,
@@ -239,6 +247,7 @@ def test_simple_ruleset_does_not_lock_movement_in_enemy_zoc() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.SIMPLE),
         active_side=Side.RED,
         units=units,
@@ -269,6 +278,7 @@ def test_move_uses_unit_specific_movement_profile_when_set() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -295,6 +305,7 @@ def test_move_fails_when_intermediate_occupied_and_stacking_disallows_pass_throu
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -334,6 +345,7 @@ def test_move_can_pass_through_occupied_hex_when_stacking_allows(monkeypatch: py
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -379,6 +391,7 @@ def test_move_can_stop_in_occupied_hex_when_stacking_allows(monkeypatch: pytest.
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -428,6 +441,7 @@ def test_move_through_fails_when_any_occupant_category_disallows(monkeypatch: py
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -475,6 +489,7 @@ def test_move_applies_cohesion_hits_on_pass_through(monkeypatch: pytest.MonkeyPa
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -539,6 +554,7 @@ def test_move_applies_cohesion_hits_on_stop_in_hex(monkeypatch: pytest.MonkeyPat
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -701,6 +717,7 @@ def test_routed_unit_uses_mandatory_stacking_for_pass_through() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -727,6 +744,7 @@ def test_routed_unit_cannot_stop_in_occupied_hex_when_mandatory_disallows() -> N
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -754,6 +772,7 @@ def test_routed_unit_can_emit_mandatory_tq_check(monkeypatch: pytest.MonkeyPatch
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -818,6 +837,7 @@ def test_routed_move_rejects_unmapped_stacking_category() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,

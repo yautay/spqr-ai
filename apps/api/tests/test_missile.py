@@ -9,6 +9,7 @@ from legions_api.core.model.game_state import GameState, ReactionWindow, TurnPha
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import MissileSupply, Side, Unit
 from legions_api.core.rules import missile as missile_rules
 from legions_api.core.rules.missile import resolve_missile, resolve_reload
@@ -440,6 +441,7 @@ def _build_state(
     scenario_map = build_irregular_map(tiles=scenario_tiles)
     return GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=active_side,
         units=units,

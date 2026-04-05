@@ -1,8 +1,10 @@
 export type RulesetMode = "original" | "simple";
 export type Side = "red" | "blue";
-export type TurnPhase = "orders" | "rout_and_reload";
+export type TurnPhase = "orders" | "shock" | "rout_and_reload" | "withdrawal";
 export type MissileSupply = "normal" | "low" | "no";
 export type ReactionTrigger = "entry" | "retire" | "return";
+export type Facing = "E" | "NE" | "NW" | "W" | "SW" | "SE";
+export type LeaderStatus = "inactive" | "active" | "finished" | "bypassed" | "trumped";
 
 export interface HexPayload {
   q: number;
@@ -20,10 +22,14 @@ export interface UnitPayload {
   unit_id: string;
   side: Side;
   position: HexPayload;
+  facing: Facing;
+  unit_class: string | null;
+  size: number;
   move_allowance: number;
   tq: number;
   cohesion_hits: number;
   is_routed: boolean;
+  is_depleted: boolean;
   exerts_zoc: boolean;
   move_profile_id: string | null;
   stacking_category: string;
@@ -33,6 +39,22 @@ export interface UnitPayload {
   pursuit_capable: boolean;
 }
 
+export interface LeaderPayload {
+  leader_id: string;
+  side: Side;
+  name: string;
+  position: HexPayload;
+  is_overall_commander: boolean;
+  initiative: number;
+  command_range: number;
+  line_command: number;
+  strategy: number;
+  charisma: number;
+  elite_commander: boolean;
+  command_restrictions: string[];
+  status: LeaderStatus;
+}
+
 export interface GameStatePayload {
   ruleset: RulesetMode;
   turn_number: number;
@@ -40,6 +62,7 @@ export interface GameStatePayload {
   tiles: TilePayload[];
   active_side: Side;
   units: UnitPayload[];
+  leaders: LeaderPayload[];
 }
 
 export interface RulesetsPayload {

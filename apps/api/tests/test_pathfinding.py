@@ -4,6 +4,7 @@ from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, MapEdge, TerrainType, build_irregular_map, edge_key
 from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import Side, Unit
 from legions_api.core.rules.pathfinding import MovementPolicy, shortest_path
 from legions_api.core.tables.loader import load_ruleset
@@ -23,6 +24,7 @@ def test_pathfinding_avoids_blocked_edge() -> None:
     units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=3)}
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
@@ -57,6 +59,7 @@ def test_pathfinding_respects_occupied_hexes() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,

@@ -6,9 +6,11 @@ from typing import cast
 
 from legions_api.core.model.game_state import GameState, ReactionTrigger, ReactionWindow, TurnPhase
 from legions_api.core.model.hex import HexCoord
+from legions_api.core.model.leader import Leader, LeaderStatus
 from legions_api.core.model.map import HexTile, MapEdge, TerrainType, build_irregular_map, edge_key
 from legions_api.core.model.ruleset import RulesetMode
-from legions_api.core.model.unit import MissileSupply, Side, Unit
+from legions_api.core.model.scenario import ScenarioDefinition
+from legions_api.core.model.unit import Facing, MissileSupply, Side, Unit
 from legions_api.core.tables.loader import load_ruleset
 
 
@@ -54,10 +56,14 @@ def encode_state(state: GameState) -> dict[str, object]:
                 "unit_id": unit.unit_id,
                 "side": unit.side.value,
                 "position": {"q": unit.position.q, "r": unit.position.r},
+                "facing": unit.facing.value,
+                "unit_class": unit.unit_class,
+                "size": unit.size,
                 "move_allowance": unit.move_allowance,
                 "tq": unit.tq,
                 "cohesion_hits": unit.cohesion_hits,
                 "is_routed": unit.is_routed,
+                "is_depleted": unit.is_depleted,
                 "exerts_zoc": unit.exerts_zoc,
                 "move_profile_id": unit.move_profile_id,
                 "stacking_category": unit.stacking_category,
@@ -67,6 +73,24 @@ def encode_state(state: GameState) -> dict[str, object]:
                 "pursuit_capable": unit.pursuit_capable,
             }
             for unit in sorted(state.units.values(), key=lambda unit: unit.unit_id)
+        ],
+        "leaders": [
+            {
+                "leader_id": leader.leader_id,
+                "side": leader.side.value,
+                "name": leader.name,
+                "position": {"q": leader.position.q, "r": leader.position.r},
+                "is_overall_commander": leader.is_overall_commander,
+                "initiative": leader.initiative,
+                "command_range": leader.command_range,
+                "line_command": leader.line_command,
+                "strategy": leader.strategy,
+                "charisma": leader.charisma,
+                "elite_commander": leader.elite_commander,
+                "command_restrictions": list(leader.command_restrictions),
+                "status": leader.status.value,
+            }
+            for leader in sorted(state.leaders.values(), key=lambda leader: leader.leader_id)
         ],
         "open_reaction_windows": [_encode_reaction_window(window) for window in state.open_reaction_windows],
         "spent_reaction_windows": [_encode_reaction_window(window) for window in state.spent_reaction_windows],
@@ -114,10 +138,14 @@ def decode_state(payload: dict[str, object]) -> GameState:
                 q=_as_int(_as_dict(_as_dict(unit)["position"])["q"]),
                 r=_as_int(_as_dict(_as_dict(unit)["position"])["r"]),
             ),
+            facing=Facing(_as_str(_as_dict(unit).get("facing", Facing.NE.value))),
+            unit_class=_as_optional_str(_as_dict(unit).get("unit_class")),
+            size=_as_int(_as_dict(unit).get("size", 0)),
             move_allowance=_as_int(_as_dict(unit)["move_allowance"]),
             tq=_as_int(_as_dict(unit)["tq"]),
             cohesion_hits=_as_int(_as_dict(unit).get("cohesion_hits", 0)),
             is_routed=_as_bool(_as_dict(unit).get("is_routed", False)),
+            is_depleted=_as_bool(_as_dict(unit).get("is_depleted", False)),
             exerts_zoc=_as_bool(_as_dict(unit).get("exerts_zoc", True)),
             move_profile_id=_as_optional_str(_as_dict(unit).get("move_profile_id")),
             stacking_category=_as_str(_as_dict(unit).get("stacking_category", "basic")),
@@ -128,15 +156,38 @@ def decode_state(payload: dict[str, object]) -> GameState:
         )
         for unit in _as_list(payload["units"])
     }
+    leaders = {
+        _as_str(_as_dict(leader)["leader_id"]): Leader(
+            leader_id=_as_str(_as_dict(leader)["leader_id"]),
+            side=Side(_as_str(_as_dict(leader)["side"])),
+            name=_as_str(_as_dict(leader)["name"]),
+            position=HexCoord(
+                q=_as_int(_as_dict(_as_dict(leader)["position"])["q"]),
+                r=_as_int(_as_dict(_as_dict(leader)["position"])["r"]),
+            ),
+            is_overall_commander=_as_bool(_as_dict(leader).get("is_overall_commander", False)),
+            initiative=_as_int(_as_dict(leader).get("initiative", 0)),
+            command_range=_as_int(_as_dict(leader).get("command_range", 0)),
+            line_command=_as_int(_as_dict(leader).get("line_command", 0)),
+            strategy=_as_int(_as_dict(leader).get("strategy", 0)),
+            charisma=_as_int(_as_dict(leader).get("charisma", 0)),
+            elite_commander=_as_bool(_as_dict(leader).get("elite_commander", False)),
+            command_restrictions=tuple(_as_str(value) for value in _as_list(_as_dict(leader).get("command_restrictions", []))),
+            status=LeaderStatus(_as_str(_as_dict(leader).get("status", LeaderStatus.INACTIVE.value))),
+        )
+        for leader in _as_list(payload.get("leaders", []))
+    }
 
     open_reaction_windows = tuple(_decode_reaction_window(item) for item in _as_list(payload.get("open_reaction_windows", [])))
     spent_reaction_windows = tuple(_decode_reaction_window(item) for item in _as_list(payload.get("spent_reaction_windows", [])))
 
     return GameState.from_units(
         scenario_map=build_irregular_map(tiles=tiles, edges=edges),
+        scenario=ScenarioDefinition(),
         ruleset=ruleset,
         active_side=Side(_as_str(payload["active_side"])),
         units=units,
+        leaders=leaders,
         rng_seed=_as_int(payload.get("rng_seed", 1)),
         rng_counter=_as_int(payload.get("rng_counter", 0)),
         turn_number=_as_int(payload.get("turn_number", 1)),

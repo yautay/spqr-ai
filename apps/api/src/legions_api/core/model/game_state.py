@@ -7,19 +7,22 @@ from enum import StrEnum
 from typing import Literal
 
 from legions_api.core.model.hex import HexCoord
+from legions_api.core.model.leader import Leader, LeaderStatus
 from legions_api.core.model.map import ScenarioMap
 from legions_api.core.model.ruleset import RulesetDefinition
+from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import Side, Unit
 
 ReactionTrigger = Literal["entry", "retire", "return"]
 
 
 class TurnPhase(StrEnum):
-    """Minimal turn phase marker used by action validation."""
+    """Runtime phase marker used by action validation and turn flow."""
 
     ORDERS = "orders"
     SHOCK = "shock"
     ROUT_AND_RELOAD = "rout_and_reload"
+    WITHDRAWAL = "withdrawal"
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,12 +36,14 @@ class ReactionWindow:
 
 @dataclass(frozen=True, slots=True)
 class GameState:
-    """Minimal immutable state used by the movement engine."""
+    """Immutable runtime state for tactical rules execution."""
 
     scenario_map: ScenarioMap
+    scenario: ScenarioDefinition
     ruleset: RulesetDefinition
     active_side: Side
     units: dict[str, Unit]
+    leaders: dict[str, Leader]
     occupant_by_hex: dict[HexCoord, tuple[str, ...]]
     rng_seed: int
     rng_counter: int
@@ -51,9 +56,11 @@ class GameState:
     def from_units(
         cls,
         scenario_map: ScenarioMap,
+        scenario: ScenarioDefinition,
         ruleset: RulesetDefinition,
         active_side: Side,
         units: dict[str, Unit],
+        leaders: dict[str, Leader] | None = None,
         rng_seed: int = 1,
         rng_counter: int = 0,
         turn_number: int = 1,
@@ -63,6 +70,7 @@ class GameState:
     ) -> GameState:
         """Create state and build occupancy index from units."""
 
+        leader_lookup = leaders or {}
         occupant_by_hex: dict[HexCoord, list[str]] = {}
         for unit_id, unit in units.items():
             if not scenario_map.contains(unit.position):
@@ -70,13 +78,19 @@ class GameState:
             occupants = occupant_by_hex.setdefault(unit.position, [])
             occupants.append(unit_id)
 
+        for leader_id, leader in leader_lookup.items():
+            if not scenario_map.contains(leader.position):
+                raise ValueError(f"leader {leader_id} starts outside passable map")
+
         frozen_occupants = {coord: tuple(unit_ids) for coord, unit_ids in occupant_by_hex.items()}
 
         return cls(
             scenario_map=scenario_map,
+            scenario=scenario,
             ruleset=ruleset,
             active_side=active_side,
             units=units,
+            leaders=leader_lookup,
             occupant_by_hex=frozen_occupants,
             rng_seed=rng_seed,
             rng_counter=rng_counter,
@@ -87,7 +101,7 @@ class GameState:
         )
 
     def unit_at(self, coord: HexCoord) -> Unit | None:
-        """Return unit occupying coordinate, if any."""
+        """Return first unit occupying coordinate, if any."""
 
         unit_ids = self.occupant_by_hex.get(coord)
         if not unit_ids:
@@ -101,14 +115,39 @@ class GameState:
         unit_ids = self.occupant_by_hex.get(coord, ())
         return tuple(self.units[unit_id] for unit_id in unit_ids)
 
+    def leaders_at(self, coord: HexCoord) -> tuple[Leader, ...]:
+        """Return all leaders currently stacked in one hex."""
+
+        return tuple(leader for leader in self.leaders.values() if leader.position == coord)
+
     def with_units(self, units: dict[str, Unit]) -> GameState:
         """Return a copy with replaced units dictionary."""
 
         return GameState.from_units(
             scenario_map=self.scenario_map,
+            scenario=self.scenario,
             ruleset=self.ruleset,
             active_side=self.active_side,
             units=units,
+            leaders=self.leaders,
+            rng_seed=self.rng_seed,
+            rng_counter=self.rng_counter,
+            turn_number=self.turn_number,
+            turn_phase=self.turn_phase,
+            open_reaction_windows=self.open_reaction_windows,
+            spent_reaction_windows=self.spent_reaction_windows,
+        )
+
+    def with_leaders(self, leaders: dict[str, Leader]) -> GameState:
+        """Return a copy with replaced leaders dictionary."""
+
+        return GameState.from_units(
+            scenario_map=self.scenario_map,
+            scenario=self.scenario,
+            ruleset=self.ruleset,
+            active_side=self.active_side,
+            units=self.units,
+            leaders=leaders,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
             turn_number=self.turn_number,
@@ -122,9 +161,11 @@ class GameState:
 
         return GameState(
             scenario_map=self.scenario_map,
+            scenario=self.scenario,
             ruleset=self.ruleset,
             active_side=active_side,
             units=self.units,
+            leaders=self.leaders,
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
@@ -139,9 +180,11 @@ class GameState:
 
         return GameState(
             scenario_map=self.scenario_map,
+            scenario=self.scenario,
             ruleset=self.ruleset,
             active_side=self.active_side,
             units=self.units,
+            leaders=self.leaders,
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=rng_counter,
@@ -156,9 +199,11 @@ class GameState:
 
         return GameState(
             scenario_map=self.scenario_map,
+            scenario=self.scenario,
             ruleset=self.ruleset,
             active_side=self.active_side,
             units=self.units,
+            leaders=self.leaders,
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
@@ -173,9 +218,11 @@ class GameState:
 
         return GameState(
             scenario_map=self.scenario_map,
+            scenario=self.scenario,
             ruleset=self.ruleset,
             active_side=self.active_side,
             units=self.units,
+            leaders=self.leaders,
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
@@ -194,9 +241,11 @@ class GameState:
 
         return GameState(
             scenario_map=self.scenario_map,
+            scenario=self.scenario,
             ruleset=self.ruleset,
             active_side=self.active_side,
             units=self.units,
+            leaders=self.leaders,
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
@@ -249,9 +298,11 @@ class GameState:
 
         return GameState(
             scenario_map=self.scenario_map,
+            scenario=self.scenario,
             ruleset=self.ruleset,
             active_side=self.active_side,
             units=self.units,
+            leaders=self.leaders,
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
@@ -260,3 +311,26 @@ class GameState:
             open_reaction_windows=next_open_windows,
             spent_reaction_windows=next_spent_windows,
         )
+
+    def active_leaders(self) -> tuple[Leader, ...]:
+        """Return leaders for active side sorted by initiative then id."""
+
+        return tuple(
+            sorted(
+                (leader for leader in self.leaders.values() if leader.side == self.active_side),
+                key=lambda leader: (leader.initiative, leader.leader_id),
+            )
+        )
+
+    def inactive_leaders(self) -> tuple[Leader, ...]:
+        """Return leaders on active side still eligible for first activation."""
+
+        return tuple(leader for leader in self.active_leaders() if leader.status == LeaderStatus.INACTIVE)
+
+    def current_active_leader(self) -> Leader | None:
+        """Return currently active leader, if any."""
+
+        active = [leader for leader in self.active_leaders() if leader.status == LeaderStatus.ACTIVE]
+        if not active:
+            return None
+        return active[0]

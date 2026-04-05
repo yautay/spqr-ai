@@ -84,7 +84,15 @@ async def new_game(
     event_stream.clear_history()
     replay_log.clear()
     state = store.reset(ruleset_mode=payload.ruleset, scenario_id=payload.scenario_id)
-    replay_log.append(ReplayEvent(event_type="game_reset", payload={"ruleset": payload.ruleset.value}))
+    replay_log.append(
+        ReplayEvent(
+            event_type="game_reset",
+            payload={
+                "ruleset": payload.ruleset.value,
+                "scenario_id": payload.scenario_id,
+            },
+        )
+    )
     event_stream.publish(
         _build_game_event(
             event_type="game_reset",

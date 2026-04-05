@@ -3,7 +3,21 @@
   "sides": [
     {
       "side_id": "red",
-      "leaders": [],
+      "leaders": [
+        {
+          "leader_id": "red_oc",
+          "name": "Red Overall Commander",
+          "position": {"q": 0, "r": 0},
+          "is_overall_commander": true,
+          "initiative": 1,
+          "command_range": 6,
+          "line_command": 1,
+          "strategy": 3,
+          "charisma": 1,
+          "elite_commander": false,
+          "command_restrictions": []
+        }
+      ],
       "units": [
         {
           "unit_id": "r1",
@@ -23,7 +37,21 @@
     },
     {
       "side_id": "blue",
-      "leaders": [],
+      "leaders": [
+        {
+          "leader_id": "blue_oc",
+          "name": "Blue Overall Commander",
+          "position": {"q": 2, "r": -1},
+          "is_overall_commander": true,
+          "initiative": 2,
+          "command_range": 6,
+          "line_command": 1,
+          "strategy": 3,
+          "charisma": 1,
+          "elite_commander": false,
+          "command_restrictions": []
+        }
+      ],
       "units": [
         {
           "unit_id": "b1",

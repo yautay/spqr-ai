@@ -7,6 +7,7 @@ from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
+from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import Side, Unit
 from legions_api.core.rules.missile import resolve_missile, resolve_reload
 from legions_api.core.rules.movement import resolve_move
@@ -30,6 +31,7 @@ def test_move_reaction_and_reload_flow() -> None:
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,

@@ -15,7 +15,7 @@ def test_replay_events_is_deterministic_for_fixed_sequence() -> None:
     """Replaying same event stream twice should produce equal state hashes."""
 
     events = (
-        ReplayEvent(event_type="game_reset", payload={"ruleset": "original"}),
+        ReplayEvent(event_type="game_reset", payload={"ruleset": "original", "scenario_id": "demo"}),
         ReplayEvent(event_type="move_resolved", payload={"unit_id": "r1", "destination_q": 1, "destination_r": 0}),
         ReplayEvent(event_type="activation_advanced", payload={}),
         ReplayEvent(
@@ -39,7 +39,7 @@ def test_verify_replay_state_matches_live_resolution_for_fixed_sequence() -> Non
     """Replay verification should pass for known deterministic event stream."""
 
     events = (
-        ReplayEvent(event_type="game_reset", payload={"ruleset": "original"}),
+        ReplayEvent(event_type="game_reset", payload={"ruleset": "original", "scenario_id": "demo"}),
         ReplayEvent(event_type="move_resolved", payload={"unit_id": "r1", "destination_q": 1, "destination_r": 0}),
         ReplayEvent(event_type="activation_advanced", payload={}),
         ReplayEvent(

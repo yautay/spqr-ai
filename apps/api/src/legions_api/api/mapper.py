@@ -12,6 +12,7 @@ from legions_api.api.schemas import (
     GameStatePayload,
     HexPayload,
     LegalMoveOptionPayload,
+    LeaderPayload,
     LegalMovesPayload,
     MissileDRMModifierPayload,
     MissileOutcomePayload,
@@ -53,15 +54,20 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
     """Convert immutable domain state into API payload."""
 
     sorted_units = sorted(state.units.values(), key=lambda unit: unit.unit_id)
+    sorted_leaders = sorted(state.leaders.values(), key=lambda leader: leader.leader_id)
     units = [
         UnitPayload(
             unit_id=unit.unit_id,
             side=unit.side,
             position=HexPayload(q=unit.position.q, r=unit.position.r),
+            facing=unit.facing,
+            unit_class=unit.unit_class,
+            size=unit.size,
             move_allowance=unit.move_allowance,
             tq=unit.tq,
             cohesion_hits=unit.cohesion_hits,
             is_routed=unit.is_routed,
+            is_depleted=unit.is_depleted,
             exerts_zoc=unit.exerts_zoc,
             move_profile_id=unit.move_profile_id,
             stacking_category=unit.stacking_category,
@@ -71,6 +77,24 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
             pursuit_capable=unit.pursuit_capable,
         )
         for unit in sorted_units
+    ]
+    leaders = [
+        LeaderPayload(
+            leader_id=leader.leader_id,
+            side=leader.side,
+            name=leader.name,
+            position=HexPayload(q=leader.position.q, r=leader.position.r),
+            is_overall_commander=leader.is_overall_commander,
+            initiative=leader.initiative,
+            command_range=leader.command_range,
+            line_command=leader.line_command,
+            strategy=leader.strategy,
+            charisma=leader.charisma,
+            elite_commander=leader.elite_commander,
+            command_restrictions=list(leader.command_restrictions),
+            status=leader.status,
+        )
+        for leader in sorted_leaders
     ]
     sorted_tiles = sorted(state.scenario_map.tiles.values(), key=lambda tile: (tile.coord.q, tile.coord.r))
     tiles = [
@@ -89,6 +113,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
         tiles=tiles,
         active_side=state.active_side,
         units=units,
+        leaders=leaders,
     )
 
 

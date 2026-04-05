@@ -6,10 +6,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from legions_api.core.model.leader import LeaderStatus
 from legions_api.core.model.game_state import TurnPhase
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetMode
-from legions_api.core.model.unit import MissileSupply, Side
+from legions_api.core.model.unit import Facing, MissileSupply, Side
 
 
 class HexPayload(BaseModel):
@@ -25,10 +26,14 @@ class UnitPayload(BaseModel):
     unit_id: str
     side: Side
     position: HexPayload
+    facing: Facing
+    unit_class: str | None
+    size: int
     move_allowance: int
     tq: int
     cohesion_hits: int
     is_routed: bool
+    is_depleted: bool
     exerts_zoc: bool
     move_profile_id: str | None
     stacking_category: str
@@ -36,6 +41,24 @@ class UnitPayload(BaseModel):
     missile_supply: MissileSupply
     shock_type: str
     pursuit_capable: bool
+
+
+class LeaderPayload(BaseModel):
+    """Serializable leader payload."""
+
+    leader_id: str
+    side: Side
+    name: str
+    position: HexPayload
+    is_overall_commander: bool
+    initiative: int
+    command_range: int
+    line_command: int
+    strategy: int
+    charisma: int
+    elite_commander: bool
+    command_restrictions: list[str]
+    status: LeaderStatus
 
 
 class TilePayload(BaseModel):
@@ -56,6 +79,7 @@ class GameStatePayload(BaseModel):
     tiles: list[TilePayload]
     active_side: Side
     units: list[UnitPayload]
+    leaders: list[LeaderPayload]
 
 
 class MoveActionPayload(BaseModel):

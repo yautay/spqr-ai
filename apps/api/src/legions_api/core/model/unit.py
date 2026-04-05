@@ -23,6 +23,17 @@ class MissileSupply(StrEnum):
     NO = "no"
 
 
+class Facing(StrEnum):
+    """Hexside orientation for front/flank/rear-sensitive rules."""
+
+    E = "E"
+    NE = "NE"
+    NW = "NW"
+    W = "W"
+    SW = "SW"
+    SE = "SE"
+
+
 @dataclass(frozen=True, slots=True)
 class Unit:
     """A minimal tactical unit for movement and ZOC simulation."""
@@ -30,10 +41,14 @@ class Unit:
     unit_id: str
     side: Side
     position: HexCoord
+    facing: Facing = Facing.NE
+    unit_class: str | None = None
+    size: int = 0
     move_allowance: int = 1
     tq: int = 7
     cohesion_hits: int = 0
     is_routed: bool = False
+    is_depleted: bool = False
     exerts_zoc: bool = True
     move_profile_id: str | None = None
     stacking_category: str = "basic"
@@ -49,10 +64,14 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=position,
+            facing=self.facing,
+            unit_class=self.unit_class,
+            size=self.size,
             move_allowance=self.move_allowance,
             tq=self.tq,
             cohesion_hits=self.cohesion_hits,
             is_routed=self.is_routed,
+            is_depleted=self.is_depleted,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
@@ -69,10 +88,14 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            facing=self.facing,
+            unit_class=self.unit_class,
+            size=self.size,
             move_allowance=self.move_allowance,
             tq=self.tq,
             cohesion_hits=self.cohesion_hits + delta,
             is_routed=self.is_routed,
+            is_depleted=self.is_depleted,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
@@ -91,10 +114,14 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            facing=self.facing,
+            unit_class=self.unit_class,
+            size=self.size,
             move_allowance=self.move_allowance,
             tq=self.tq,
             cohesion_hits=self.cohesion_hits,
             is_routed=is_routed,
+            is_depleted=self.is_depleted,
             exerts_zoc=exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
@@ -111,15 +138,67 @@ class Unit:
             unit_id=self.unit_id,
             side=self.side,
             position=self.position,
+            facing=self.facing,
+            unit_class=self.unit_class,
+            size=self.size,
             move_allowance=self.move_allowance,
             tq=self.tq,
             cohesion_hits=self.cohesion_hits,
             is_routed=self.is_routed,
+            is_depleted=self.is_depleted,
             exerts_zoc=self.exerts_zoc,
             move_profile_id=self.move_profile_id,
             stacking_category=self.stacking_category,
             missile_class_id=self.missile_class_id,
             missile_supply=missile_supply,
+            shock_type=self.shock_type,
+            pursuit_capable=self.pursuit_capable,
+        )
+
+    def with_facing(self, facing: Facing) -> Unit:
+        """Return unit with updated orientation."""
+
+        return Unit(
+            unit_id=self.unit_id,
+            side=self.side,
+            position=self.position,
+            facing=facing,
+            unit_class=self.unit_class,
+            size=self.size,
+            move_allowance=self.move_allowance,
+            tq=self.tq,
+            cohesion_hits=self.cohesion_hits,
+            is_routed=self.is_routed,
+            is_depleted=self.is_depleted,
+            exerts_zoc=self.exerts_zoc,
+            move_profile_id=self.move_profile_id,
+            stacking_category=self.stacking_category,
+            missile_class_id=self.missile_class_id,
+            missile_supply=self.missile_supply,
+            shock_type=self.shock_type,
+            pursuit_capable=self.pursuit_capable,
+        )
+
+    def with_depleted(self, is_depleted: bool = True) -> Unit:
+        """Return unit with updated depletion state."""
+
+        return Unit(
+            unit_id=self.unit_id,
+            side=self.side,
+            position=self.position,
+            facing=self.facing,
+            unit_class=self.unit_class,
+            size=self.size,
+            move_allowance=self.move_allowance,
+            tq=self.tq,
+            cohesion_hits=self.cohesion_hits,
+            is_routed=self.is_routed,
+            is_depleted=is_depleted,
+            exerts_zoc=self.exerts_zoc,
+            move_profile_id=self.move_profile_id,
+            stacking_category=self.stacking_category,
+            missile_class_id=self.missile_class_id,
+            missile_supply=self.missile_supply,
             shock_type=self.shock_type,
             pursuit_capable=self.pursuit_capable,
         )
