@@ -86,6 +86,14 @@ Implement:
   - orderly withdrawal,
   - pre-arranged withdrawal.
 
+Geometry note:
+
+- unit facing should be modeled as a hex-vertex orientation, not a hexside label,
+- the canonical runtime encoding is vertex angle in degrees: `0/60/120/180/240/300`,
+- one-hex units project `2` front, `2` flank, and `2` rear hexes from that facing,
+- phalanx units require a footprint-aware geometry model so they can later occupy `2` hexes and project `3` front and `3` rear hexes around an `8`-hex outer ring,
+- movement, ZOC, and shock helpers should depend on shared geometry primitives rather than bespoke facing math in each rules module.
+
 Pathfinding note:
 
 - movement legality should use graph search with rule-aware policy,

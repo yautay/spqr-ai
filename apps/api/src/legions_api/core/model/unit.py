@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 from legions_api.core.model.hex import HexCoord
 
@@ -23,15 +23,15 @@ class MissileSupply(StrEnum):
     NO = "no"
 
 
-class Facing(StrEnum):
-    """Hexside orientation for front/flank/rear-sensitive rules."""
+class Facing(IntEnum):
+    """Vertex-facing orientation expressed as clockwise hex-vertex angles."""
 
-    E = "E"
-    NE = "NE"
-    NW = "NW"
-    W = "W"
-    SW = "SW"
-    SE = "SE"
+    DEG_0 = 0
+    DEG_60 = 60
+    DEG_120 = 120
+    DEG_180 = 180
+    DEG_240 = 240
+    DEG_300 = 300
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,7 +41,7 @@ class Unit:
     unit_id: str
     side: Side
     position: HexCoord
-    facing: Facing = Facing.NE
+    facing: Facing = Facing.DEG_0
     unit_class: str | None = None
     size: int = 0
     move_allowance: int = 1

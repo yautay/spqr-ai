@@ -65,7 +65,7 @@ def encode_state(state: GameState) -> dict[str, object]:
                 "unit_id": unit.unit_id,
                 "side": unit.side.value,
                 "position": {"q": unit.position.q, "r": unit.position.r},
-                "facing": unit.facing.value,
+                "facing": int(unit.facing),
                 "unit_class": unit.unit_class,
                 "size": unit.size,
                 "move_allowance": unit.move_allowance,
@@ -148,7 +148,7 @@ def decode_state(payload: dict[str, object]) -> GameState:
                 q=_as_int(_as_dict(_as_dict(unit)["position"])["q"]),
                 r=_as_int(_as_dict(_as_dict(unit)["position"])["r"]),
             ),
-            facing=Facing(_as_str(_as_dict(unit).get("facing", Facing.NE.value))),
+            facing=_parse_facing(_as_dict(unit).get("facing", Facing.DEG_0.value)),
             unit_class=_as_optional_str(_as_dict(unit).get("unit_class")),
             size=_as_int(_as_dict(unit).get("size", 0)),
             move_allowance=_as_int(_as_dict(unit)["move_allowance"]),
@@ -302,3 +302,26 @@ def _as_reaction_trigger(value: object) -> ReactionTrigger:
     if normalized not in {"entry", "retire", "return"}:
         raise ValueError("unknown reaction trigger")
     return cast(ReactionTrigger, normalized)
+
+
+def _parse_facing(value: object) -> Facing:
+    """Accept angle-based facings and migrate legacy vertex labels."""
+
+    legacy_map = {
+        "NE": Facing.DEG_0,
+        "E": Facing.DEG_60,
+        "SE": Facing.DEG_120,
+        "SW": Facing.DEG_180,
+        "W": Facing.DEG_240,
+        "NW": Facing.DEG_300,
+    }
+    if isinstance(value, int):
+        return Facing(value)
+
+    if isinstance(value, str):
+        normalized = value.strip().upper()
+        if normalized in legacy_map:
+            return legacy_map[normalized]
+        return Facing(int(normalized))
+
+    return Facing.DEG_0

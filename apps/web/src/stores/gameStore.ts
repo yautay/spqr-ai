@@ -222,7 +222,6 @@ export const useGameStore = defineStore("game", () => {
   async function loadShockPreview(payload: {
     attacker_unit_id: string;
     defender_unit_id: string;
-    angle?: "front" | "flank" | "rear";
     modifier_ids?: string[];
   }): Promise<void> {
     try {
@@ -295,7 +294,6 @@ export const useGameStore = defineStore("game", () => {
   async function resolveShock(payload: {
     attacker_unit_id: string;
     defender_unit_id: string;
-    angle?: "front" | "flank" | "rear";
     modifier_ids?: string[];
   }): Promise<ActionResponsePayload | null> {
     return runAction(async () => executeShockAction(payload));

@@ -109,7 +109,6 @@ export async function executeMissileReload(unitId: string): Promise<ActionRespon
 export async function executeShockAction(payload: {
   attacker_unit_id: string;
   defender_unit_id: string;
-  angle?: "front" | "flank" | "rear";
   modifier_ids?: string[];
 }): Promise<ActionResponsePayload> {
   return apiRequest<ActionResponsePayload>("/game/action/shock", {
@@ -134,7 +133,6 @@ export async function fetchMissilePreview(payload: {
 export async function fetchShockPreview(payload: {
   attacker_unit_id: string;
   defender_unit_id: string;
-  angle?: "front" | "flank" | "rear";
   modifier_ids?: string[];
 }): Promise<ShockPreviewResponsePayload> {
   return apiRequest<ShockPreviewResponsePayload>("/game/preview/shock", {

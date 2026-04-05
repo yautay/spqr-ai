@@ -121,7 +121,7 @@ def load_scenario_state(scenario_id: str, mode: RulesetMode = RulesetMode.ORIGIN
                     q=_as_int(_as_dict(unit_payload["position"])["q"]),
                     r=_as_int(_as_dict(unit_payload["position"])["r"]),
                 ),
-                facing=Facing(_as_str(unit_payload.get("facing", Facing.NE.value))),
+                facing=_parse_facing(unit_payload.get("facing", Facing.DEG_0.value)),
                 unit_class=_as_optional_str(unit_payload.get("class")),
                 size=_as_int(unit_payload.get("size", 0)),
                 move_allowance=_as_int(unit_payload.get("move_allowance", 4)),
@@ -284,3 +284,26 @@ def _as_optional_str(value: object) -> str | None:
     if value is None:
         return None
     return _as_str(value)
+
+
+def _parse_facing(value: object) -> Facing:
+    """Accept angle-based facings and migrate legacy vertex labels."""
+
+    legacy_map = {
+        "NE": Facing.DEG_0,
+        "E": Facing.DEG_60,
+        "SE": Facing.DEG_120,
+        "SW": Facing.DEG_180,
+        "W": Facing.DEG_240,
+        "NW": Facing.DEG_300,
+    }
+    if isinstance(value, int):
+        return Facing(value)
+
+    if isinstance(value, str):
+        normalized = value.strip().upper()
+        if normalized in legacy_map:
+            return legacy_map[normalized]
+        return Facing(int(normalized))
+
+    return Facing.DEG_0

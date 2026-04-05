@@ -5,6 +5,7 @@ from __future__ import annotations
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Side
+from legions_api.core.rules.facing import front_hexes
 
 
 def enemy_zoc_hexes(state: GameState, side: Side) -> set[HexCoord]:
@@ -15,7 +16,7 @@ def enemy_zoc_hexes(state: GameState, side: Side) -> set[HexCoord]:
         if unit.side == side or not unit.exerts_zoc or unit.is_routed:
             continue
 
-        for neighbor in unit.position.neighbors():
+        for neighbor in front_hexes(unit):
             if state.scenario_map.contains(neighbor):
                 zoc.add(neighbor)
 

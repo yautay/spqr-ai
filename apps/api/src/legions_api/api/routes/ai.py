@@ -120,7 +120,6 @@ def _to_replay_event(action: object) -> ReplayEvent | None:
             payload={
                 "attacker_unit_id": action.attacker_unit_id,
                 "defender_unit_id": action.defender_unit_id,
-                "angle": action.angle,
                 "modifier_ids": list(action.modifier_ids),
             },
         )

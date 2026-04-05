@@ -10,7 +10,7 @@ from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.scenario import ScenarioDefinition
-from legions_api.core.model.unit import Side, Unit
+from legions_api.core.model.unit import Facing, Side, Unit
 from legions_api.core.rules import shock as shock_rules
 from legions_api.core.rules.shock import resolve_shock
 from legions_api.core.tables.loader import load_ruleset
@@ -38,8 +38,8 @@ def test_shock_applies_crt_hits_and_advances_rng(monkeypatch: pytest.MonkeyPatch
 
     state = _build_state(
         {
-            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HI", tq=10),
-            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=10),
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), facing=Facing.DEG_60, shock_type="HI", tq=10),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), facing=Facing.DEG_240, shock_type="HI", tq=10),
         }
     )
     _patch_shock_tables(monkeypatch)
@@ -66,8 +66,8 @@ def test_shock_applies_superiority_and_explicit_modifier_shifts(monkeypatch: pyt
 
     state = _build_state(
         {
-            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HC", tq=10),
-            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=10),
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), facing=Facing.DEG_60, shock_type="HC", tq=10),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), facing=Facing.DEG_240, shock_type="HI", tq=10),
         }
     )
     _patch_shock_tables(monkeypatch)
@@ -90,13 +90,31 @@ def test_shock_applies_superiority_and_explicit_modifier_shifts(monkeypatch: pyt
     assert result.state.units["b1"].cohesion_hits == 4
 
 
+def test_shock_uses_defender_facing_to_resolve_angle(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Shock angle should be derived from board state, not trusted from payload."""
+
+    state = _build_state(
+        {
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(1, 0), facing=Facing.DEG_240, shock_type="HI", tq=10),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(0, 0), facing=Facing.DEG_300, shock_type="HI", tq=10),
+        }
+    )
+    _patch_shock_tables(monkeypatch)
+
+    result = resolve_shock(state, ShockAction(attacker_unit_id="r1", defender_unit_id="b1"))
+
+    assert result.ok
+    assert result.shock_outcome is not None
+    assert result.shock_outcome.angle == "rear"
+
+
 def test_shock_rejects_unknown_modifier(monkeypatch: pytest.MonkeyPatch) -> None:
     """Shock resolver should fail for modifier ids absent from CRT metadata."""
 
     state = _build_state(
         {
-            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HI"),
-            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI"),
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), facing=Facing.DEG_60, shock_type="HI"),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), facing=Facing.DEG_240, shock_type="HI"),
         }
     )
     _patch_shock_tables(monkeypatch)
@@ -115,8 +133,8 @@ def test_shock_failed_morale_routes_and_retreated_unit(monkeypatch: pytest.Monke
 
     state = _build_state(
         {
-            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HC", tq=10),
-            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=3),
+            "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), facing=Facing.DEG_60, shock_type="HC", tq=10),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), facing=Facing.DEG_240, shock_type="HI", tq=3),
         }
     )
     _patch_shock_tables(monkeypatch)
@@ -141,11 +159,12 @@ def test_shock_cavalry_pursuit_moves_into_vacated_hex(monkeypatch: pytest.Monkey
                 unit_id="r1",
                 side=Side.RED,
                 position=HexCoord(0, 0),
+                facing=Facing.DEG_60,
                 shock_type="HC",
                 tq=10,
                 pursuit_capable=True,
             ),
-            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=3),
+            "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), facing=Facing.DEG_240, shock_type="HI", tq=3),
         }
     )
     _patch_shock_tables(monkeypatch)
@@ -169,8 +188,8 @@ def test_shock_eliminates_routed_unit_when_retreat_hex_unavailable(monkeypatch: 
         ]
     )
     units = {
-        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), shock_type="HC", tq=10),
-        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), shock_type="HI", tq=3),
+        "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), facing=Facing.DEG_60, shock_type="HC", tq=10),
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), facing=Facing.DEG_240, shock_type="HI", tq=3),
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
@@ -213,6 +232,7 @@ def _patch_shock_tables(monkeypatch: pytest.MonkeyPatch) -> None:
                 "angles": ["front", "flank", "rear"],
                 "entries": [
                     {"attacker_type": "HI", "defender_type": "HI", "angle": "front", "base_column": 5},
+                    {"attacker_type": "HI", "defender_type": "HI", "angle": "rear", "base_column": 7},
                     {"attacker_type": "HC", "defender_type": "HI", "angle": "front", "base_column": 6},
                 ],
             }
@@ -256,11 +276,10 @@ def _build_state(units: dict[str, Unit]) -> GameState:
     """Create a tiny deterministic battlefield for shock tests."""
 
     scenario_map = build_irregular_map(
-        tiles=[
-            HexTile(coord=HexCoord(0, 0)),
-            HexTile(coord=HexCoord(1, 0)),
-            HexTile(coord=HexCoord(2, 0)),
-        ]
+        tiles=sorted(
+            [HexTile(coord=unit.position) for unit in units.values()] + [HexTile(coord=HexCoord(2, 0))],
+            key=lambda tile: (tile.coord.q, tile.coord.r),
+        )
     )
     return GameState.from_units(
         scenario_map=scenario_map,

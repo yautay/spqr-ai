@@ -140,7 +140,6 @@ watch(
       gameStore.loadShockPreview({
         attacker_unit_id: activeUnit.unit_id,
         defender_unit_id: targetUnit.unit_id,
-        angle: "front",
       }),
     ]);
   },
@@ -264,7 +263,6 @@ async function handleResolveShock(): Promise<void> {
   const result = await gameStore.resolveShock({
     attacker_unit_id: selectedUnit.value.unit_id,
     defender_unit_id: hoveredTargetUnit.value.unit_id,
-    angle: "front",
   });
   if (!result) {
     logStore.append("error", "Shock error", gameStore.error ?? "Shock request failed.");

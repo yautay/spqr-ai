@@ -87,22 +87,22 @@ def _generate_shock_actions(state: GameState, max_actions: int | None = None) ->
             if unit.position.distance_to(target_unit.position) != 1:
                 continue
 
-            for angle in ("front", "flank", "rear"):
-                shock_action = ShockAction(
-                    attacker_unit_id=unit.unit_id,
-                    defender_unit_id=target_unit.unit_id,
-                    angle=angle,
-                )
-                if resolve_shock(state, shock_action).ok:
-                    candidates.append(
-                        AICandidateAction(
-                            action_type="shock",
-                            action=shock_action,
-                            summary=f"shock {unit.unit_id} -> {target_unit.unit_id} ({angle})",
-                        )
+            shock_action = ShockAction(
+                attacker_unit_id=unit.unit_id,
+                defender_unit_id=target_unit.unit_id,
+            )
+            result = resolve_shock(state, shock_action)
+            if result.ok:
+                angle = result.shock_outcome.angle if result.shock_outcome is not None else "front"
+                candidates.append(
+                    AICandidateAction(
+                        action_type="shock",
+                        action=shock_action,
+                        summary=f"shock {unit.unit_id} -> {target_unit.unit_id} ({angle})",
                     )
-                    if _reached_limit(candidates, max_actions):
-                        return tuple(candidates)
+                )
+                if _reached_limit(candidates, max_actions):
+                    return tuple(candidates)
 
     return tuple(candidates)
 

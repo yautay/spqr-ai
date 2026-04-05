@@ -231,7 +231,6 @@ def to_ai_action_descriptor_payload(candidate: AICandidateAction | None) -> AIAc
             summary=candidate.summary,
             attacker_unit_id=candidate.action.attacker_unit_id,
             defender_unit_id=candidate.action.defender_unit_id,
-            angle=candidate.action.angle,
         )
 
     raise TypeError("unknown AI action payload type")

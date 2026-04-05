@@ -10,7 +10,7 @@ from legions_api.core.model.leader import LeaderStatus
 from legions_api.core.model.game_state import TurnPhase
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.ruleset import RulesetMode
-from legions_api.core.model.unit import Facing, MissileSupply, Side
+from legions_api.core.model.unit import MissileSupply, Side
 
 
 class HexPayload(BaseModel):
@@ -26,7 +26,7 @@ class UnitPayload(BaseModel):
     unit_id: str
     side: Side
     position: HexPayload
-    facing: Facing
+    facing: int
     unit_class: str | None
     size: int
     move_allowance: int
@@ -110,7 +110,6 @@ class ShockActionPayload(BaseModel):
 
     attacker_unit_id: str
     defender_unit_id: str
-    angle: Literal["front", "flank", "rear"] = "front"
     modifier_ids: list[str] = Field(default_factory=list)
 
 

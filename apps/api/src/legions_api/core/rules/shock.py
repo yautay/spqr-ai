@@ -10,6 +10,7 @@ from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, DomainEvent, MoraleOutcome, PursuitOutcome, ShockModifier, ShockOutcome, ShockPreview
+from legions_api.core.rules.facing import relative_angle
 from legions_api.core.tables.adapters import (
     ShockCRTCellLookup,
     clash_column_lookup,
@@ -25,6 +26,7 @@ from legions_api.core.tables.models import ClashColumnsTableModel, ShockCRTTable
 class _ShockResolutionContext:
     attacker: Unit
     defender: Unit
+    angle: str
     attacker_type: str
     defender_type: str
     base_column: int
@@ -107,7 +109,7 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
             details={
                 "attacker_unit_id": context.attacker.unit_id,
                 "defender_unit_id": context.defender.unit_id,
-                "angle": action.angle,
+                "angle": context.angle,
             },
         ),
         DomainEvent(
@@ -172,7 +174,7 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
         shock_outcome=ShockOutcome(
             attacker_unit_id=context.attacker.unit_id,
             defender_unit_id=context.defender.unit_id,
-            angle=action.angle,
+            angle=context.angle,
             attacker_type=context.attacker_type,
             defender_type=context.defender_type,
             base_column=context.base_column,
@@ -200,7 +202,7 @@ def preview_shock(state: GameState, action: ShockAction) -> tuple[ShockPreview |
         ShockPreview(
             attacker_unit_id=context.attacker.unit_id,
             defender_unit_id=context.defender.unit_id,
-            angle=action.angle,
+            angle=context.angle,
             attacker_type=context.attacker_type,
             defender_type=context.defender_type,
             base_column=context.base_column,
@@ -262,7 +264,8 @@ def _build_shock_context(state: GameState, action: ShockAction) -> tuple[_ShockR
 
     attacker_type = attacker.shock_type
     defender_type = defender.shock_type
-    base_column = clash_lookup.get((attacker_type, defender_type, action.angle))
+    resolved_angle = relative_angle(attacker=attacker, defender=defender)
+    base_column = clash_lookup.get((attacker_type, defender_type, resolved_angle))
     if base_column is None:
         return None, "unknown_clash_column"
 
@@ -294,6 +297,7 @@ def _build_shock_context(state: GameState, action: ShockAction) -> tuple[_ShockR
         _ShockResolutionContext(
             attacker=attacker,
             defender=defender,
+            angle=resolved_angle,
             attacker_type=attacker_type,
             defender_type=defender_type,
             base_column=base_column,

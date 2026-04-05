@@ -3,7 +3,7 @@ export type Side = "red" | "blue";
 export type TurnPhase = "orders" | "shock" | "rout_and_reload" | "withdrawal";
 export type MissileSupply = "normal" | "low" | "no";
 export type ReactionTrigger = "entry" | "retire" | "return";
-export type Facing = "E" | "NE" | "NW" | "W" | "SW" | "SE";
+export type Facing = 0 | 60 | 120 | 180 | 240 | 300;
 export type LeaderStatus = "inactive" | "active" | "finished" | "bypassed" | "trumped";
 
 export interface HexPayload {

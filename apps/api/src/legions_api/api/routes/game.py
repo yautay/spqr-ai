@@ -504,7 +504,6 @@ async def shock_action(
     action = ShockAction(
         attacker_unit_id=payload.attacker_unit_id,
         defender_unit_id=payload.defender_unit_id,
-        angle=payload.angle,
         modifier_ids=tuple(payload.modifier_ids),
     )
     result = resolve_shock(store.state, action)
@@ -516,16 +515,14 @@ async def shock_action(
                 payload={
                     "attacker_unit_id": payload.attacker_unit_id,
                     "defender_unit_id": payload.defender_unit_id,
-                    "angle": payload.angle,
                     "modifier_ids": payload.modifier_ids,
                 },
             )
         )
         logger.debug(
-            "Shock resolved: attacker={} defender={} angle={} modifiers={}",
+            "Shock resolved: attacker={} defender={} modifiers={}",
             payload.attacker_unit_id,
             payload.defender_unit_id,
-            payload.angle,
             payload.modifier_ids,
         )
     else:
@@ -544,7 +541,7 @@ async def shock_action(
             details={
                 "attacker_unit_id": payload.attacker_unit_id,
                 "defender_unit_id": payload.defender_unit_id,
-                "angle": payload.angle,
+                "angle": result.shock_outcome.angle if result.shock_outcome is not None else None,
             },
         )
     )
@@ -562,7 +559,6 @@ async def shock_preview(
     action = ShockAction(
         attacker_unit_id=payload.attacker_unit_id,
         defender_unit_id=payload.defender_unit_id,
-        angle=payload.angle,
         modifier_ids=tuple(payload.modifier_ids),
     )
     preview, reason = preview_shock(store.state, action)

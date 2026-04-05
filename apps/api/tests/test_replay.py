@@ -23,7 +23,6 @@ def test_replay_events_is_deterministic_for_fixed_sequence() -> None:
             payload={
                 "attacker_unit_id": "r1",
                 "defender_unit_id": "b1",
-                "angle": "front",
                 "modifier_ids": [],
             },
         ),
@@ -47,7 +46,6 @@ def test_verify_replay_state_matches_live_resolution_for_fixed_sequence() -> Non
             payload={
                 "attacker_unit_id": "r1",
                 "defender_unit_id": "b1",
-                "angle": "front",
                 "modifier_ids": [],
             },
         ),
@@ -56,7 +54,7 @@ def test_verify_replay_state_matches_live_resolution_for_fixed_sequence() -> Non
     state = replay_events((events[0],))
     state = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(1, 0))).state
     state, _ = advance_activation_step(state)
-    state = resolve_shock(state, ShockAction(attacker_unit_id="r1", defender_unit_id="b1", angle="front")).state
+    state = resolve_shock(state, ShockAction(attacker_unit_id="r1", defender_unit_id="b1")).state
 
     verification = verify_replay_state(state, events)
 

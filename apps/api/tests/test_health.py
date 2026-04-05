@@ -163,7 +163,6 @@ def test_shock_preview_endpoint_returns_read_only_metadata() -> None:
         json={
             "attacker_unit_id": "r1",
             "defender_unit_id": "b1",
-            "angle": "front",
             "modifier_ids": [],
         },
     )
@@ -252,7 +251,6 @@ def test_replay_verify_endpoint_reports_ok_after_actions() -> None:
         json={
             "attacker_unit_id": "r1",
             "defender_unit_id": "b1",
-            "angle": "front",
         },
     )
 
@@ -503,7 +501,6 @@ def test_shock_endpoint_returns_shock_outcome(monkeypatch) -> None:
         json={
             "attacker_unit_id": "r1",
             "defender_unit_id": "b1",
-            "angle": "front",
             "modifier_ids": ["attacker_charging"],
         },
     )

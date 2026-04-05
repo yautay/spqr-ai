@@ -108,7 +108,6 @@ def _apply_event(state: GameState, replay_event: ReplayEvent) -> GameState:
         shock_action = ShockAction(
             attacker_unit_id=str(payload["attacker_unit_id"]),
             defender_unit_id=str(payload["defender_unit_id"]),
-            angle=_as_shock_angle(payload.get("angle", "front")),
             modifier_ids=tuple(str(value) for value in _as_list(payload.get("modifier_ids", []))),
         )
         result = resolve_shock(state, shock_action)
@@ -164,11 +163,3 @@ def _as_reaction_trigger(value: object) -> Literal["entry", "retire", "return"] 
         raise ValueError("unknown reaction trigger")
     return cast(Literal["entry", "retire", "return"], normalized)
 
-
-def _as_shock_angle(value: object) -> Literal["front", "flank", "rear"]:
-    """Convert replay payload field to shock angle literal."""
-
-    normalized = str(value)
-    if normalized not in {"front", "flank", "rear"}:
-        raise ValueError("unknown shock angle")
-    return cast(Literal["front", "flank", "rear"], normalized)

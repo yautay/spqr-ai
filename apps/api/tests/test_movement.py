@@ -9,11 +9,12 @@ from legions_api.core.model.leader import Leader
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.scenario import ScenarioDefinition
-from legions_api.core.model.unit import Side, Unit
+from legions_api.core.model.unit import Facing, Side, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import PendingTQCheck
 from legions_api.core.rules import movement as movement_rules
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
+from legions_api.core.rules.zoc import enemy_zoc_hexes
 from legions_api.core.tables.loader import load_ruleset
 from legions_api.core.tables.models import StackingMandatoryTableModel, StackingVoluntaryTableModel
 
@@ -30,7 +31,7 @@ def test_move_fails_when_unit_starts_in_enemy_zoc() -> None:
     )
     units = {
         "r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1),
-        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), move_allowance=1),
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0), facing=Facing.DEG_240, move_allowance=1),
     }
     state = GameState.from_units(
         scenario_map=scenario_map,
@@ -44,6 +45,36 @@ def test_move_fails_when_unit_starts_in_enemy_zoc() -> None:
 
     assert not result.ok
     assert result.reason == "unit_pinned_by_enemy_zoc"
+
+
+def test_enemy_zoc_hexes_use_only_front_hexes_from_facing() -> None:
+    """ZOC should project only through frontal hexes instead of all six neighbors."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, -1)),
+            HexTile(coord=HexCoord(0, -1)),
+            HexTile(coord=HexCoord(-1, 0)),
+            HexTile(coord=HexCoord(-1, 1)),
+            HexTile(coord=HexCoord(0, 1)),
+            HexTile(coord=HexCoord(1, 0)),
+        ]
+    )
+    units = {
+        "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(0, 0)),
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+    )
+
+    zoc = enemy_zoc_hexes(state, Side.RED)
+
+    assert zoc == {HexCoord(1, -1), HexCoord(0, -1)}
 
 
 def test_move_fails_when_no_active_leader_exists() -> None:

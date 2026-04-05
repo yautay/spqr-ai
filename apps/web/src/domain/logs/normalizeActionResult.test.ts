@@ -10,6 +10,7 @@ const EMPTY_STATE: GameStatePayload = {
   tiles: [],
   active_side: "red",
   units: [],
+  leaders: [],
 };
 
 describe("normalizeActionResult", () => {

@@ -26,3 +26,13 @@ class HexCoord:
         dr = self.r - other.r
         ds = (-self.q - self.r) - (-other.q - other.r)
         return max(abs(dq), abs(dr), abs(ds))
+
+    def direction_to(self, other: HexCoord) -> int | None:
+        """Return neighbor direction index to adjacent hex or None otherwise."""
+
+        dq = other.q - self.q
+        dr = other.r - self.r
+        try:
+            return _NEIGHBOR_DELTAS.index((dq, dr))
+        except ValueError:
+            return None
