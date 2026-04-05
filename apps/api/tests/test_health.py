@@ -204,10 +204,50 @@ def test_list_saves_returns_saved_slot() -> None:
     assert any(snapshot["slot_id"] == "test_slot_list" for snapshot in payload["snapshots"])
 
 
+def test_replay_endpoint_reconstructs_current_state() -> None:
+    """Replay endpoint should reconstruct state equal to current runtime state."""
+
+    client = TestClient(app)
+    _ = client.post("/game/new", json={"ruleset": "original"})
+    _ = client.post("/game/action", json={"unit_id": "r1", "destination": {"q": 1, "r": 0}})
+
+    current_state = client.get("/game/state").json()
+    replay_response = client.get("/game/replay")
+
+    assert replay_response.status_code == 200
+    payload = replay_response.json()
+    assert payload["total_events"] >= 1
+    assert payload["state"] == current_state
+
+
+def test_replay_verify_endpoint_reports_ok_after_actions() -> None:
+    """Replay verify endpoint should report success after deterministic action sequence."""
+
+    client = TestClient(app)
+    _ = client.post("/game/new", json={"ruleset": "original"})
+    _ = client.post("/game/action", json={"unit_id": "r1", "destination": {"q": 1, "r": 0}})
+    _ = client.post("/game/activation/advance")
+    _ = client.post(
+        "/game/action/shock",
+        json={
+            "attacker_unit_id": "r1",
+            "defender_unit_id": "b1",
+            "angle": "front",
+        },
+    )
+
+    response = client.get("/game/replay/verify")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["reason"] == "ok"
+
+
 def test_activation_advance_endpoint_updates_turn_phase() -> None:
     """Activation endpoint should advance phase marker deterministically."""
 
     client = TestClient(app)
+    _ = client.post("/game/new", json={"ruleset": "original"})
 
     response = client.post("/game/activation/advance")
 

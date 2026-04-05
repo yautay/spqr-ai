@@ -162,6 +162,25 @@ async function handleLoadGame(): Promise<void> {
   logStore.append("success", "Game loaded", `Snapshot slot: ${selectedSaveSlot.value}`);
 }
 
+async function handleVerifyReplay(): Promise<void> {
+  const verification = await gameStore.verifyReplayState();
+  if (!verification) {
+    logStore.append("error", "Replay verify failed", gameStore.error ?? "Replay verification failed.");
+    return;
+  }
+
+  if (verification.ok) {
+    logStore.append("success", "Replay verified", `events=${verification.total_events}`);
+    return;
+  }
+
+  logStore.append(
+    "warning",
+    "Replay mismatch",
+    `events=${verification.total_events}, replay=${verification.replay_state_hash.slice(0, 12)}, current=${verification.current_state_hash.slice(0, 12)}`,
+  );
+}
+
 function handleUnitClick(unitId: string): void {
   if (uiStore.selectedUnitId === unitId) {
     uiStore.setSelectedUnit(null);
@@ -324,6 +343,7 @@ async function handleRunAiMove(): Promise<void> {
         <input v-model="selectedSaveSlot" :disabled="gameStore.isSubmitting" class="slot-input" placeholder="save slot" />
         <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleSaveGame">Save</button>
         <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleLoadGame">Load</button>
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleVerifyReplay">Verify Replay</button>
         <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleAdvanceActivation">
           Advance Activation
         </button>

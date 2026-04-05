@@ -63,6 +63,19 @@ export interface SnapshotListPayload {
   snapshots: SnapshotSummaryPayload[];
 }
 
+export interface ReplayStatePayload {
+  total_events: number;
+  state: GameStatePayload;
+}
+
+export interface ReplayVerificationPayload {
+  ok: boolean;
+  reason: string;
+  total_events: number;
+  replay_state_hash: string;
+  current_state_hash: string;
+}
+
 export interface GameEventPayload {
   event_id: string;
   timestamp: string;

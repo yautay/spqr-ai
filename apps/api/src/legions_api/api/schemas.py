@@ -137,6 +137,23 @@ class SnapshotListPayload(BaseModel):
     snapshots: list[SnapshotSummaryPayload]
 
 
+class ReplayStatePayload(BaseModel):
+    """Reconstructed state from replay event history."""
+
+    total_events: int
+    state: GameStatePayload
+
+
+class ReplayVerificationPayload(BaseModel):
+    """Replay verification metadata against current runtime state."""
+
+    ok: bool
+    reason: str
+    total_events: int
+    replay_state_hash: str
+    current_state_hash: str
+
+
 class GameEventPayload(BaseModel):
     """Realtime event payload emitted over websocket stream."""
 

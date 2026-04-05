@@ -8,6 +8,7 @@ import {
   executeMissileReload,
   executeMove,
   executeShockAction,
+  fetchReplayState,
   fetchSnapshots,
   fetchMissilePreview,
   fetchGameState,
@@ -18,6 +19,7 @@ import {
   loadGame,
   requestAiMove,
   saveGame,
+  verifyReplay,
 } from "../api/gameApi";
 import type {
   AIMoveResponsePayload,
@@ -26,6 +28,7 @@ import type {
   LegalMoveOptionPayload,
   MissilePreviewPayload,
   RulesetMode,
+  ReplayVerificationPayload,
   SnapshotSummaryPayload,
   ShockPreviewPayload,
   UnitPayload,
@@ -45,6 +48,7 @@ export const useGameStore = defineStore("game", () => {
   const missilePreviewReason = ref<string | null>(null);
   const shockPreviewReason = ref<string | null>(null);
   const lastAiMoveResponse = ref<AIMoveResponsePayload | null>(null);
+  const lastReplayVerification = ref<ReplayVerificationPayload | null>(null);
 
   const unitsById = computed<Record<string, UnitPayload>>(() => {
     if (!state.value) {
@@ -134,6 +138,23 @@ export const useGameStore = defineStore("game", () => {
     } catch (caughtError) {
       error.value = caughtError instanceof Error ? caughtError.message : "Failed to load snapshot.";
       return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  async function verifyReplayState(): Promise<ReplayVerificationPayload | null> {
+    isSubmitting.value = true;
+    error.value = null;
+    try {
+      const replayState = await fetchReplayState();
+      state.value = replayState.state;
+      const verification = await verifyReplay();
+      lastReplayVerification.value = verification;
+      return verification;
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : "Failed to verify replay.";
+      return null;
     } finally {
       isSubmitting.value = false;
     }
@@ -314,6 +335,7 @@ export const useGameStore = defineStore("game", () => {
     missilePreviewReason,
     shockPreviewReason,
     lastAiMoveResponse,
+    lastReplayVerification,
     unitsById,
     initialize,
     refreshState,
@@ -321,6 +343,7 @@ export const useGameStore = defineStore("game", () => {
     startNewGame,
     saveSnapshot,
     loadSnapshot,
+    verifyReplayState,
     advanceActivation,
     endTurn,
     loadLegalMoves,

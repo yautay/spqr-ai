@@ -922,6 +922,58 @@
         "title": "PursuitOutcomePayload",
         "type": "object"
       },
+      "ReplayStatePayload": {
+        "description": "Reconstructed state from replay event history.",
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/GameStatePayload"
+          },
+          "total_events": {
+            "title": "Total Events",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_events",
+          "state"
+        ],
+        "title": "ReplayStatePayload",
+        "type": "object"
+      },
+      "ReplayVerificationPayload": {
+        "description": "Replay verification metadata against current runtime state.",
+        "properties": {
+          "current_state_hash": {
+            "title": "Current State Hash",
+            "type": "string"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "replay_state_hash": {
+            "title": "Replay State Hash",
+            "type": "string"
+          },
+          "total_events": {
+            "title": "Total Events",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "reason",
+          "total_events",
+          "replay_state_hash",
+          "current_state_hash"
+        ],
+        "title": "ReplayVerificationPayload",
+        "type": "object"
+      },
       "RulesetMode": {
         "description": "Supported ruleset variants.",
         "enum": [
@@ -2055,6 +2107,50 @@
           }
         },
         "summary": "Shock Preview",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/replay": {
+      "get": {
+        "description": "Reconstruct current game state from ordered replay history.",
+        "operationId": "replay_state_route_game_replay_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayStatePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Replay State Route",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/replay/verify": {
+      "get": {
+        "description": "Verify replay reconstruction hash matches live state hash.",
+        "operationId": "replay_verify_route_game_replay_verify_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayVerificationPayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Replay Verify Route",
         "tags": [
           "game"
         ]

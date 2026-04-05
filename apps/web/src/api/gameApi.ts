@@ -5,6 +5,8 @@ import type {
   GameStatePayload,
   LegalMovesPayload,
   MissilePreviewResponsePayload,
+  ReplayStatePayload,
+  ReplayVerificationPayload,
   RulesetMode,
   RulesetsPayload,
   SnapshotListPayload,
@@ -43,6 +45,14 @@ export async function loadGame(slotId: string): Promise<SnapshotPayload> {
 
 export async function fetchSnapshots(): Promise<SnapshotListPayload> {
   return apiRequest<SnapshotListPayload>("/game/saves");
+}
+
+export async function fetchReplayState(): Promise<ReplayStatePayload> {
+  return apiRequest<ReplayStatePayload>("/game/replay");
+}
+
+export async function verifyReplay(): Promise<ReplayVerificationPayload> {
+  return apiRequest<ReplayVerificationPayload>("/game/replay/verify");
 }
 
 export async function advanceActivationStep(): Promise<GameStatePayload> {

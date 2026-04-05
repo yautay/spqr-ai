@@ -11,7 +11,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Body, Depends, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-from legions_api.api.dependencies import get_event_stream, get_game_store, get_snapshot_repository
+from legions_api.api.dependencies import get_event_stream, get_game_store, get_replay_log, get_snapshot_repository
 from legions_api.api.event_stream import GameEventStream
 from legions_api.api.mapper import (
     to_action_response_payload,
@@ -31,6 +31,8 @@ from legions_api.api.schemas import (
     MissileReloadActionPayload,
     MoveActionPayload,
     NewGamePayload,
+    ReplayStatePayload,
+    ReplayVerificationPayload,
     RulesetsPayload,
     SaveGamePayload,
     ShockActionPayload,
@@ -42,11 +44,13 @@ from legions_api.api.schemas import (
 from legions_api.api.state_store import GameStateStore
 from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
 from legions_api.core.model.hex import HexCoord
+from legions_api.core.replay import replay_events, verify_replay_state
 from legions_api.core.rules.missile import preview_missile, resolve_missile, resolve_reload
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.rules.shock import preview_shock, resolve_shock
 from legions_api.core.tables.loader import available_rulesets
 from legions_api.core.turn import advance_activation_step, end_turn
+from legions_api.persistence.replay_log import ReplayEvent, ReplayLog
 from legions_api.persistence.snapshots import SnapshotRepository
 
 router = APIRouter(prefix="/game", tags=["game"])
@@ -71,11 +75,14 @@ async def new_game(
     payload: NewGamePayload = Body(default_factory=NewGamePayload),
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
 ) -> GameStatePayload:
     """Reset in-memory game and return the fresh state."""
 
     event_stream.clear_history()
+    replay_log.clear()
     state = store.reset(ruleset_mode=payload.ruleset)
+    replay_log.append(ReplayEvent(event_type="game_reset", payload={"ruleset": payload.ruleset.value}))
     event_stream.publish(
         _build_game_event(
             event_type="game_reset",
@@ -93,11 +100,12 @@ async def save_game(
     payload: SaveGamePayload = Body(default_factory=SaveGamePayload),
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
     snapshots: SnapshotRepository = Depends(get_snapshot_repository),
 ) -> SnapshotPayload:
     """Persist current game state snapshot under selected slot id."""
 
-    record = snapshots.save(slot_id=payload.slot_id, state=store.state, event_offset=event_stream.total_events())
+    record = snapshots.save(slot_id=payload.slot_id, state=store.state, event_offset=replay_log.total_events())
     event_stream.publish(
         _build_game_event(
             event_type="game_saved",
@@ -171,6 +179,32 @@ async def list_saves(snapshots: SnapshotRepository = Depends(get_snapshot_reposi
     )
 
 
+@router.get("/replay", response_model=ReplayStatePayload)
+async def replay_state_route(replay_log: ReplayLog = Depends(get_replay_log)) -> ReplayStatePayload:
+    """Reconstruct current game state from ordered replay history."""
+
+    events = replay_log.events()
+    replay_state = replay_events(events)
+    return ReplayStatePayload(total_events=len(events), state=to_game_state_payload(replay_state))
+
+
+@router.get("/replay/verify", response_model=ReplayVerificationPayload)
+async def replay_verify_route(
+    store: GameStateStore = Depends(get_game_store),
+    replay_log: ReplayLog = Depends(get_replay_log),
+) -> ReplayVerificationPayload:
+    """Verify replay reconstruction hash matches live state hash."""
+
+    verification = verify_replay_state(store.state, replay_log.events())
+    return ReplayVerificationPayload(
+        ok=verification.ok,
+        reason=verification.reason,
+        total_events=verification.total_events,
+        replay_state_hash=verification.replay_state_hash,
+        current_state_hash=verification.current_state_hash,
+    )
+
+
 @router.get("/rulesets", response_model=RulesetsPayload)
 async def rulesets() -> RulesetsPayload:
     """Return supported rulesets that can be selected for a new game."""
@@ -197,11 +231,13 @@ async def legal_moves(unit_id: str, store: GameStateStore = Depends(get_game_sto
 async def advance_activation(
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
 ) -> GameStatePayload:
     """Advance one activation step in deterministic turn sequence."""
 
     state, transition = advance_activation_step(store.state)
     store.replace(state)
+    replay_log.append(ReplayEvent(event_type="activation_advanced", payload={}))
     event_stream.publish(
         _build_game_event(
             event_type="activation_advanced",
@@ -233,11 +269,13 @@ async def advance_activation(
 async def force_end_turn(
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
 ) -> GameStatePayload:
     """Force end current side and start opposite side orders segment."""
 
     state, transition = end_turn(store.state)
     store.replace(state)
+    replay_log.append(ReplayEvent(event_type="turn_ended", payload={}))
     event_stream.publish(
         _build_game_event(
             event_type="turn_ended",
@@ -290,6 +328,7 @@ async def game_action(
     payload: MoveActionPayload,
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
 ) -> ActionResponsePayload:
     """Apply movement action and return updated state payload."""
 
@@ -297,6 +336,16 @@ async def game_action(
     result = resolve_move(store.state, action)
     if result.ok:
         store.replace(result.state)
+        replay_log.append(
+            ReplayEvent(
+                event_type="move_resolved",
+                payload={
+                    "unit_id": payload.unit_id,
+                    "destination_q": payload.destination.q,
+                    "destination_r": payload.destination.r,
+                },
+            )
+        )
         logger.debug("Move resolved: unit={} destination=({}, {})", payload.unit_id, payload.destination.q, payload.destination.r)
     else:
         logger.debug("Move rejected: unit={} reason={}", payload.unit_id, result.reason)
@@ -322,6 +371,7 @@ async def missile_action(
     payload: MissileActionPayload,
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
 ) -> ActionResponsePayload:
     """Apply missile action and return updated state payload."""
 
@@ -335,6 +385,18 @@ async def missile_action(
     result = resolve_missile(store.state, action)
     if result.ok:
         store.replace(result.state)
+        replay_log.append(
+            ReplayEvent(
+                event_type="missile_resolved",
+                payload={
+                    "firing_unit_id": payload.firing_unit_id,
+                    "target_unit_id": payload.target_unit_id,
+                    "modifier_ids": payload.modifier_ids,
+                    "fire_mode": payload.fire_mode,
+                    "reaction_trigger": payload.reaction_trigger,
+                },
+            )
+        )
         logger.debug(
             "Missile resolved: firing_unit={} target_unit={} modifiers={}",
             payload.firing_unit_id,
@@ -388,6 +450,7 @@ async def missile_reload_action(
     payload: MissileReloadActionPayload,
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
 ) -> ActionResponsePayload:
     """Apply missile reload action and return updated state payload."""
 
@@ -395,6 +458,7 @@ async def missile_reload_action(
     result = resolve_reload(store.state, action)
     if result.ok:
         store.replace(result.state)
+        replay_log.append(ReplayEvent(event_type="reload_resolved", payload={"unit_id": payload.unit_id}))
         logger.debug("Missile reload resolved: unit={}", payload.unit_id)
     else:
         logger.debug("Missile reload rejected: unit={} reason={}", payload.unit_id, result.reason)
@@ -416,6 +480,7 @@ async def shock_action(
     payload: ShockActionPayload,
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
+    replay_log: ReplayLog = Depends(get_replay_log),
 ) -> ActionResponsePayload:
     """Apply shock action and return updated state payload."""
 
@@ -428,6 +493,17 @@ async def shock_action(
     result = resolve_shock(store.state, action)
     if result.ok:
         store.replace(result.state)
+        replay_log.append(
+            ReplayEvent(
+                event_type="shock_resolved",
+                payload={
+                    "attacker_unit_id": payload.attacker_unit_id,
+                    "defender_unit_id": payload.defender_unit_id,
+                    "angle": payload.angle,
+                    "modifier_ids": payload.modifier_ids,
+                },
+            )
+        )
         logger.debug(
             "Shock resolved: attacker={} defender={} angle={} modifiers={}",
             payload.attacker_unit_id,
