@@ -1,0 +1,1 @@
+2026-04-05 session summary: introduced wide-unit footprint groundwork and explicit runtime support for two-hex occupancy; wide-unit movement/missile unsupported cases were made explicit until footprint-correct rule handlers are completed.
