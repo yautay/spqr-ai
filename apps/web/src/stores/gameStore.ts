@@ -8,13 +8,16 @@ import {
   executeMissileReload,
   executeMove,
   executeShockAction,
+  fetchSnapshots,
   fetchMissilePreview,
   fetchGameState,
   fetchLegalMoves,
   fetchRulesets,
   fetchShockPreview,
   forceEndTurn,
+  loadGame,
   requestAiMove,
+  saveGame,
 } from "../api/gameApi";
 import type {
   AIMoveResponsePayload,
@@ -23,6 +26,7 @@ import type {
   LegalMoveOptionPayload,
   MissilePreviewPayload,
   RulesetMode,
+  SnapshotSummaryPayload,
   ShockPreviewPayload,
   UnitPayload,
 } from "@shared-schema/game";
@@ -30,6 +34,7 @@ import type {
 export const useGameStore = defineStore("game", () => {
   const state = ref<GameStatePayload | null>(null);
   const rulesets = ref<RulesetMode[]>([]);
+  const snapshots = ref<SnapshotSummaryPayload[]>([]);
   const legalMovesByUnit = ref<Record<string, LegalMoveOptionPayload[]>>({});
   const isLoading = ref(false);
   const isSubmitting = ref(false);
@@ -56,6 +61,7 @@ export const useGameStore = defineStore("game", () => {
       const [rulesetsPayload, gameState] = await Promise.all([fetchRulesets(), fetchGameState()]);
       rulesets.value = rulesetsPayload.rulesets;
       state.value = gameState;
+      snapshots.value = (await fetchSnapshots()).snapshots;
     } catch (caughtError) {
       error.value = caughtError instanceof Error ? caughtError.message : "Failed to initialize game state.";
     } finally {
@@ -75,6 +81,15 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
+  async function refreshSnapshots(): Promise<void> {
+    error.value = null;
+    try {
+      snapshots.value = (await fetchSnapshots()).snapshots;
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : "Failed to load snapshots.";
+    }
+  }
+
   async function startNewGame(ruleset: RulesetMode): Promise<void> {
     isSubmitting.value = true;
     error.value = null;
@@ -84,8 +99,41 @@ export const useGameStore = defineStore("game", () => {
       lastActionResult.value = null;
       lastAiMoveResponse.value = null;
       clearCombatPreviews();
+      await refreshSnapshots();
     } catch (caughtError) {
       error.value = caughtError instanceof Error ? caughtError.message : "Failed to create a new game.";
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  async function saveSnapshot(slotId: string): Promise<boolean> {
+    isSubmitting.value = true;
+    error.value = null;
+    try {
+      const snapshot = await saveGame(slotId);
+      state.value = snapshot.state;
+      await refreshSnapshots();
+      return true;
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : "Failed to save snapshot.";
+      return false;
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  async function loadSnapshot(slotId: string): Promise<boolean> {
+    isSubmitting.value = true;
+    error.value = null;
+    try {
+      const snapshot = await loadGame(slotId);
+      state.value = snapshot.state;
+      await refreshSnapshots();
+      return snapshot.saved_at.length > 0;
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : "Failed to load snapshot.";
+      return false;
     } finally {
       isSubmitting.value = false;
     }
@@ -255,6 +303,7 @@ export const useGameStore = defineStore("game", () => {
   return {
     state,
     rulesets,
+    snapshots,
     legalMovesByUnit,
     isLoading,
     isSubmitting,
@@ -268,7 +317,10 @@ export const useGameStore = defineStore("game", () => {
     unitsById,
     initialize,
     refreshState,
+    refreshSnapshots,
     startNewGame,
+    saveSnapshot,
+    loadSnapshot,
     advanceActivation,
     endTurn,
     loadLegalMoves,

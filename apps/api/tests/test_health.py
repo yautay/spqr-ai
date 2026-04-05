@@ -171,6 +171,39 @@ def test_new_game_accepts_ruleset_selection() -> None:
     assert payload["ruleset"] == "simple"
 
 
+def test_save_and_load_snapshot_round_trip() -> None:
+    """Save/load endpoints should round-trip game state by slot id."""
+
+    client = TestClient(app)
+    _ = client.post("/game/new", json={"ruleset": "original"})
+    _ = client.post("/game/action", json={"unit_id": "r1", "destination": {"q": 1, "r": 0}})
+
+    save_response = client.post("/game/save", json={"slot_id": "test_slot_round_trip"})
+    assert save_response.status_code == 200
+    saved_payload = save_response.json()
+    assert saved_payload["slot_id"] == "test_slot_round_trip"
+    assert saved_payload["saved_at"]
+
+    _ = client.post("/game/end-turn")
+    loaded_response = client.post("/game/load", json={"slot_id": "test_slot_round_trip"})
+    assert loaded_response.status_code == 200
+    loaded_payload = loaded_response.json()
+    assert loaded_payload["slot_id"] == "test_slot_round_trip"
+    assert loaded_payload["state"] == saved_payload["state"]
+
+
+def test_list_saves_returns_saved_slot() -> None:
+    """Snapshot listing should include newly saved slot metadata."""
+
+    client = TestClient(app)
+    _ = client.post("/game/save", json={"slot_id": "test_slot_list"})
+
+    response = client.get("/game/saves")
+    assert response.status_code == 200
+    payload = response.json()
+    assert any(snapshot["slot_id"] == "test_slot_list" for snapshot in payload["snapshots"])
+
+
 def test_activation_advance_endpoint_updates_turn_phase() -> None:
     """Activation endpoint should advance phase marker deterministically."""
 

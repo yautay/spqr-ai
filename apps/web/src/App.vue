@@ -16,6 +16,7 @@ const gameStore = useGameStore();
 const logStore = useLogStore();
 const uiStore = useUiStore();
 const selectedRuleset = ref<RulesetMode>("original");
+const selectedSaveSlot = ref("quicksave");
 let gameEventsSocket: GameEventsSocketHandle | null = null;
 
 const boardState = computed(() => gameStore.state);
@@ -138,6 +139,27 @@ async function handleNewGame(): Promise<void> {
   await gameStore.startNewGame(selectedRuleset.value);
   uiStore.resetSelections();
   logStore.append("info", "New game", `Created ${selectedRuleset.value} ruleset match.`);
+}
+
+async function handleSaveGame(): Promise<void> {
+  const ok = await gameStore.saveSnapshot(selectedSaveSlot.value);
+  if (!ok) {
+    logStore.append("error", "Save failed", gameStore.error ?? "Snapshot save failed.");
+    return;
+  }
+
+  logStore.append("success", "Game saved", `Snapshot slot: ${selectedSaveSlot.value}`);
+}
+
+async function handleLoadGame(): Promise<void> {
+  const ok = await gameStore.loadSnapshot(selectedSaveSlot.value);
+  if (!ok) {
+    logStore.append("warning", "Snapshot missing", `No snapshot in slot ${selectedSaveSlot.value}.`);
+    return;
+  }
+
+  uiStore.resetSelections();
+  logStore.append("success", "Game loaded", `Snapshot slot: ${selectedSaveSlot.value}`);
 }
 
 function handleUnitClick(unitId: string): void {
@@ -299,6 +321,9 @@ async function handleRunAiMove(): Promise<void> {
           </option>
         </select>
         <span class="phase-indicator">Turn {{ boardState?.turn_number ?? "-" }} / {{ boardState?.turn_phase ?? "-" }}</span>
+        <input v-model="selectedSaveSlot" :disabled="gameStore.isSubmitting" class="slot-input" placeholder="save slot" />
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleSaveGame">Save</button>
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleLoadGame">Load</button>
         <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleAdvanceActivation">
           Advance Activation
         </button>
@@ -398,6 +423,15 @@ h1 {
   font-size: 0.86rem;
   font-weight: 600;
   color: #4f402a;
+}
+
+.slot-input {
+  border-radius: 8px;
+  border: 1px solid #9f855d;
+  background: #fff7ea;
+  color: #3f2f1a;
+  padding: 0.4rem 0.55rem;
+  min-width: 7.5rem;
 }
 
 .ruleset-select,

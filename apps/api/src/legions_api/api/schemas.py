@@ -96,10 +96,45 @@ class NewGamePayload(BaseModel):
     ruleset: RulesetMode = RulesetMode.ORIGINAL
 
 
+class SaveGamePayload(BaseModel):
+    """Save snapshot options."""
+
+    slot_id: str = "quicksave"
+
+
+class LoadGamePayload(BaseModel):
+    """Load snapshot options."""
+
+    slot_id: str = "quicksave"
+
+
 class RulesetsPayload(BaseModel):
     """List of available ruleset identifiers."""
 
     rulesets: list[RulesetMode]
+
+
+class SnapshotSummaryPayload(BaseModel):
+    """Save slot metadata payload."""
+
+    slot_id: str
+    saved_at: str
+    event_offset: int
+
+
+class SnapshotPayload(BaseModel):
+    """Save/load response payload including state."""
+
+    slot_id: str
+    saved_at: str
+    event_offset: int
+    state: GameStatePayload
+
+
+class SnapshotListPayload(BaseModel):
+    """Snapshot listing payload."""
+
+    snapshots: list[SnapshotSummaryPayload]
 
 
 class GameEventPayload(BaseModel):
@@ -109,6 +144,8 @@ class GameEventPayload(BaseModel):
     timestamp: str
     event_type: Literal[
         "game_reset",
+        "game_saved",
+        "game_loaded",
         "activation_advanced",
         "turn_ended",
         "move_resolved",

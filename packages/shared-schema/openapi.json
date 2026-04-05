@@ -461,6 +461,18 @@
         "title": "LegalMovesPayload",
         "type": "object"
       },
+      "LoadGamePayload": {
+        "description": "Load snapshot options.",
+        "properties": {
+          "slot_id": {
+            "default": "quicksave",
+            "title": "Slot Id",
+            "type": "string"
+          }
+        },
+        "title": "LoadGamePayload",
+        "type": "object"
+      },
       "MissileActionPayload": {
         "description": "Missile command payload.",
         "properties": {
@@ -936,6 +948,18 @@
         "title": "RulesetsPayload",
         "type": "object"
       },
+      "SaveGamePayload": {
+        "description": "Save snapshot options.",
+        "properties": {
+          "slot_id": {
+            "default": "quicksave",
+            "title": "Slot Id",
+            "type": "string"
+          }
+        },
+        "title": "SaveGamePayload",
+        "type": "object"
+      },
       "ShockActionPayload": {
         "description": "Shock combat command payload.",
         "properties": {
@@ -1168,6 +1192,75 @@
         ],
         "title": "Side",
         "type": "string"
+      },
+      "SnapshotListPayload": {
+        "description": "Snapshot listing payload.",
+        "properties": {
+          "snapshots": {
+            "items": {
+              "$ref": "#/components/schemas/SnapshotSummaryPayload"
+            },
+            "title": "Snapshots",
+            "type": "array"
+          }
+        },
+        "required": [
+          "snapshots"
+        ],
+        "title": "SnapshotListPayload",
+        "type": "object"
+      },
+      "SnapshotPayload": {
+        "description": "Save/load response payload including state.",
+        "properties": {
+          "event_offset": {
+            "title": "Event Offset",
+            "type": "integer"
+          },
+          "saved_at": {
+            "title": "Saved At",
+            "type": "string"
+          },
+          "slot_id": {
+            "title": "Slot Id",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/GameStatePayload"
+          }
+        },
+        "required": [
+          "slot_id",
+          "saved_at",
+          "event_offset",
+          "state"
+        ],
+        "title": "SnapshotPayload",
+        "type": "object"
+      },
+      "SnapshotSummaryPayload": {
+        "description": "Save slot metadata payload.",
+        "properties": {
+          "event_offset": {
+            "title": "Event Offset",
+            "type": "integer"
+          },
+          "saved_at": {
+            "title": "Saved At",
+            "type": "string"
+          },
+          "slot_id": {
+            "title": "Slot Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slot_id",
+          "saved_at",
+          "event_offset"
+        ],
+        "title": "SnapshotSummaryPayload",
+        "type": "object"
       },
       "StackingEffectPayload": {
         "description": "Stacking side-effect metadata generated during movement.",
@@ -1801,6 +1894,47 @@
         ]
       }
     },
+    "/game/load": {
+      "post": {
+        "description": "Load previously saved snapshot into active game state.",
+        "operationId": "load_game_game_load_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoadGamePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotPayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Load Game",
+        "tags": [
+          "game"
+        ]
+      }
+    },
     "/game/new": {
       "post": {
         "description": "Reset in-memory game and return the fresh state.",
@@ -1943,6 +2077,69 @@
           }
         },
         "summary": "Rulesets",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/save": {
+      "post": {
+        "description": "Persist current game state snapshot under selected slot id.",
+        "operationId": "save_game_game_save_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveGamePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotPayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Game",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/saves": {
+      "get": {
+        "description": "List available snapshot slots.",
+        "operationId": "list_saves_game_saves_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotListPayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Saves",
         "tags": [
           "game"
         ]

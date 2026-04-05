@@ -11,7 +11,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Body, Depends, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-from legions_api.api.dependencies import get_event_stream, get_game_store
+from legions_api.api.dependencies import get_event_stream, get_game_store, get_snapshot_repository
 from legions_api.api.event_stream import GameEventStream
 from legions_api.api.mapper import (
     to_action_response_payload,
@@ -25,14 +25,19 @@ from legions_api.api.schemas import (
     GameEventPayload,
     GameStatePayload,
     LegalMovesPayload,
+    LoadGamePayload,
     MissileActionPayload,
     MissilePreviewResponsePayload,
     MissileReloadActionPayload,
     MoveActionPayload,
     NewGamePayload,
     RulesetsPayload,
+    SaveGamePayload,
     ShockActionPayload,
     ShockPreviewResponsePayload,
+    SnapshotListPayload,
+    SnapshotPayload,
+    SnapshotSummaryPayload,
 )
 from legions_api.api.state_store import GameStateStore
 from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
@@ -40,13 +45,16 @@ from legions_api.core.model.hex import HexCoord
 from legions_api.core.rules.missile import preview_missile, resolve_missile, resolve_reload
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.rules.shock import preview_shock, resolve_shock
-from legions_api.core.turn import advance_activation_step, end_turn
 from legions_api.core.tables.loader import available_rulesets
+from legions_api.core.turn import advance_activation_step, end_turn
+from legions_api.persistence.snapshots import SnapshotRepository
 
 router = APIRouter(prefix="/game", tags=["game"])
 
 GameEventType = Literal[
     "game_reset",
+    "game_saved",
+    "game_loaded",
     "activation_advanced",
     "turn_ended",
     "move_resolved",
@@ -66,6 +74,7 @@ async def new_game(
 ) -> GameStatePayload:
     """Reset in-memory game and return the fresh state."""
 
+    event_stream.clear_history()
     state = store.reset(ruleset_mode=payload.ruleset)
     event_stream.publish(
         _build_game_event(
@@ -77,6 +86,89 @@ async def new_game(
     )
     logger.info("Game reset to demo scenario using ruleset={}", payload.ruleset.value)
     return to_game_state_payload(state)
+
+
+@router.post("/save", response_model=SnapshotPayload)
+async def save_game(
+    payload: SaveGamePayload = Body(default_factory=SaveGamePayload),
+    store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
+    snapshots: SnapshotRepository = Depends(get_snapshot_repository),
+) -> SnapshotPayload:
+    """Persist current game state snapshot under selected slot id."""
+
+    record = snapshots.save(slot_id=payload.slot_id, state=store.state, event_offset=event_stream.total_events())
+    event_stream.publish(
+        _build_game_event(
+            event_type="game_saved",
+            ok=True,
+            reason="ok",
+            details={
+                "slot_id": record.slot_id,
+                "event_offset": record.event_offset,
+            },
+        )
+    )
+    return SnapshotPayload(
+        slot_id=record.slot_id,
+        saved_at=record.saved_at,
+        event_offset=record.event_offset,
+        state=to_game_state_payload(record.state),
+    )
+
+
+@router.post("/load", response_model=SnapshotPayload)
+async def load_game(
+    payload: LoadGamePayload = Body(default_factory=LoadGamePayload),
+    store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
+    snapshots: SnapshotRepository = Depends(get_snapshot_repository),
+) -> SnapshotPayload:
+    """Load previously saved snapshot into active game state."""
+
+    record = snapshots.load(payload.slot_id)
+    if record is None:
+        return SnapshotPayload(
+            slot_id=payload.slot_id,
+            saved_at="",
+            event_offset=0,
+            state=to_game_state_payload(store.state),
+        )
+
+    store.replace(record.state)
+    event_stream.publish(
+        _build_game_event(
+            event_type="game_loaded",
+            ok=True,
+            reason="ok",
+            details={
+                "slot_id": record.slot_id,
+                "event_offset": record.event_offset,
+            },
+        )
+    )
+    return SnapshotPayload(
+        slot_id=record.slot_id,
+        saved_at=record.saved_at,
+        event_offset=record.event_offset,
+        state=to_game_state_payload(record.state),
+    )
+
+
+@router.get("/saves", response_model=SnapshotListPayload)
+async def list_saves(snapshots: SnapshotRepository = Depends(get_snapshot_repository)) -> SnapshotListPayload:
+    """List available snapshot slots."""
+
+    return SnapshotListPayload(
+        snapshots=[
+            SnapshotSummaryPayload(
+                slot_id=record.slot_id,
+                saved_at=record.saved_at,
+                event_offset=record.event_offset,
+            )
+            for record in snapshots.list_snapshots()
+        ]
+    )
 
 
 @router.get("/rulesets", response_model=RulesetsPayload)

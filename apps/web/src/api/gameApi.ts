@@ -7,6 +7,8 @@ import type {
   MissilePreviewResponsePayload,
   RulesetMode,
   RulesetsPayload,
+  SnapshotListPayload,
+  SnapshotPayload,
   ShockPreviewResponsePayload,
 } from "@shared-schema/game";
 
@@ -23,6 +25,24 @@ export async function createNewGame(ruleset: RulesetMode): Promise<GameStatePayl
     method: "POST",
     body: JSON.stringify({ ruleset }),
   });
+}
+
+export async function saveGame(slotId: string): Promise<SnapshotPayload> {
+  return apiRequest<SnapshotPayload>("/game/save", {
+    method: "POST",
+    body: JSON.stringify({ slot_id: slotId }),
+  });
+}
+
+export async function loadGame(slotId: string): Promise<SnapshotPayload> {
+  return apiRequest<SnapshotPayload>("/game/load", {
+    method: "POST",
+    body: JSON.stringify({ slot_id: slotId }),
+  });
+}
+
+export async function fetchSnapshots(): Promise<SnapshotListPayload> {
+  return apiRequest<SnapshotListPayload>("/game/saves");
 }
 
 export async function advanceActivationStep(): Promise<GameStatePayload> {

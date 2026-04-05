@@ -13,7 +13,6 @@ from legions_api.core.rules.shock import resolve_shock
 def generate_legal_actions(state: GameState, max_actions: int | None = None) -> tuple[AICandidateAction, ...]:
     """Enumerate legal actions for current active side using core rule validators."""
 
-    candidates: list[AICandidateAction] = []
     if state.turn_phase == TurnPhase.ORDERS:
         return _generate_orders_actions(state, max_actions=max_actions)
     if state.turn_phase == TurnPhase.SHOCK:

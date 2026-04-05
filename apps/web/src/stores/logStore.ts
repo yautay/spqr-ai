@@ -79,6 +79,10 @@ function resolveEventTitle(event: GameEventPayload): string {
   switch (event.event_type) {
     case "game_reset":
       return "Game reset";
+    case "game_saved":
+      return "Game saved";
+    case "game_loaded":
+      return "Game loaded";
     case "activation_advanced":
       return "Activation advanced";
     case "turn_ended":

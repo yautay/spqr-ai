@@ -16,3 +16,4 @@ dist/
 
 # Logs and local artifacts
 *.log
+.spqr/

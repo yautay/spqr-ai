@@ -46,11 +46,30 @@ export interface RulesetsPayload {
   rulesets: RulesetMode[];
 }
 
+export interface SnapshotSummaryPayload {
+  slot_id: string;
+  saved_at: string;
+  event_offset: number;
+}
+
+export interface SnapshotPayload {
+  slot_id: string;
+  saved_at: string;
+  event_offset: number;
+  state: GameStatePayload;
+}
+
+export interface SnapshotListPayload {
+  snapshots: SnapshotSummaryPayload[];
+}
+
 export interface GameEventPayload {
   event_id: string;
   timestamp: string;
   event_type:
     | "game_reset"
+    | "game_saved"
+    | "game_loaded"
     | "activation_advanced"
     | "turn_ended"
     | "move_resolved"
