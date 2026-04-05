@@ -1,4 +1,8 @@
 export type RulesetMode = "original" | "simple";
+export type Side = "red" | "blue";
+export type TurnPhase = "orders" | "rout_and_reload";
+export type MissileSupply = "normal" | "low" | "no";
+export type ReactionTrigger = "entry" | "retire" | "return";
 
 export interface HexPayload {
   q: number;
@@ -14,16 +18,26 @@ export interface TilePayload {
 
 export interface UnitPayload {
   unit_id: string;
-  side: "red" | "blue";
+  side: Side;
   position: HexPayload;
   move_allowance: number;
+  tq: number;
+  cohesion_hits: number;
+  is_routed: boolean;
   exerts_zoc: boolean;
+  move_profile_id: string | null;
+  stacking_category: string;
+  missile_class_id: string | null;
+  missile_supply: MissileSupply;
+  shock_type: string;
+  pursuit_capable: boolean;
 }
 
 export interface GameStatePayload {
   ruleset: RulesetMode;
+  turn_phase: TurnPhase;
   tiles: TilePayload[];
-  active_side: "red" | "blue";
+  active_side: Side;
   units: UnitPayload[];
 }
 
@@ -35,4 +49,135 @@ export interface ActionResponsePayload {
   ok: boolean;
   reason: string;
   state: GameStatePayload;
+  effects: StackingEffectPayload[];
+  pending_tq_checks: PendingTQCheckPayload[];
+  tq_check_outcomes: TQCheckOutcomePayload[];
+  missile_outcome: MissileOutcomePayload | null;
+  shock_outcome: ShockOutcomePayload | null;
+  morale_outcomes: MoraleOutcomePayload[];
+  pursuit_outcome: PursuitOutcomePayload | null;
+  events: MissileEventPayload[];
+}
+
+export interface LegalMoveOptionPayload {
+  destination: HexPayload;
+  total_cost: number;
+  path: HexPayload[];
+}
+
+export interface LegalMovesPayload {
+  unit_id: string;
+  options: LegalMoveOptionPayload[];
+}
+
+export interface StackingEffectPayload {
+  effect_type: string;
+  interaction: string;
+  location: HexPayload;
+  moving_unit_id: string;
+  stationary_unit_id: string;
+  moving_unit_cohesion_hits: number;
+  stationary_unit_cohesion_hits: number;
+  stationary_unit_tq_check_required: boolean;
+  stationary_unit_tq_check_formula: string | null;
+  tq_check_drm: number | null;
+}
+
+export interface PendingTQCheckPayload {
+  unit_id: string;
+  location: HexPayload;
+  source: string;
+  required: boolean;
+  formula: string | null;
+  drm: number | null;
+  target: number;
+}
+
+export interface TQCheckOutcomePayload {
+  unit_id: string;
+  location: HexPayload;
+  source: string;
+  required: boolean;
+  formula: string | null;
+  drm: number | null;
+  target: number;
+  roll: number;
+  passed: boolean;
+  applied_cohesion_hits: number;
+  became_routed: boolean;
+}
+
+export interface MissileDRMModifierPayload {
+  id: string;
+  drm: number;
+}
+
+export interface MissileOutcomePayload {
+  firing_unit_id: string;
+  target_unit_id: string;
+  fire_mode: "active" | "reaction";
+  reaction_trigger: ReactionTrigger | null;
+  missile_class_id: string;
+  range_to_target: number;
+  table_strength: number;
+  base_roll: number;
+  total_drm: number;
+  modified_roll: number;
+  hit: boolean;
+  applied_cohesion_hits: number;
+  drm_breakdown: MissileDRMModifierPayload[];
+}
+
+export interface MissileEventPayload {
+  event_type:
+    | "missile_fired"
+    | "reaction_fire"
+    | "reload_attempt"
+    | "supply_changed"
+    | "reaction_window_opened"
+    | "reaction_window_spent";
+  unit_id: string;
+  target_unit_id: string | null;
+  reaction_trigger: ReactionTrigger | null;
+  roll: number | null;
+  target: number | null;
+  success: boolean | null;
+  supply_before: string | null;
+  supply_after: string | null;
+}
+
+export interface ShockModifierPayload {
+  id: string;
+  shift: number;
+}
+
+export interface ShockOutcomePayload {
+  attacker_unit_id: string;
+  defender_unit_id: string;
+  angle: "front" | "flank" | "rear";
+  attacker_type: string;
+  defender_type: string;
+  base_column: number;
+  total_shift: number;
+  final_column: number;
+  roll: number;
+  attacker_hits: number;
+  defender_hits: number;
+  modifier_breakdown: ShockModifierPayload[];
+}
+
+export interface MoraleOutcomePayload {
+  unit_id: string;
+  source: "shock";
+  target: number;
+  roll: number;
+  passed: boolean;
+  became_routed: boolean;
+  retreated: boolean;
+  eliminated: boolean;
+}
+
+export interface PursuitOutcomePayload {
+  unit_id: string;
+  destination: HexPayload;
 }
