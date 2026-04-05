@@ -119,9 +119,7 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
             for window in reaction_windows
         )
         updated_state = (
-            state.with_units(updated_units)
-            .with_rng_counter(next_rng_counter)
-            .with_reaction_windows(open_reaction_windows=reaction_windows)
+            state.with_units(updated_units).with_rng_counter(next_rng_counter).with_reaction_windows(open_reaction_windows=reaction_windows)
         )
     except ValueError:
         return ActionResult(ok=False, reason="stacking_category_unmapped", state=state)
@@ -299,9 +297,7 @@ def _resolve_stacking_side_effects(
 
     for step in path[1:]:
         occupant_ids = [
-            unit_id
-            for unit_id, occupant in current_units.items()
-            if occupant.position == step and unit_id != moved_unit.unit_id
+            unit_id for unit_id, occupant in current_units.items() if occupant.position == step and unit_id != moved_unit.unit_id
         ]
         if not occupant_ids:
             continue

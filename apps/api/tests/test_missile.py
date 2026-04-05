@@ -318,9 +318,7 @@ def test_reaction_fire_emits_reaction_and_supply_events(monkeypatch: pytest.Monk
             "b1": Unit(unit_id="b1", side=Side.BLUE, position=HexCoord(1, 0)),
         },
         active_side=Side.BLUE,
-        open_reaction_windows=(
-            ReactionWindow(firing_unit_id="r1", target_unit_id="b1", reaction_trigger="entry"),
-        ),
+        open_reaction_windows=(ReactionWindow(firing_unit_id="r1", target_unit_id="b1", reaction_trigger="entry"),),
     )
     monkeypatch.setattr(missile_rules, "load_table", lambda table_id: _missile_table(strength_at_range_one=8))
 

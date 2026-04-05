@@ -52,11 +52,7 @@ const movePreview = computed(() => {
     return null;
   }
 
-  return (
-    selectedUnitLegalMoves.value.find(
-      (option) => option.destination.q === coord.q && option.destination.r === coord.r
-    ) ?? null
-  );
+  return selectedUnitLegalMoves.value.find((option) => option.destination.q === coord.q && option.destination.r === coord.r) ?? null;
 });
 
 onMounted(async () => {
@@ -74,7 +70,7 @@ watch(
       selectedRuleset.value = rulesets[0];
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -93,7 +89,7 @@ watch(
     }
 
     await gameStore.loadLegalMoves(unitId);
-  }
+  },
 );
 
 watch(
@@ -103,7 +99,7 @@ watch(
       selectedPhase.value = phase;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 async function handleNewGame(): Promise<void> {
@@ -135,7 +131,7 @@ async function handleHexClick(coord: HexPayload): Promise<void> {
   }
 
   const destinationOption = selectedUnitLegalMoves.value.find(
-    (option) => option.destination.q === coord.q && option.destination.r === coord.r
+    (option) => option.destination.q === coord.q && option.destination.r === coord.r,
   );
   if (!destinationOption) {
     return;
@@ -235,12 +231,8 @@ async function handleSetPhase(): Promise<void> {
           <option value="orders">orders</option>
           <option value="rout_and_reload">rout_and_reload</option>
         </select>
-        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleSetPhase">
-          Set Phase
-        </button>
-        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleNewGame">
-          New Game
-        </button>
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleSetPhase">Set Phase</button>
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleNewGame">New Game</button>
       </div>
     </header>
 
@@ -249,11 +241,7 @@ async function handleSetPhase(): Promise<void> {
       <p v-else-if="gameStore.error" class="status error">{{ gameStore.error }}</p>
       <template v-else>
         <aside class="side-panel">
-          <UnitDetailsPanel
-            :selected-unit="selectedUnit"
-            :hovered-unit="hoveredUnit"
-            :active-side="boardState?.active_side ?? null"
-          />
+          <UnitDetailsPanel :selected-unit="selectedUnit" :hovered-unit="hoveredUnit" :active-side="boardState?.active_side ?? null" />
           <ActionPreviewPanel
             :selected-unit="selectedUnit"
             :target-unit="hoveredTargetUnit"

@@ -44,11 +44,11 @@ Status legend:
 
 ## Milestone 3 - Playable UI Slice
 
-- [ ] Render hex map via PixiJS
-- [ ] Add hover, selection, and unit details panel
-- [ ] Add legal move overlay
-- [ ] Add action preview and modifier panel
-- [ ] Add event log panel
+- [x] Render hex map via PixiJS
+- [x] Add hover, selection, and unit details panel
+- [x] Add legal move overlay
+- [x] Add action preview and modifier panel
+- [x] Add event log panel
 
 ## Milestone 4 - AI v1
 
@@ -77,7 +77,7 @@ Status legend:
 
 Before marking a milestone complete:
 
-- [ ] Unit and integration tests pass
-- [ ] Deterministic replay still valid
-- [ ] API/schema updates documented
-- [ ] No shell-specific code leaked into `apps/web`
+- [x] Unit and integration tests pass
+- [x] Deterministic replay still valid
+- [x] API/schema updates documented
+- [x] No shell-specific code leaked into `apps/web`

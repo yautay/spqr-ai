@@ -72,9 +72,7 @@ def test_move_opens_reaction_window_event_on_entry_trigger() -> None:
     assert result.events[0].unit_id == "b1"
     assert result.events[0].target_unit_id == "r1"
     assert result.events[0].reaction_trigger == "entry"
-    assert result.state.open_reaction_windows == (
-        ReactionWindow(firing_unit_id="b1", target_unit_id="r1", reaction_trigger="entry"),
-    )
+    assert result.state.open_reaction_windows == (ReactionWindow(firing_unit_id="b1", target_unit_id="r1", reaction_trigger="entry"),)
 
 
 @pytest.mark.parametrize(

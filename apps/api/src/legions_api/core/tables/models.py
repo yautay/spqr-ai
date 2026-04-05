@@ -122,14 +122,10 @@ class MissileClassModel(BaseModel):
             try:
                 numeric_range = int(raw_range)
             except ValueError as exc:
-                raise ValueError(
-                    f"missile class {self.missile_class_id!r} uses non-numeric range band {raw_range!r}"
-                ) from exc
+                raise ValueError(f"missile class {self.missile_class_id!r} uses non-numeric range band {raw_range!r}") from exc
 
             if numeric_range <= 0:
-                raise ValueError(
-                    f"missile class {self.missile_class_id!r} uses non-positive range band {numeric_range}"
-                )
+                raise ValueError(f"missile class {self.missile_class_id!r} uses non-positive range band {numeric_range}")
 
             numeric_ranges.append(numeric_range)
 
@@ -138,9 +134,7 @@ class MissileClassModel(BaseModel):
         if numeric_ranges != expected_ranges:
             expected = ", ".join(str(value) for value in expected_ranges)
             actual = ", ".join(str(value) for value in numeric_ranges)
-            raise ValueError(
-                f"missile class {self.missile_class_id!r} must define contiguous ranges {expected}; got {actual}"
-            )
+            raise ValueError(f"missile class {self.missile_class_id!r} must define contiguous ranges {expected}; got {actual}")
 
         return self
 

@@ -116,9 +116,7 @@ def load_table(table_id: TableId) -> ParsedTableModel:
 
     payload_table_id = raw.get("table_id")
     if payload_table_id != table_id:
-        raise ValueError(
-            f"table_id mismatch in {path}: expected {table_id!r}, got {payload_table_id!r}"
-        )
+        raise ValueError(f"table_id mismatch in {path}: expected {table_id!r}, got {payload_table_id!r}")
 
     if table_id == "movement_costs":
         return MovementCostsTableModel.model_validate(raw)

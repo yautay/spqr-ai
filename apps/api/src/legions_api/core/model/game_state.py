@@ -67,10 +67,7 @@ class GameState:
             occupants = occupant_by_hex.setdefault(unit.position, [])
             occupants.append(unit_id)
 
-        frozen_occupants = {
-            coord: tuple(unit_ids)
-            for coord, unit_ids in occupant_by_hex.items()
-        }
+        frozen_occupants = {coord: tuple(unit_ids) for coord, unit_ids in occupant_by_hex.items()}
 
         return cls(
             scenario_map=scenario_map,

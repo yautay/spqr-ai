@@ -332,9 +332,7 @@ def test_shock_endpoint_returns_shock_outcome(monkeypatch) -> None:
                 roll=6,
                 attacker_hits=1,
                 defender_hits=2,
-                modifier_breakdown=(
-                    ShockModifier(id="attacker_charging", shift=1),
-                ),
+                modifier_breakdown=(ShockModifier(id="attacker_charging", shift=1),),
             ),
         )
 

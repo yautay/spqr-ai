@@ -74,9 +74,7 @@ def movement_costs_by_profile(table: MovementCostsTableModel) -> dict[str, dict[
             try:
                 terrain = TerrainType(terrain_name)
             except ValueError as exc:
-                raise ValueError(
-                    f"movement profile {profile.unit_profile_id!r} uses unknown terrain {terrain_name!r}"
-                ) from exc
+                raise ValueError(f"movement profile {profile.unit_profile_id!r} uses unknown terrain {terrain_name!r}") from exc
             terrain_costs[terrain] = int(cost_cell.mp)
 
         by_profile[profile.unit_profile_id] = terrain_costs
@@ -141,14 +139,10 @@ def missile_class_lookup(table: MissileTableModel) -> dict[str, MissileClassLook
             try:
                 numeric_range = int(range_band)
             except ValueError as exc:
-                raise ValueError(
-                    f"missile class {missile_class.missile_class_id!r} uses non-numeric range band {range_band!r}"
-                ) from exc
+                raise ValueError(f"missile class {missile_class.missile_class_id!r} uses non-numeric range band {range_band!r}") from exc
 
             if numeric_range <= 0:
-                raise ValueError(
-                    f"missile class {missile_class.missile_class_id!r} uses non-positive range band {numeric_range}"
-                )
+                raise ValueError(f"missile class {missile_class.missile_class_id!r} uses non-positive range band {numeric_range}")
 
             strengths_by_range[numeric_range] = int(strength)
 

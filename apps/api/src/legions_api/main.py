@@ -14,6 +14,7 @@ from legions_api.logging import configure_logging
 
 configure_logging()
 
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Emit startup diagnostics and keep lifecycle hooks centralized."""

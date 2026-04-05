@@ -41,8 +41,6 @@ class RulesetDefinition:
 
         terrain_cost = profile_costs.get(terrain)
         if terrain_cost is None:
-            raise ValueError(
-                f"movement profile {selected_profile_id!r} does not define terrain {terrain.value!r}"
-            )
+            raise ValueError(f"movement profile {selected_profile_id!r} does not define terrain {terrain.value!r}")
 
         return terrain_cost

@@ -22,7 +22,6 @@ from legions_api.api.schemas import (
     UnitPayload,
 )
 from legions_api.core.model.game_state import GameState
-from legions_api.core.rules.movement import LegalMoveOption
 from legions_api.core.results import (
     ActionResult,
     MissileDRMModifier,
@@ -36,6 +35,7 @@ from legions_api.core.results import (
     StackingEffect,
     TQCheckOutcome,
 )
+from legions_api.core.rules.movement import LegalMoveOption
 
 
 def to_game_state_payload(state: GameState) -> GameStatePayload:

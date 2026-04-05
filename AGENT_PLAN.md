@@ -31,7 +31,8 @@ It defines assumptions, architecture guardrails, and a progress checklist.
 - Milestone 1 (Core Movement Loop): done
 - Milestone 1.5 (Missile Baseline): done
 - Milestone 2 (Combat and Morale): done
-- Next target: Milestone 3 (Playable UI Slice)
+- Milestone 3 (Playable UI Slice): done
+- Next target: Milestone 4 (AI v1)
 
 ## Non-Negotiable Technical Rules
 
@@ -143,10 +144,10 @@ docs/
 
 ### Frontend Playability
 
-- [ ] Render hex map with PixiJS
-- [ ] Implement selection and legal-move overlays
-- [ ] Build action preview and event log panels
-- [ ] Hook REST commands and websocket event stream
+- [x] Render hex map with PixiJS
+- [x] Implement selection and legal-move overlays
+- [x] Build action preview and event log panels
+- [~] Hook REST commands and websocket event stream
 
 ### AI v1
 

@@ -1,12 +1,5 @@
 import { apiRequest } from "./httpClient";
-import type {
-  ActionResponsePayload,
-  GameStatePayload,
-  LegalMovesPayload,
-  RulesetMode,
-  RulesetsPayload,
-  TurnPhase,
-} from "../types/game";
+import type { ActionResponsePayload, GameStatePayload, LegalMovesPayload, RulesetMode, RulesetsPayload, TurnPhase } from "../types/game";
 
 export async function fetchGameState(): Promise<GameStatePayload> {
   return apiRequest<GameStatePayload>("/game/state");

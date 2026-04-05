@@ -56,30 +56,13 @@ const emit = defineEmits<{
       <p v-else>Target: {{ targetUnit.unit_id }} ({{ targetUnit.side }})</p>
 
       <div class="button-row">
-        <button
-          type="button"
-          class="panel-button"
-          :disabled="!selectedUnit || !targetUnit || isSubmitting"
-          @click="emit('fire-missile')"
-        >
+        <button type="button" class="panel-button" :disabled="!selectedUnit || !targetUnit || isSubmitting" @click="emit('fire-missile')">
           Fire Missile
         </button>
-        <button
-          type="button"
-          class="panel-button"
-          :disabled="!selectedUnit || !targetUnit || isSubmitting"
-          @click="emit('resolve-shock')"
-        >
+        <button type="button" class="panel-button" :disabled="!selectedUnit || !targetUnit || isSubmitting" @click="emit('resolve-shock')">
           Resolve Shock
         </button>
-        <button
-          type="button"
-          class="panel-button"
-          :disabled="!selectedUnit || isSubmitting"
-          @click="emit('reload-missile')"
-        >
-          Reload
-        </button>
+        <button type="button" class="panel-button" :disabled="!selectedUnit || isSubmitting" @click="emit('reload-missile')">Reload</button>
       </div>
     </div>
 
@@ -97,8 +80,8 @@ const emit = defineEmits<{
         </p>
         <p v-if="lastActionResult.missile_outcome">
           <strong>Missile:</strong>
-          {{ lastActionResult.missile_outcome.firing_unit_id }} -> {{ lastActionResult.missile_outcome.target_unit_id }}
-          (roll {{ lastActionResult.missile_outcome.modified_roll }})
+          {{ lastActionResult.missile_outcome.firing_unit_id }} -> {{ lastActionResult.missile_outcome.target_unit_id }} (roll
+          {{ lastActionResult.missile_outcome.modified_roll }})
         </p>
         <p v-if="lastActionResult.shock_outcome">
           <strong>Shock:</strong>

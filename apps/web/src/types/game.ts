@@ -129,13 +129,7 @@ export interface MissileOutcomePayload {
 }
 
 export interface MissileEventPayload {
-  event_type:
-    | "missile_fired"
-    | "reaction_fire"
-    | "reload_attempt"
-    | "supply_changed"
-    | "reaction_window_opened"
-    | "reaction_window_spent";
+  event_type: "missile_fired" | "reaction_fire" | "reload_attempt" | "supply_changed" | "reaction_window_opened" | "reaction_window_spent";
   unit_id: string;
   target_unit_id: string | null;
   reaction_trigger: ReactionTrigger | null;

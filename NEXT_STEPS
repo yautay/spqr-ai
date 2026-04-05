@@ -1,44 +1,26 @@
 Legions - NEXT STEPS for next AI session
 
 Current baseline
-- Typed parser and loader for rules tables are implemented.
-- API startup validates and loads all currently supported rules tables.
-- Movement resolution uses table-driven terrain MP profiles selected by ruleset.
-- Movement baseline data exists in `movement_costs.json`; elevation/facing values are still placeholders.
-- Movement pathfinding supports occupied-hex pass-through checks via voluntary stacking table categories.
-- Game state supports multi-unit occupancy and voluntary stacking stop-in-hex when table rows allow it.
-- Movement applies voluntary/mandatory stacking side effects and emits stacking effect metadata with TQ-check fields.
-- Movement action results include pending TQ checks and resolved TQ outcomes with rolled value (`roll`).
-- TQ and missile rolls use seeded per-game RNG state (`rng_seed` + advancing `rng_counter`) for deterministic replayable sequences.
-- Failed TQ checks apply cohesion loss and set stationary units to routed state (`is_routed`).
-- Routed-unit movement uses mandatory stacking lookup (with `routing_*` moving categories).
-- Stacking table JSONs are finalized for current category matrix and loader validates complete pair coverage.
-- Missile range/results table and DR modifiers are finalized and consumed by runtime resolver.
-- Missile resolution supports active/reaction fire payload modes, LOS checks, reaction windows, DR-modifier breakdown, supply depletion, and reload attempts.
-- Shock module is implemented with table-driven clash columns, superiority shifts, CRT resolution, morale checks, rout retreat/elimination, and cavalry pursuit.
-- API supports `/game/action/shock` and returns shock/morale/pursuit result payloads.
-- M1.5 and M2 roadmap milestones are complete.
+- Milestone 3 UI slice is complete in `apps/web`.
+- PixiJS battlefield rendering is live with terrain hexes, unit layer, hover/selection states, and legal-move highlights.
+- Frontend can execute move, missile, reload, and shock actions against existing REST contracts.
+- Frontend action preview panel shows move path/MP preview and latest action breakdown metadata.
+- Event log panel normalizes action outcomes/events into user-facing timeline entries.
+- Backend exposes `GET /game/legal-moves/{unit_id}` with deterministic path + cost metadata for UI overlays.
+- Full quality gate is green via `just check`.
 
 Priority order
-1) Start Milestone 3 UI slice: render hex map and unit layer in `apps/web`
-2) Add unit selection, hover details, and legal move overlay
-3) Add action preview panel for move/missile/shock breakdowns
-4) Add event log panel for movement/missile/shock/morale outcomes
-5) Wire UI commands to existing REST endpoints and stabilize payload contracts
-
-Data import workflow
-- Source files are in `docs/sources/charts/` and `docs/SPQR_4thEdition_Living_Rules_Draft_Oct2022.pdf`.
-- For each table:
-  - copy `*.template.json` -> `<table_id>.json`
-  - fill values, keep schema keys stable
-  - keep `null` only where value is unknown and add short note
-- Validate with `just check` from repo root.
+1) Start Milestone 4 AI slice: legal move generator integration entrypoint
+2) Add backend read-only AI evaluation endpoint scaffolding (state feature extraction)
+3) Add shallow search prototype with strict move time budget
+4) Emit AI explanation payload for chosen action
+5) Add AI-vs-AI smoke simulation command and baseline regression test
 
 Coding constraints
 - Keep files small and strongly typed.
-- Keep deterministic behavior in core rules.
+- Keep deterministic behavior in core rules and AI action selection.
 - Add tests for every behavior change.
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Start `apps/web` Milestone 3 with baseline hex map render + live unit positions from `/game/state`.
+- Implement AI-facing legal action enumeration over current move/missile/shock action contracts.

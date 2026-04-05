@@ -2,6 +2,7 @@ import js from "@eslint/js";
 import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import vuePlugin from "eslint-plugin-vue";
+import vueParser from "vue-eslint-parser";
 import prettier from "eslint-config-prettier";
 
 export default [
@@ -11,7 +12,7 @@ export default [
   js.configs.recommended,
   ...vuePlugin.configs["flat/recommended"],
   {
-    files: ["**/*.{ts,tsx,vue}"],
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -23,15 +24,39 @@ export default [
       "@typescript-eslint": tsPlugin,
     },
     rules: {
-      "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+      "no-undef": "off",
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
       "max-len": [
         "error",
         {
-          "code": 140,
-          "ignoreUrls": true,
-          "ignoreStrings": true,
-          "ignoreTemplateLiterals": true
-        }
+          code: 140,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+        },
+      ],
+    },
+  },
+  {
+    files: ["**/*.vue"],
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tsParser,
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
+    },
+    rules: {
+      "no-undef": "off",
+      "max-len": [
+        "error",
+        {
+          code: 140,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+        },
       ],
     },
   },

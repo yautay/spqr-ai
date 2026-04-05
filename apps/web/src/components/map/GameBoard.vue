@@ -52,7 +52,7 @@ watch(
   () => {
     renderBoard();
   },
-  { deep: true }
+  { deep: true },
 );
 
 async function mountBoard(): Promise<void> {
@@ -90,7 +90,7 @@ function renderBoard(): void {
 
   const bounds = buildMapBounds(
     props.state.tiles.map((tile) => tile.coord),
-    HEX_SIZE
+    HEX_SIZE,
   );
   const boardWidth = bounds.maxX - bounds.minX;
   const boardHeight = bounds.maxY - bounds.minY;
@@ -101,7 +101,7 @@ function renderBoard(): void {
   root.scale.set(boardScale);
   root.position.set(
     app.value.screen.width / 2 - ((bounds.minX + bounds.maxX) * boardScale) / 2,
-    app.value.screen.height / 2 - ((bounds.minY + bounds.maxY) * boardScale) / 2
+    app.value.screen.height / 2 - ((bounds.minY + bounds.maxY) * boardScale) / 2,
   );
 
   const legalMoveByHex = new Map(props.legalMoves.map((option) => [coordKey(option.destination), option]));
@@ -210,8 +210,7 @@ function terrainColor(terrain: string): number {
   border-radius: 16px;
   background:
     radial-gradient(circle at 12% 20%, rgba(248, 228, 187, 0.44), transparent 36%),
-    radial-gradient(circle at 85% 78%, rgba(104, 129, 162, 0.33), transparent 42%),
-    linear-gradient(165deg, #f2e7ca 0%, #e4d7b8 100%);
+    radial-gradient(circle at 85% 78%, rgba(104, 129, 162, 0.33), transparent 42%), linear-gradient(165deg, #f2e7ca 0%, #e4d7b8 100%);
   overflow: hidden;
 }
 </style>

@@ -14,11 +14,13 @@ export function normalizeActionResult(actionKind: ActionKind, result: ActionResp
   });
 
   entries.push(
-    ...result.tq_check_outcomes.map((outcome): LogDraftEntry => ({
-      level: outcome.passed ? "info" : "warning",
-      title: `TQ check ${outcome.passed ? "passed" : "failed"}`,
-      detail: `${outcome.unit_id} roll ${outcome.roll} vs ${outcome.target} (${outcome.source})`,
-    }))
+    ...result.tq_check_outcomes.map(
+      (outcome): LogDraftEntry => ({
+        level: outcome.passed ? "info" : "warning",
+        title: `TQ check ${outcome.passed ? "passed" : "failed"}`,
+        detail: `${outcome.unit_id} roll ${outcome.roll} vs ${outcome.target} (${outcome.source})`,
+      }),
+    ),
   );
 
   if (result.missile_outcome) {
@@ -38,11 +40,13 @@ export function normalizeActionResult(actionKind: ActionKind, result: ActionResp
   }
 
   entries.push(
-    ...result.morale_outcomes.map((outcome): LogDraftEntry => ({
-      level: outcome.passed ? "info" : "warning",
-      title: `Morale ${outcome.passed ? "passed" : "failed"}`,
-      detail: `${outcome.unit_id} roll ${outcome.roll} vs ${outcome.target}`,
-    }))
+    ...result.morale_outcomes.map(
+      (outcome): LogDraftEntry => ({
+        level: outcome.passed ? "info" : "warning",
+        title: `Morale ${outcome.passed ? "passed" : "failed"}`,
+        detail: `${outcome.unit_id} roll ${outcome.roll} vs ${outcome.target}`,
+      }),
+    ),
   );
 
   if (result.pursuit_outcome) {

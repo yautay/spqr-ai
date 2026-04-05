@@ -12,14 +12,7 @@ import {
   fetchRulesets,
   setTurnPhase,
 } from "../api/gameApi";
-import type {
-  ActionResponsePayload,
-  GameStatePayload,
-  LegalMoveOptionPayload,
-  RulesetMode,
-  TurnPhase,
-  UnitPayload,
-} from "../types/game";
+import type { ActionResponsePayload, GameStatePayload, LegalMoveOptionPayload, RulesetMode, TurnPhase, UnitPayload } from "../types/game";
 
 export const useGameStore = defineStore("game", () => {
   const state = ref<GameStatePayload | null>(null);

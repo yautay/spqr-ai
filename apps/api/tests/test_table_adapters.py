@@ -41,20 +41,11 @@ def test_movement_costs_by_profile_raises_for_unknown_terrain() -> None:
                     "aliases": [],
                     "base_ma": 4,
                     "extended_ma": None,
-                    "terrain_costs": {
-                        "clear": {"mp": 1, "cohesion_hits": 0},
-                        "lava": {"mp": 9, "cohesion_hits": 2}
-                    },
-                    "elevation": {
-                        "up_one": {"mp": 1, "cohesion_hits": 0},
-                        "up_two_or_more": {"mp": 2, "cohesion_hits": 1}
-                    },
-                    "facing_change": {
-                        "mp_per_vertex": 1,
-                        "cohesion_hits_per_vertex_in_rough": 0
-                    }
+                    "terrain_costs": {"clear": {"mp": 1, "cohesion_hits": 0}, "lava": {"mp": 9, "cohesion_hits": 2}},
+                    "elevation": {"up_one": {"mp": 1, "cohesion_hits": 0}, "up_two_or_more": {"mp": 2, "cohesion_hits": 1}},
+                    "facing_change": {"mp_per_vertex": 1, "cohesion_hits_per_vertex_in_rough": 0},
                 }
-            ]
+            ],
         }
     )
 
@@ -76,20 +67,11 @@ def test_movement_costs_by_profile_returns_enum_keyed_costs() -> None:
                     "aliases": [],
                     "base_ma": 4,
                     "extended_ma": None,
-                    "terrain_costs": {
-                        "clear": {"mp": 1, "cohesion_hits": 0},
-                        "rough": {"mp": 2, "cohesion_hits": 1}
-                    },
-                    "elevation": {
-                        "up_one": {"mp": 1, "cohesion_hits": 0},
-                        "up_two_or_more": {"mp": 2, "cohesion_hits": 1}
-                    },
-                    "facing_change": {
-                        "mp_per_vertex": 1,
-                        "cohesion_hits_per_vertex_in_rough": 0
-                    }
+                    "terrain_costs": {"clear": {"mp": 1, "cohesion_hits": 0}, "rough": {"mp": 2, "cohesion_hits": 1}},
+                    "elevation": {"up_one": {"mp": 1, "cohesion_hits": 0}, "up_two_or_more": {"mp": 2, "cohesion_hits": 1}},
+                    "facing_change": {"mp_per_vertex": 1, "cohesion_hits_per_vertex_in_rough": 0},
                 }
-            ]
+            ],
         }
     )
 
@@ -114,7 +96,7 @@ def test_voluntary_stacking_lookup_rejects_duplicate_keys() -> None:
                     "may_stop_in_hex": False,
                     "moving_unit_cohesion_hits": None,
                     "stationary_unit_cohesion_hits": None,
-                    "tq_check_drm": None
+                    "tq_check_drm": None,
                 },
                 {
                     "moving_category": "basic",
@@ -123,9 +105,9 @@ def test_voluntary_stacking_lookup_rejects_duplicate_keys() -> None:
                     "may_stop_in_hex": False,
                     "moving_unit_cohesion_hits": 1,
                     "stationary_unit_cohesion_hits": 1,
-                    "tq_check_drm": -1
-                }
-            ]
+                    "tq_check_drm": -1,
+                },
+            ],
         }
     )
 
@@ -148,12 +130,9 @@ def test_mandatory_stacking_lookup_maps_tq_fields() -> None:
                     "may_stop_in_hex": False,
                     "moving_unit_cohesion_hits": 1,
                     "stationary_unit_cohesion_hits": 2,
-                    "stationary_unit_tq_check": {
-                        "required": True,
-                        "formula": "tq-2"
-                    }
+                    "stationary_unit_tq_check": {"required": True, "formula": "tq-2"},
                 }
-            ]
+            ],
         }
     )
 

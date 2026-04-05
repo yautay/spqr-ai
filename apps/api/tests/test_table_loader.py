@@ -11,17 +11,20 @@ from legions_api.core.tables.loader import TableId, load_ruleset, load_supported
 from legions_api.core.tables.models import MissileTableModel, MovementCostsTableModel
 
 
-@pytest.mark.parametrize("table_id", [
-    "movement_costs",
-    "stacking_voluntary",
-    "stacking_mandatory",
-    "missile_range_results",
-    "shock_superiority",
-    "clash_columns",
-    "shock_crt",
-    "rally_table",
-    "leader_casualty_table",
-])
+@pytest.mark.parametrize(
+    "table_id",
+    [
+        "movement_costs",
+        "stacking_voluntary",
+        "stacking_mandatory",
+        "missile_range_results",
+        "shock_superiority",
+        "clash_columns",
+        "shock_crt",
+        "rally_table",
+        "leader_casualty_table",
+    ],
+)
 def test_known_table_templates_load_and_validate(table_id: TableId) -> None:
     """Known table templates should be parseable with typed models."""
 
@@ -89,18 +92,12 @@ def test_load_ruleset_fails_when_movement_profile_misses_terrain(monkeypatch: py
                         "clear": {"mp": 1, "cohesion_hits": 0},
                         "rough": {"mp": 2, "cohesion_hits": 0},
                         "woods": {"mp": 2, "cohesion_hits": 0},
-                        "road": {"mp": 1, "cohesion_hits": 0}
+                        "road": {"mp": 1, "cohesion_hits": 0},
                     },
-                    "elevation": {
-                        "up_one": {"mp": 1, "cohesion_hits": 0},
-                        "up_two_or_more": {"mp": 2, "cohesion_hits": 1}
-                    },
-                    "facing_change": {
-                        "mp_per_vertex": 1,
-                        "cohesion_hits_per_vertex_in_rough": 0
-                    }
+                    "elevation": {"up_one": {"mp": 1, "cohesion_hits": 0}, "up_two_or_more": {"mp": 2, "cohesion_hits": 1}},
+                    "facing_change": {"mp_per_vertex": 1, "cohesion_hits_per_vertex_in_rough": 0},
                 }
-            ]
+            ],
         }
     )
 
@@ -131,18 +128,12 @@ def test_load_ruleset_fails_for_unknown_profile_terrain(monkeypatch: pytest.Monk
                         "woods": {"mp": 2, "cohesion_hits": 0},
                         "road": {"mp": 1, "cohesion_hits": 0},
                         "water": {"mp": 99, "cohesion_hits": None},
-                        "lava": {"mp": 9, "cohesion_hits": 3}
+                        "lava": {"mp": 9, "cohesion_hits": 3},
                     },
-                    "elevation": {
-                        "up_one": {"mp": 1, "cohesion_hits": 0},
-                        "up_two_or_more": {"mp": 2, "cohesion_hits": 1}
-                    },
-                    "facing_change": {
-                        "mp_per_vertex": 1,
-                        "cohesion_hits_per_vertex_in_rough": 0
-                    }
+                    "elevation": {"up_one": {"mp": 1, "cohesion_hits": 0}, "up_two_or_more": {"mp": 2, "cohesion_hits": 1}},
+                    "facing_change": {"mp_per_vertex": 1, "cohesion_hits_per_vertex_in_rough": 0},
                 }
-            ]
+            ],
         }
     )
 
@@ -199,9 +190,7 @@ def test_missile_table_validator_rejects_duplicate_modifier_ids() -> None:
         {
             "table_id": "missile_range_results",
             "version": "test",
-            "missile_classes": [
-                {"missile_class_id": "A", "name": "archer", "strength_by_range": {"1": 7}}
-            ],
+            "missile_classes": [{"missile_class_id": "A", "name": "archer", "strength_by_range": {"1": 7}}],
             "dr_modifiers": [
                 {"id": "target_woods", "drm": 2},
                 {"id": "target_woods", "drm": 1},
