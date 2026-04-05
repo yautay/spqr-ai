@@ -105,6 +105,17 @@ This document records confirmed project decisions and rationale.
 - Decision: AI position scoring is deterministic and based on unit preservation, cohesion pressure, rout state, and enemy proximity.
 - Rationale: ensures rules parity between human and AI turns, predictable runtime on low-spec hardware, and explainable candidate ranking.
 
+## D-020 Persistence and Replay Contracts
+
+- Decision: persist save slots as full game-state snapshots and maintain a separate ordered replay-event log for deterministic reconstruction.
+- Decision: expose replay verification via API hash comparison (`/game/replay/verify`) to guard runtime/replay parity.
+- Rationale: enables recoverable local save/load while keeping replay deterministic and auditable in tests/CI.
+
+## D-021 Scenario-Driven Bootstrap
+
+- Decision: game bootstrap must load map and order-of-battle from scenario assets, not hardcoded in Python bootstrap code.
+- Rationale: reduces code-data coupling and allows scaling to additional historical scenarios without rewriting engine bootstrap.
+
 ## Revisit Policy
 
 Any decision can be revised when one of these is true:

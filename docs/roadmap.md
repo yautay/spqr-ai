@@ -11,12 +11,12 @@ Status legend:
 
 - [x] Create backend skeleton (`apps/api`)
 - [x] Create frontend skeleton (`apps/web`)
-- [ ] Add shared schema package (`packages/shared-schema`)
+- [x] Add shared schema package (`packages/shared-schema`)
 - [x] Add project scripts (lint, test, typecheck, security)
 - [x] Configure Python tooling: `pytest`, `ruff`, `mypy`, `bandit`, `pip-audit`
 - [x] Configure frontend tooling: `vitest`, `eslint`, strict `typescript`
 - [x] Set max line length to `140` for configured linters/formatters
-- [ ] Add CI baseline checks (tests, lint, typecheck, security scans)
+- [x] Add CI baseline checks (tests, lint, typecheck, security scans)
 
 ## Milestone 1 - Core Movement Loop
 
@@ -68,10 +68,10 @@ Status legend:
 
 ## Milestone 5 - Save/Load and Replay
 
-- [ ] Persist game state snapshots
-- [ ] Persist event logs
-- [ ] Implement replay from event history
-- [ ] Add deterministic replay tests with fixed seeds
+- [x] Persist game state snapshots
+- [x] Persist event logs
+- [x] Implement replay from event history
+- [x] Add deterministic replay tests with fixed seeds
 
 ## Milestone 6 - Desktop Packaging
 

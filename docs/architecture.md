@@ -118,23 +118,28 @@ This guarantees replay, debugging, and AI parity.
 ### REST
 
 - `POST /game/new`
+- `GET /game/scenarios`
 - `GET /game/state`
+- `POST /game/activation/advance`
 - `POST /game/action`
 - `POST /game/end-turn`
 - `POST /ai/move`
-- `POST /save`
-- `POST /load`
+- `POST /game/save`
+- `POST /game/load`
+- `GET /game/saves`
+- `GET /game/replay`
+- `GET /game/replay/verify`
 
 ### WebSocket
 
 Example events:
 
-- `game_started`
-- `action_validated`
-- `action_resolved`
-- `combat_resolved`
+- `game_reset`
+- `activation_advanced`
+- `move_resolved`
+- `shock_resolved`
 - `morale_resolved`
-- `unit_routed`
+- `rout_resolved`
 - `turn_ended`
 - `ai_thinking`
 - `ai_move_selected`

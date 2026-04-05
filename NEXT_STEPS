@@ -1,22 +1,21 @@
 Legions - NEXT STEPS for next AI session
 
 Current baseline
-- Milestones 3 and 3.1 are complete in `apps/web` with Pixi map, legal overlays, action preview, event log, and websocket live events.
-- Milestone 4 AI v1 is complete in `apps/api`:
-  - legal action generator,
-  - deterministic heuristic evaluator,
-  - bounded shallow search,
-  - `/ai/move` endpoint with explainability payload,
-  - AI-vs-AI smoke simulation utility.
-- Frontend includes AI control panel with selected-action summary and ranked candidates.
+- Milestones 0 through 5 are complete in backend/frontend:
+  - shared schema package and CI baseline checks,
+  - turn/activation flow with phase-gated actions,
+  - per-step domain events and websocket streaming,
+  - snapshot save/load APIs with frontend controls,
+  - replay reconstruction and deterministic replay verification tests.
 - Full quality gate currently passes via `just check`.
 
-Priority order
-1) Start Milestone 5: persist game state snapshots (in-memory adapter -> file adapter)
-2) Persist ordered event history and link snapshots to event offsets
-3) Add replay loader from event history with deterministic state reconstruction
-4) Add fixed-seed replay regression suite for movement/missile/shock/AI actions
-5) Expose save/load/replay API contracts and wire minimal frontend controls
+Remaining scope
+1) Milestone 6 desktop packaging only:
+   - add Electron shell app,
+   - run local backend process from shell,
+   - package desktop build,
+   - validate Tauri-neutral frontend,
+   - prototype Tauri shell compatibility.
 
 Coding constraints
 - Keep files small and strongly typed.
@@ -25,4 +24,4 @@ Coding constraints
 - Keep line length <= 140 chars.
 
 Suggested first task next session
-- Introduce persistence adapters and implement `POST /save` + `POST /load` for current in-memory game state.
+- Scaffold desktop shell (`apps/desktop-electron`) and implement backend process lifecycle management.

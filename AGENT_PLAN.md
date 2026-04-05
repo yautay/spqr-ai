@@ -126,7 +126,7 @@ docs/
 
 - [x] Initialize `apps/api` (FastAPI skeleton)
 - [x] Initialize `apps/web` (Vue + TS skeleton)
-- [ ] Add shared schema package and API contracts
+- [x] Add shared schema package and API contracts
 - [x] Add `Justfile` and standard task recipes
 - [x] Add lint, formatting, and test scripts
 
@@ -135,14 +135,14 @@ docs/
 - [x] Implement map coordinates and hex utilities
 - [x] Implement movement and ZOC rules
 - [x] Implement action validation and resolution pipeline
-- [ ] Implement turn structure and activation flow
+- [x] Implement turn structure and activation flow
 
 ### Combat Loop
 
 - [x] Implement combat resolution and modifiers
 - [x] Implement morale checks
 - [x] Implement rout and pursuit
-- [ ] Emit events for each combat step
+- [x] Emit events for each combat step
 
 ### Frontend Playability
 
@@ -161,9 +161,9 @@ docs/
 
 ### Persistence and Replay
 
-- [ ] Save/load game state
-- [ ] Event log replay
-- [ ] Deterministic replay verification tests
+- [x] Save/load game state
+- [x] Event log replay
+- [x] Deterministic replay verification tests
 
 ### Desktop Packaging
 
