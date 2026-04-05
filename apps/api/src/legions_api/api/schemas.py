@@ -172,6 +172,29 @@ class MissileDRMModifierPayload(BaseModel):
     drm: int
 
 
+class MissilePreviewPayload(BaseModel):
+    """Read-only missile preview details before action execution."""
+
+    firing_unit_id: str
+    target_unit_id: str
+    fire_mode: Literal["active", "reaction"]
+    reaction_trigger: Literal["entry", "retire", "return"] | None
+    missile_class_id: str
+    range_to_target: int
+    table_strength: int
+    total_drm: int
+    hit_threshold: int
+    drm_breakdown: list[MissileDRMModifierPayload]
+
+
+class MissilePreviewResponsePayload(BaseModel):
+    """Missile preview response shape."""
+
+    ok: bool
+    reason: str
+    preview: MissilePreviewPayload | None
+
+
 class MissileOutcomePayload(BaseModel):
     """Resolved missile attack details."""
 
@@ -216,6 +239,28 @@ class ShockModifierPayload(BaseModel):
 
     id: str
     shift: int
+
+
+class ShockPreviewPayload(BaseModel):
+    """Read-only shock preview details before action execution."""
+
+    attacker_unit_id: str
+    defender_unit_id: str
+    angle: Literal["front", "flank", "rear"]
+    attacker_type: str
+    defender_type: str
+    base_column: int
+    total_shift: int
+    final_column: int
+    modifier_breakdown: list[ShockModifierPayload]
+
+
+class ShockPreviewResponsePayload(BaseModel):
+    """Shock preview response shape."""
+
+    ok: bool
+    reason: str
+    preview: ShockPreviewPayload | None
 
 
 class ShockOutcomePayload(BaseModel):

@@ -11,11 +11,15 @@ from legions_api.api.schemas import (
     MissileDRMModifierPayload,
     MissileEventPayload,
     MissileOutcomePayload,
+    MissilePreviewPayload,
+    MissilePreviewResponsePayload,
     MoraleOutcomePayload,
     PendingTQCheckPayload,
     PursuitOutcomePayload,
     ShockModifierPayload,
     ShockOutcomePayload,
+    ShockPreviewPayload,
+    ShockPreviewResponsePayload,
     StackingEffectPayload,
     TilePayload,
     TQCheckOutcomePayload,
@@ -27,11 +31,13 @@ from legions_api.core.results import (
     MissileDRMModifier,
     MissileEvent,
     MissileOutcome,
+    MissilePreview,
     MoraleOutcome,
     PendingTQCheck,
     PursuitOutcome,
     ShockModifier,
     ShockOutcome,
+    ShockPreview,
     StackingEffect,
     TQCheckOutcome,
 )
@@ -114,6 +120,26 @@ def to_legal_moves_payload(unit_id: str, options: tuple[LegalMoveOption, ...]) -
     )
 
 
+def to_missile_preview_response_payload(preview: MissilePreview | None, reason: str) -> MissilePreviewResponsePayload:
+    """Convert missile preview domain output to API response payload."""
+
+    return MissilePreviewResponsePayload(
+        ok=preview is not None,
+        reason=reason,
+        preview=_to_missile_preview_payload(preview),
+    )
+
+
+def to_shock_preview_response_payload(preview: ShockPreview | None, reason: str) -> ShockPreviewResponsePayload:
+    """Convert shock preview domain output to API response payload."""
+
+    return ShockPreviewResponsePayload(
+        ok=preview is not None,
+        reason=reason,
+        preview=_to_shock_preview_payload(preview),
+    )
+
+
 def _to_stacking_effect_payload(effect: StackingEffect) -> StackingEffectPayload:
     """Convert stacking effect metadata to API payload."""
 
@@ -186,6 +212,26 @@ def _to_missile_outcome_payload(outcome: MissileOutcome | None) -> MissileOutcom
     )
 
 
+def _to_missile_preview_payload(preview: MissilePreview | None) -> MissilePreviewPayload | None:
+    """Convert missile preview metadata to API payload."""
+
+    if preview is None:
+        return None
+
+    return MissilePreviewPayload(
+        firing_unit_id=preview.firing_unit_id,
+        target_unit_id=preview.target_unit_id,
+        fire_mode=preview.fire_mode,
+        reaction_trigger=preview.reaction_trigger,
+        missile_class_id=preview.missile_class_id,
+        range_to_target=preview.range_to_target,
+        table_strength=preview.table_strength,
+        total_drm=preview.total_drm,
+        hit_threshold=preview.hit_threshold,
+        drm_breakdown=[_to_missile_drm_modifier_payload(modifier) for modifier in preview.drm_breakdown],
+    )
+
+
 def _to_missile_drm_modifier_payload(modifier: MissileDRMModifier) -> MissileDRMModifierPayload:
     """Convert one missile DRM entry to API payload."""
 
@@ -227,6 +273,25 @@ def _to_shock_outcome_payload(outcome: ShockOutcome | None) -> ShockOutcomePaylo
         attacker_hits=outcome.attacker_hits,
         defender_hits=outcome.defender_hits,
         modifier_breakdown=[_to_shock_modifier_payload(entry) for entry in outcome.modifier_breakdown],
+    )
+
+
+def _to_shock_preview_payload(preview: ShockPreview | None) -> ShockPreviewPayload | None:
+    """Convert shock preview metadata to API payload."""
+
+    if preview is None:
+        return None
+
+    return ShockPreviewPayload(
+        attacker_unit_id=preview.attacker_unit_id,
+        defender_unit_id=preview.defender_unit_id,
+        angle=preview.angle,
+        attacker_type=preview.attacker_type,
+        defender_type=preview.defender_type,
+        base_column=preview.base_column,
+        total_shift=preview.total_shift,
+        final_column=preview.final_column,
+        modifier_breakdown=[_to_shock_modifier_payload(entry) for entry in preview.modifier_breakdown],
     )
 
 

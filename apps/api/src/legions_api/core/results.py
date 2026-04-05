@@ -83,6 +83,22 @@ class MissileOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class MissilePreview:
+    """Pre-execution missile metadata without random resolution side effects."""
+
+    firing_unit_id: str
+    target_unit_id: str
+    fire_mode: Literal["active", "reaction"]
+    reaction_trigger: Literal["entry", "retire", "return"] | None
+    missile_class_id: str
+    range_to_target: int
+    table_strength: int
+    total_drm: int
+    hit_threshold: int
+    drm_breakdown: tuple[MissileDRMModifier, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class MissileEvent:
     """Domain event emitted by missile fire/reload resolution."""
 
@@ -127,6 +143,21 @@ class ShockOutcome:
     roll: int
     attacker_hits: int
     defender_hits: int
+    modifier_breakdown: tuple[ShockModifier, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ShockPreview:
+    """Pre-execution shock metadata without random CRT roll resolution."""
+
+    attacker_unit_id: str
+    defender_unit_id: str
+    angle: Literal["front", "flank", "rear"]
+    attacker_type: str
+    defender_type: str
+    base_column: int
+    total_shift: int
+    final_column: int
     modifier_breakdown: tuple[ShockModifier, ...] = ()
 
 

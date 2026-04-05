@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from legions_api.core.actions import ShockAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
 from legions_api.core.random import seeded_d10_roll
-from legions_api.core.results import ActionResult, MoraleOutcome, PursuitOutcome, ShockModifier, ShockOutcome
+from legions_api.core.results import ActionResult, MoraleOutcome, PursuitOutcome, ShockModifier, ShockOutcome, ShockPreview
 from legions_api.core.tables.adapters import (
     ShockCRTCellLookup,
     clash_column_lookup,
@@ -19,79 +21,36 @@ from legions_api.core.tables.loader import load_table
 from legions_api.core.tables.models import ClashColumnsTableModel, ShockCRTTableModel, ShockSuperiorityTableModel
 
 
+@dataclass(frozen=True, slots=True)
+class _ShockResolutionContext:
+    attacker: Unit
+    defender: Unit
+    attacker_type: str
+    defender_type: str
+    base_column: int
+    total_shift: int
+    final_column: int
+    modifier_breakdown: tuple[ShockModifier, ...]
+    crt_table: ShockCRTTableModel
+    crt_lookup: dict[tuple[int, int], ShockCRTCellLookup]
+
+
 def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
     """Validate and resolve one adjacent shock attack."""
 
-    attacker = state.units.get(action.attacker_unit_id)
-    if attacker is None:
-        return ActionResult(ok=False, reason="attacker_unit_not_found", state=state)
+    context, reason = _build_shock_context(state, action)
+    if context is None:
+        return ActionResult(ok=False, reason=reason, state=state)
 
-    defender = state.units.get(action.defender_unit_id)
-    if defender is None:
-        return ActionResult(ok=False, reason="defender_unit_not_found", state=state)
-
-    if attacker.side != state.active_side:
-        return ActionResult(ok=False, reason="wrong_active_side", state=state)
-
-    if attacker.side == defender.side:
-        return ActionResult(ok=False, reason="target_not_enemy", state=state)
-
-    if attacker.position.distance_to(defender.position) != 1:
-        return ActionResult(ok=False, reason="shock_not_adjacent", state=state)
-
-    superiority_table = load_table("shock_superiority")
-    clash_table = load_table("clash_columns")
-    crt_table = load_table("shock_crt")
-    if not isinstance(superiority_table, ShockSuperiorityTableModel):
-        raise TypeError("shock_superiority table did not resolve to ShockSuperiorityTableModel")
-    if not isinstance(clash_table, ClashColumnsTableModel):
-        raise TypeError("clash_columns table did not resolve to ClashColumnsTableModel")
-    if not isinstance(crt_table, ShockCRTTableModel):
-        raise TypeError("shock_crt table did not resolve to ShockCRTTableModel")
-
-    clash_lookup = clash_column_lookup(clash_table)
-    superiority_lookup = shock_superiority_lookup(superiority_table)
-    adjustment_lookup = shock_column_adjustment_lookup(crt_table)
-    crt_lookup = shock_crt_lookup(crt_table)
-
-    attacker_type = attacker.shock_type
-    defender_type = defender.shock_type
-    base_column = clash_lookup.get((attacker_type, defender_type, action.angle))
-    if base_column is None:
-        return ActionResult(ok=False, reason="unknown_clash_column", state=state)
-
-    modifier_ids: list[str] = []
-    superiority_shift = superiority_lookup.get((attacker_type, defender_type), 0)
-    if superiority_shift > 0:
-        modifier_ids.append("superiority_attacker")
-    elif superiority_shift < 0:
-        modifier_ids.append("superiority_defender")
-
-    for modifier_id in action.modifier_ids:
-        if modifier_id not in modifier_ids:
-            modifier_ids.append(modifier_id)
-
-    modifier_breakdown: list[ShockModifier] = []
-    total_shift = 0
-    for modifier_id in modifier_ids:
-        modifier = adjustment_lookup.get(modifier_id)
-        if modifier is None:
-            return ActionResult(ok=False, reason="unknown_shock_modifier", state=state)
-
-        total_shift += modifier.shift
-        modifier_breakdown.append(ShockModifier(id=modifier.id, shift=modifier.shift))
-
-    crt_columns = sorted(int(column) for column in crt_table.columns)
-    final_column = max(crt_columns[0], min(crt_columns[-1], base_column + total_shift))
     roll = seeded_d10_roll(rng_seed=state.rng_seed, rng_counter=state.rng_counter)
     next_rng_counter = state.rng_counter + 1
-    crt_cell = _resolve_crt_cell(crt_table=crt_table, crt_lookup=crt_lookup, column=final_column, roll=roll)
+    crt_cell = _resolve_crt_cell(crt_table=context.crt_table, crt_lookup=context.crt_lookup, column=context.final_column, roll=roll)
 
     updated_units = dict(state.units)
-    updated_attacker = attacker.with_added_cohesion_hits(crt_cell.attacker_hits)
-    updated_defender = defender.with_added_cohesion_hits(crt_cell.defender_hits)
-    updated_units[attacker.unit_id] = updated_attacker
-    updated_units[defender.unit_id] = updated_defender
+    updated_attacker = context.attacker.with_added_cohesion_hits(crt_cell.attacker_hits)
+    updated_defender = context.defender.with_added_cohesion_hits(crt_cell.defender_hits)
+    updated_units[context.attacker.unit_id] = updated_attacker
+    updated_units[context.defender.unit_id] = updated_defender
 
     morale_outcomes: list[MoraleOutcome] = []
     if crt_cell.attacker_hits > 0:
@@ -100,7 +59,7 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
             rng_seed=state.rng_seed,
             rng_counter=next_rng_counter,
         )
-        updated_units[attacker.unit_id] = updated_attacker
+        updated_units[context.attacker.unit_id] = updated_attacker
         morale_outcomes.append(morale_outcome)
 
     if crt_cell.defender_hits > 0:
@@ -109,13 +68,13 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
             rng_seed=state.rng_seed,
             rng_counter=next_rng_counter,
         )
-        updated_units[defender.unit_id] = updated_defender
+        updated_units[context.defender.unit_id] = updated_defender
         morale_outcomes.append(morale_outcome)
 
     retreat_results = _resolve_routs(
         state=state,
-        attacker_id=attacker.unit_id,
-        defender_id=defender.unit_id,
+        attacker_id=context.attacker.unit_id,
+        defender_id=context.defender.unit_id,
         units=updated_units,
         morale_outcomes=morale_outcomes,
     )
@@ -138,21 +97,126 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
         reason="ok",
         state=updated_state,
         shock_outcome=ShockOutcome(
-            attacker_unit_id=attacker.unit_id,
-            defender_unit_id=defender.unit_id,
+            attacker_unit_id=context.attacker.unit_id,
+            defender_unit_id=context.defender.unit_id,
             angle=action.angle,
+            attacker_type=context.attacker_type,
+            defender_type=context.defender_type,
+            base_column=context.base_column,
+            total_shift=context.total_shift,
+            final_column=context.final_column,
+            roll=roll,
+            attacker_hits=crt_cell.attacker_hits,
+            defender_hits=crt_cell.defender_hits,
+            modifier_breakdown=context.modifier_breakdown,
+        ),
+        morale_outcomes=tuple(morale_outcomes),
+        pursuit_outcome=pursuit_outcome.outcome,
+    )
+
+
+def preview_shock(state: GameState, action: ShockAction) -> tuple[ShockPreview | None, str]:
+    """Compute read-only shock preview metadata for current state and command."""
+
+    context, reason = _build_shock_context(state, action)
+    if context is None:
+        return None, reason
+
+    return (
+        ShockPreview(
+            attacker_unit_id=context.attacker.unit_id,
+            defender_unit_id=context.defender.unit_id,
+            angle=action.angle,
+            attacker_type=context.attacker_type,
+            defender_type=context.defender_type,
+            base_column=context.base_column,
+            total_shift=context.total_shift,
+            final_column=context.final_column,
+            modifier_breakdown=context.modifier_breakdown,
+        ),
+        "ok",
+    )
+
+
+def _build_shock_context(state: GameState, action: ShockAction) -> tuple[_ShockResolutionContext | None, str]:
+    """Validate static shock inputs and return metadata shared by preview and resolve."""
+
+    attacker = state.units.get(action.attacker_unit_id)
+    if attacker is None:
+        return None, "attacker_unit_not_found"
+
+    defender = state.units.get(action.defender_unit_id)
+    if defender is None:
+        return None, "defender_unit_not_found"
+
+    if attacker.side != state.active_side:
+        return None, "wrong_active_side"
+
+    if attacker.side == defender.side:
+        return None, "target_not_enemy"
+
+    if attacker.position.distance_to(defender.position) != 1:
+        return None, "shock_not_adjacent"
+
+    superiority_table = load_table("shock_superiority")
+    clash_table = load_table("clash_columns")
+    crt_table = load_table("shock_crt")
+    if not isinstance(superiority_table, ShockSuperiorityTableModel):
+        raise TypeError("shock_superiority table did not resolve to ShockSuperiorityTableModel")
+    if not isinstance(clash_table, ClashColumnsTableModel):
+        raise TypeError("clash_columns table did not resolve to ClashColumnsTableModel")
+    if not isinstance(crt_table, ShockCRTTableModel):
+        raise TypeError("shock_crt table did not resolve to ShockCRTTableModel")
+
+    clash_lookup = clash_column_lookup(clash_table)
+    superiority_lookup = shock_superiority_lookup(superiority_table)
+    adjustment_lookup = shock_column_adjustment_lookup(crt_table)
+    crt_lookup = shock_crt_lookup(crt_table)
+
+    attacker_type = attacker.shock_type
+    defender_type = defender.shock_type
+    base_column = clash_lookup.get((attacker_type, defender_type, action.angle))
+    if base_column is None:
+        return None, "unknown_clash_column"
+
+    modifier_ids: list[str] = []
+    superiority_shift = superiority_lookup.get((attacker_type, defender_type), 0)
+    if superiority_shift > 0:
+        modifier_ids.append("superiority_attacker")
+    elif superiority_shift < 0:
+        modifier_ids.append("superiority_defender")
+
+    for modifier_id in action.modifier_ids:
+        if modifier_id not in modifier_ids:
+            modifier_ids.append(modifier_id)
+
+    modifier_breakdown: list[ShockModifier] = []
+    total_shift = 0
+    for modifier_id in modifier_ids:
+        modifier = adjustment_lookup.get(modifier_id)
+        if modifier is None:
+            return None, "unknown_shock_modifier"
+
+        total_shift += modifier.shift
+        modifier_breakdown.append(ShockModifier(id=modifier.id, shift=modifier.shift))
+
+    crt_columns = sorted(int(column) for column in crt_table.columns)
+    final_column = max(crt_columns[0], min(crt_columns[-1], base_column + total_shift))
+
+    return (
+        _ShockResolutionContext(
+            attacker=attacker,
+            defender=defender,
             attacker_type=attacker_type,
             defender_type=defender_type,
             base_column=base_column,
             total_shift=total_shift,
             final_column=final_column,
-            roll=roll,
-            attacker_hits=crt_cell.attacker_hits,
-            defender_hits=crt_cell.defender_hits,
             modifier_breakdown=tuple(modifier_breakdown),
+            crt_table=crt_table,
+            crt_lookup=crt_lookup,
         ),
-        morale_outcomes=tuple(morale_outcomes),
-        pursuit_outcome=pursuit_outcome.outcome,
+        "ok",
     )
 
 

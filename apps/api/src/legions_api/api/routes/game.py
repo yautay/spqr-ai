@@ -6,25 +6,33 @@ from fastapi import APIRouter, Body, Depends
 from loguru import logger
 
 from legions_api.api.dependencies import get_game_store
-from legions_api.api.mapper import to_action_response_payload, to_game_state_payload, to_legal_moves_payload
+from legions_api.api.mapper import (
+    to_action_response_payload,
+    to_game_state_payload,
+    to_legal_moves_payload,
+    to_missile_preview_response_payload,
+    to_shock_preview_response_payload,
+)
 from legions_api.api.schemas import (
     ActionResponsePayload,
     GameStatePayload,
     LegalMovesPayload,
     MissileActionPayload,
+    MissilePreviewResponsePayload,
     MissileReloadActionPayload,
     MoveActionPayload,
     NewGamePayload,
     RulesetsPayload,
     SetPhasePayload,
     ShockActionPayload,
+    ShockPreviewResponsePayload,
 )
 from legions_api.api.state_store import GameStateStore
 from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
 from legions_api.core.model.hex import HexCoord
-from legions_api.core.rules.missile import resolve_missile, resolve_reload
+from legions_api.core.rules.missile import preview_missile, resolve_missile, resolve_reload
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
-from legions_api.core.rules.shock import resolve_shock
+from legions_api.core.rules.shock import preview_shock, resolve_shock
 from legions_api.core.tables.loader import available_rulesets
 
 router = APIRouter(prefix="/game", tags=["game"])
@@ -129,6 +137,24 @@ async def missile_action(
     return to_action_response_payload(result)
 
 
+@router.post("/preview/missile", response_model=MissilePreviewResponsePayload)
+async def missile_preview(
+    payload: MissileActionPayload,
+    store: GameStateStore = Depends(get_game_store),
+) -> MissilePreviewResponsePayload:
+    """Return read-only missile preview details without mutating game state."""
+
+    action = MissileAction(
+        firing_unit_id=payload.firing_unit_id,
+        target_unit_id=payload.target_unit_id,
+        modifier_ids=tuple(payload.modifier_ids),
+        fire_mode=payload.fire_mode,
+        reaction_trigger=payload.reaction_trigger,
+    )
+    preview, reason = preview_missile(store.state, action)
+    return to_missile_preview_response_payload(preview=preview, reason=reason)
+
+
 @router.post("/action/missile/reload", response_model=ActionResponsePayload)
 async def missile_reload_action(
     payload: MissileReloadActionPayload,
@@ -179,3 +205,20 @@ async def shock_action(
         )
 
     return to_action_response_payload(result)
+
+
+@router.post("/preview/shock", response_model=ShockPreviewResponsePayload)
+async def shock_preview(
+    payload: ShockActionPayload,
+    store: GameStateStore = Depends(get_game_store),
+) -> ShockPreviewResponsePayload:
+    """Return read-only shock preview details without mutating game state."""
+
+    action = ShockAction(
+        attacker_unit_id=payload.attacker_unit_id,
+        defender_unit_id=payload.defender_unit_id,
+        angle=payload.angle,
+        modifier_ids=tuple(payload.modifier_ids),
+    )
+    preview, reason = preview_shock(store.state, action)
+    return to_shock_preview_response_payload(preview=preview, reason=reason)

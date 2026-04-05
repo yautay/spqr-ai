@@ -98,6 +98,66 @@ def test_legal_moves_endpoint_returns_preview_options() -> None:
     assert len(first_option["path"]) > 1
 
 
+def test_missile_preview_endpoint_returns_read_only_metadata() -> None:
+    """Missile preview endpoint should return hit threshold metadata without mutating state."""
+
+    client = TestClient(app)
+    before_state = client.get("/game/state").json()
+
+    response = client.post(
+        "/game/preview/missile",
+        json={
+            "firing_unit_id": "r1",
+            "target_unit_id": "b1",
+            "modifier_ids": [],
+            "fire_mode": "active",
+            "reaction_trigger": None,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["reason"] == "ok"
+    assert payload["preview"]["range_to_target"] == 2
+    assert "hit_threshold" in payload["preview"]
+
+    after_state = client.get("/game/state").json()
+    assert after_state == before_state
+
+
+def test_shock_preview_endpoint_returns_read_only_metadata() -> None:
+    """Shock preview endpoint should return column preview without mutating state."""
+
+    client = TestClient(app)
+    _ = client.post("/game/new", json={"ruleset": "original"})
+    _ = client.post(
+        "/game/action",
+        json={"unit_id": "r1", "destination": {"q": 1, "r": 0}},
+    )
+    before_state = client.get("/game/state").json()
+
+    response = client.post(
+        "/game/preview/shock",
+        json={
+            "attacker_unit_id": "r1",
+            "defender_unit_id": "b1",
+            "angle": "front",
+            "modifier_ids": [],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["reason"] == "ok"
+    assert payload["preview"]["base_column"] >= 1
+    assert payload["preview"]["final_column"] >= 1
+
+    after_state = client.get("/game/state").json()
+    assert after_state == before_state
+
+
 def test_new_game_accepts_ruleset_selection() -> None:
     """New game endpoint applies selected ruleset to state payload."""
 
