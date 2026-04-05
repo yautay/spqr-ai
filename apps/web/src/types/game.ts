@@ -45,6 +45,23 @@ export interface RulesetsPayload {
   rulesets: RulesetMode[];
 }
 
+export interface GameEventPayload {
+  event_id: string;
+  timestamp: string;
+  event_type:
+    | "game_reset"
+    | "phase_changed"
+    | "move_resolved"
+    | "missile_resolved"
+    | "reload_resolved"
+    | "shock_resolved"
+    | "ai_thinking"
+    | "ai_move_selected";
+  ok: boolean | null;
+  reason: string | null;
+  details: Record<string, string | number | boolean | null>;
+}
+
 export interface ActionResponsePayload {
   ok: boolean;
   reason: string;

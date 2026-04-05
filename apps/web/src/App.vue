@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
+import { connectGameEventsStream, type GameEventsSocketHandle } from "./api/gameEventsWs";
 import GameBoard from "./components/map/GameBoard.vue";
 import ActionPreviewPanel from "./components/panels/ActionPreviewPanel.vue";
 import EventLogPanel from "./components/panels/EventLogPanel.vue";
@@ -15,6 +16,7 @@ const logStore = useLogStore();
 const uiStore = useUiStore();
 const selectedRuleset = ref<RulesetMode>("original");
 const selectedPhase = ref<TurnPhase>("orders");
+let gameEventsSocket: GameEventsSocketHandle | null = null;
 
 const boardState = computed(() => gameStore.state);
 const availableRulesets = computed(() => gameStore.rulesets);
@@ -57,10 +59,29 @@ const movePreview = computed(() => {
 
 onMounted(async () => {
   await gameStore.initialize();
+  gameEventsSocket = connectGameEventsStream(
+    (event) => {
+      logStore.appendGameEvent(event);
+    },
+    (status) => {
+      if (status === "reconnecting") {
+        logStore.append("warning", "Live events", "WebSocket reconnecting...");
+      }
+      if (status === "closed") {
+        logStore.append("info", "Live events", "WebSocket stream closed.");
+      }
+    },
+  );
+
   if (gameStore.state) {
     selectedPhase.value = gameStore.state.turn_phase;
   }
   logStore.append("info", "Session started", "Game state loaded from API.");
+});
+
+onUnmounted(() => {
+  gameEventsSocket?.close();
+  gameEventsSocket = null;
 });
 
 watch(
