@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Body, Depends
+import asyncio
+from datetime import UTC, datetime
+from queue import Empty
+from typing import Literal
+from uuid import uuid4
+
+from fastapi import APIRouter, Body, Depends, WebSocket, WebSocketDisconnect
 from loguru import logger
 
-from legions_api.api.dependencies import get_game_store
+from legions_api.api.dependencies import get_event_stream, get_game_store
+from legions_api.api.event_stream import GameEventStream
 from legions_api.api.mapper import (
     to_action_response_payload,
     to_game_state_payload,
@@ -15,6 +22,7 @@ from legions_api.api.mapper import (
 )
 from legions_api.api.schemas import (
     ActionResponsePayload,
+    GameEventPayload,
     GameStatePayload,
     LegalMovesPayload,
     MissileActionPayload,
@@ -37,15 +45,35 @@ from legions_api.core.tables.loader import available_rulesets
 
 router = APIRouter(prefix="/game", tags=["game"])
 
+GameEventType = Literal[
+    "game_reset",
+    "phase_changed",
+    "move_resolved",
+    "missile_resolved",
+    "reload_resolved",
+    "shock_resolved",
+    "ai_thinking",
+    "ai_move_selected",
+]
+
 
 @router.post("/new", response_model=GameStatePayload)
 async def new_game(
     payload: NewGamePayload = Body(default_factory=NewGamePayload),
     store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
 ) -> GameStatePayload:
     """Reset in-memory game and return the fresh state."""
 
     state = store.reset(ruleset_mode=payload.ruleset)
+    event_stream.publish(
+        _build_game_event(
+            event_type="game_reset",
+            ok=True,
+            reason="ok",
+            details={"ruleset": payload.ruleset.value},
+        )
+    )
     logger.info("Game reset to demo scenario using ruleset={}", payload.ruleset.value)
     return to_game_state_payload(state)
 
@@ -76,19 +104,49 @@ async def legal_moves(unit_id: str, store: GameStateStore = Depends(get_game_sto
 async def set_phase(
     payload: SetPhasePayload,
     store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
 ) -> GameStatePayload:
     """Set minimal in-memory phase marker for development actions."""
 
     state = store.state.with_turn_phase(payload.phase)
     store.replace(state)
+    event_stream.publish(
+        _build_game_event(
+            event_type="phase_changed",
+            ok=True,
+            reason="ok",
+            details={"phase": payload.phase.value},
+        )
+    )
     logger.debug("Phase set to {}", payload.phase.value)
     return to_game_state_payload(state)
+
+
+@router.websocket("/ws/events")
+async def game_events(websocket: WebSocket, event_stream: GameEventStream = Depends(get_event_stream)) -> None:
+    """Stream live action events for frontend event log updates."""
+
+    await websocket.accept()
+    subscriber_queue = event_stream.subscribe()
+    try:
+        while True:
+            try:
+                event = await asyncio.to_thread(subscriber_queue.get, True, 1.0)
+            except Empty:
+                continue
+
+            await websocket.send_json(event.model_dump(mode="json"))
+    except WebSocketDisconnect:
+        logger.debug("Game events websocket disconnected")
+    finally:
+        event_stream.unsubscribe(subscriber_queue)
 
 
 @router.post("/action", response_model=ActionResponsePayload)
 async def game_action(
     payload: MoveActionPayload,
     store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
 ) -> ActionResponsePayload:
     """Apply movement action and return updated state payload."""
 
@@ -100,6 +158,19 @@ async def game_action(
     else:
         logger.debug("Move rejected: unit={} reason={}", payload.unit_id, result.reason)
 
+    event_stream.publish(
+        _build_game_event(
+            event_type="move_resolved",
+            ok=result.ok,
+            reason=result.reason,
+            details={
+                "unit_id": payload.unit_id,
+                "destination_q": payload.destination.q,
+                "destination_r": payload.destination.r,
+            },
+        )
+    )
+
     return to_action_response_payload(result)
 
 
@@ -107,6 +178,7 @@ async def game_action(
 async def missile_action(
     payload: MissileActionPayload,
     store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
 ) -> ActionResponsePayload:
     """Apply missile action and return updated state payload."""
 
@@ -134,6 +206,19 @@ async def missile_action(
             result.reason,
         )
 
+    event_stream.publish(
+        _build_game_event(
+            event_type="missile_resolved",
+            ok=result.ok,
+            reason=result.reason,
+            details={
+                "firing_unit_id": payload.firing_unit_id,
+                "target_unit_id": payload.target_unit_id,
+                "fire_mode": payload.fire_mode,
+            },
+        )
+    )
+
     return to_action_response_payload(result)
 
 
@@ -159,6 +244,7 @@ async def missile_preview(
 async def missile_reload_action(
     payload: MissileReloadActionPayload,
     store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
 ) -> ActionResponsePayload:
     """Apply missile reload action and return updated state payload."""
 
@@ -170,6 +256,15 @@ async def missile_reload_action(
     else:
         logger.debug("Missile reload rejected: unit={} reason={}", payload.unit_id, result.reason)
 
+    event_stream.publish(
+        _build_game_event(
+            event_type="reload_resolved",
+            ok=result.ok,
+            reason=result.reason,
+            details={"unit_id": payload.unit_id},
+        )
+    )
+
     return to_action_response_payload(result)
 
 
@@ -177,6 +272,7 @@ async def missile_reload_action(
 async def shock_action(
     payload: ShockActionPayload,
     store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
 ) -> ActionResponsePayload:
     """Apply shock action and return updated state payload."""
 
@@ -204,6 +300,19 @@ async def shock_action(
             result.reason,
         )
 
+    event_stream.publish(
+        _build_game_event(
+            event_type="shock_resolved",
+            ok=result.ok,
+            reason=result.reason,
+            details={
+                "attacker_unit_id": payload.attacker_unit_id,
+                "defender_unit_id": payload.defender_unit_id,
+                "angle": payload.angle,
+            },
+        )
+    )
+
     return to_action_response_payload(result)
 
 
@@ -222,3 +331,21 @@ async def shock_preview(
     )
     preview, reason = preview_shock(store.state, action)
     return to_shock_preview_response_payload(preview=preview, reason=reason)
+
+
+def _build_game_event(
+    event_type: GameEventType,
+    ok: bool | None,
+    reason: str | None,
+    details: dict[str, str | int | bool | None],
+) -> GameEventPayload:
+    """Create one websocket event payload with deterministic transport shape."""
+
+    return GameEventPayload(
+        event_id=str(uuid4()),
+        timestamp=datetime.now(tz=UTC).isoformat(),
+        event_type=event_type,
+        ok=ok,
+        reason=reason,
+        details=details,
+    )

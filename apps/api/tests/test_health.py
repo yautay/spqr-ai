@@ -413,3 +413,28 @@ def test_shock_endpoint_returns_shock_outcome(monkeypatch) -> None:
     assert payload["ok"] is True
     assert payload["shock_outcome"]["final_column"] == 6
     assert payload["shock_outcome"]["modifier_breakdown"] == [{"id": "attacker_charging", "shift": 1}]
+
+
+def test_game_events_websocket_stream_emits_live_action_events() -> None:
+    """Websocket endpoint should stream action lifecycle events in realtime."""
+
+    client = TestClient(app)
+
+    with client.websocket_connect("/game/ws/events") as websocket:
+        reset_response = client.post("/game/new", json={"ruleset": "original"})
+        assert reset_response.status_code == 200
+
+        reset_event = websocket.receive_json()
+        assert reset_event["event_type"] == "game_reset"
+        assert reset_event["ok"] is True
+
+        action_response = client.post(
+            "/game/action",
+            json={"unit_id": "r1", "destination": {"q": 1, "r": 0}},
+        )
+        assert action_response.status_code == 200
+
+        action_event = websocket.receive_json()
+        assert action_event["event_type"] == "move_resolved"
+        assert action_event["reason"] == "ok"
+        assert action_event["details"]["unit_id"] == "r1"

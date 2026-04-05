@@ -107,6 +107,26 @@ class RulesetsPayload(BaseModel):
     rulesets: list[RulesetMode]
 
 
+class GameEventPayload(BaseModel):
+    """Realtime event payload emitted over websocket stream."""
+
+    event_id: str
+    timestamp: str
+    event_type: Literal[
+        "game_reset",
+        "phase_changed",
+        "move_resolved",
+        "missile_resolved",
+        "reload_resolved",
+        "shock_resolved",
+        "ai_thinking",
+        "ai_move_selected",
+    ]
+    ok: bool | None = None
+    reason: str | None = None
+    details: dict[str, str | int | bool | None] = Field(default_factory=dict)
+
+
 class LegalMoveOptionPayload(BaseModel):
     """One legal destination with deterministic movement path preview."""
 
