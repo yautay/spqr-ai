@@ -2,14 +2,19 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import GameBoard from "./components/map/GameBoard.vue";
+import ActionPreviewPanel from "./components/panels/ActionPreviewPanel.vue";
+import EventLogPanel from "./components/panels/EventLogPanel.vue";
 import UnitDetailsPanel from "./components/panels/UnitDetailsPanel.vue";
 import { useGameStore } from "./stores/gameStore";
+import { useLogStore } from "./stores/logStore";
 import { useUiStore } from "./stores/uiStore";
-import type { HexPayload, RulesetMode } from "./types/game";
+import type { HexPayload, RulesetMode, TurnPhase } from "./types/game";
 
 const gameStore = useGameStore();
+const logStore = useLogStore();
 const uiStore = useUiStore();
 const selectedRuleset = ref<RulesetMode>("original");
+const selectedPhase = ref<TurnPhase>("orders");
 
 const boardState = computed(() => gameStore.state);
 const availableRulesets = computed(() => gameStore.rulesets);
@@ -34,9 +39,32 @@ const hoveredUnit = computed(() => {
 
   return gameStore.unitsById[uiStore.hoveredUnitId] ?? null;
 });
+const hoveredTargetUnit = computed(() => {
+  if (!selectedUnit.value || !hoveredUnit.value || selectedUnit.value.side === hoveredUnit.value.side) {
+    return null;
+  }
+
+  return hoveredUnit.value;
+});
+const movePreview = computed(() => {
+  const coord = uiStore.selectedDestination ?? uiStore.hoveredHex;
+  if (!coord) {
+    return null;
+  }
+
+  return (
+    selectedUnitLegalMoves.value.find(
+      (option) => option.destination.q === coord.q && option.destination.r === coord.r
+    ) ?? null
+  );
+});
 
 onMounted(async () => {
   await gameStore.initialize();
+  if (gameStore.state) {
+    selectedPhase.value = gameStore.state.turn_phase;
+  }
+  logStore.append("info", "Session started", "Game state loaded from API.");
 });
 
 watch(
@@ -68,9 +96,20 @@ watch(
   }
 );
 
+watch(
+  () => boardState.value?.turn_phase,
+  (phase) => {
+    if (phase) {
+      selectedPhase.value = phase;
+    }
+  },
+  { immediate: true }
+);
+
 async function handleNewGame(): Promise<void> {
   await gameStore.startNewGame(selectedRuleset.value);
   uiStore.resetSelections();
+  logStore.append("info", "New game", `Created ${selectedRuleset.value} ruleset match.`);
 }
 
 function handleUnitClick(unitId: string): void {
@@ -104,12 +143,78 @@ async function handleHexClick(coord: HexPayload): Promise<void> {
 
   uiStore.setSelectedDestination(coord);
   const result = await gameStore.moveUnit(uiStore.selectedUnitId, coord);
-  if (!result?.ok) {
+  if (!result) {
+    logStore.append("error", "Move error", gameStore.error ?? "Move request failed.");
+    return;
+  }
+
+  logStore.appendActionResult("move", result);
+  if (!result.ok) {
     return;
   }
 
   uiStore.setSelectedDestination(null);
   await gameStore.loadLegalMoves(uiStore.selectedUnitId);
+}
+
+async function handleFireMissile(): Promise<void> {
+  if (!selectedUnit.value || !hoveredTargetUnit.value) {
+    return;
+  }
+
+  const result = await gameStore.fireMissile({
+    firing_unit_id: selectedUnit.value.unit_id,
+    target_unit_id: hoveredTargetUnit.value.unit_id,
+    fire_mode: "active",
+  });
+  if (!result) {
+    logStore.append("error", "Missile error", gameStore.error ?? "Missile request failed.");
+    return;
+  }
+
+  logStore.appendActionResult("missile", result);
+}
+
+async function handleResolveShock(): Promise<void> {
+  if (!selectedUnit.value || !hoveredTargetUnit.value) {
+    return;
+  }
+
+  const result = await gameStore.resolveShock({
+    attacker_unit_id: selectedUnit.value.unit_id,
+    defender_unit_id: hoveredTargetUnit.value.unit_id,
+    angle: "front",
+  });
+  if (!result) {
+    logStore.append("error", "Shock error", gameStore.error ?? "Shock request failed.");
+    return;
+  }
+
+  logStore.appendActionResult("shock", result);
+}
+
+async function handleReloadMissile(): Promise<void> {
+  if (!selectedUnit.value) {
+    return;
+  }
+
+  const result = await gameStore.reloadMissile(selectedUnit.value.unit_id);
+  if (!result) {
+    logStore.append("error", "Reload error", gameStore.error ?? "Reload request failed.");
+    return;
+  }
+
+  logStore.appendActionResult("reload", result);
+}
+
+async function handleSetPhase(): Promise<void> {
+  await gameStore.changePhase(selectedPhase.value);
+  if (gameStore.error) {
+    logStore.append("error", "Phase change failed", gameStore.error);
+    return;
+  }
+
+  logStore.append("info", "Phase updated", `Turn phase set to ${selectedPhase.value}.`);
 }
 </script>
 
@@ -126,6 +231,13 @@ async function handleHexClick(coord: HexPayload): Promise<void> {
             {{ ruleset }}
           </option>
         </select>
+        <select v-model="selectedPhase" :disabled="gameStore.isSubmitting" class="ruleset-select">
+          <option value="orders">orders</option>
+          <option value="rout_and_reload">rout_and_reload</option>
+        </select>
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleSetPhase">
+          Set Phase
+        </button>
         <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleNewGame">
           New Game
         </button>
@@ -142,6 +254,16 @@ async function handleHexClick(coord: HexPayload): Promise<void> {
             :hovered-unit="hoveredUnit"
             :active-side="boardState?.active_side ?? null"
           />
+          <ActionPreviewPanel
+            :selected-unit="selectedUnit"
+            :target-unit="hoveredTargetUnit"
+            :move-preview="movePreview"
+            :last-action-result="gameStore.lastActionResult"
+            :is-submitting="gameStore.isSubmitting"
+            @fire-missile="handleFireMissile"
+            @resolve-shock="handleResolveShock"
+            @reload-missile="handleReloadMissile"
+          />
         </aside>
         <div class="board-layout">
           <GameBoard
@@ -156,6 +278,9 @@ async function handleHexClick(coord: HexPayload): Promise<void> {
             @hex-hover="handleHexHover"
           />
         </div>
+        <aside class="log-panel">
+          <EventLogPanel :entries="logStore.entries" />
+        </aside>
       </template>
     </section>
   </main>
@@ -218,15 +343,22 @@ h1 {
 .content-layout {
   min-height: 0;
   display: grid;
-  grid-template-columns: 290px 1fr;
+  grid-template-columns: 330px 1fr 340px;
   gap: 1rem;
 }
 
 .side-panel {
   min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0.9rem;
 }
 
 .board-layout {
+  min-height: 0;
+}
+
+.log-panel {
   min-height: 0;
 }
 
@@ -254,6 +386,11 @@ h1 {
   .board-layout {
     order: 1;
     min-height: 60dvh;
+  }
+
+  .log-panel {
+    order: 3;
+    min-height: 40dvh;
   }
 }
 </style>
