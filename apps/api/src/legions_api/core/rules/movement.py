@@ -10,7 +10,7 @@ from legions_api.core.actions import MoveAction
 from legions_api.core.model.game_state import GameState, ReactionTrigger, ReactionWindow, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.leader import Leader
-from legions_api.core.model.unit import MissileSupply, Unit
+from legions_api.core.model.unit import Facing, MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, DomainEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
 from legions_api.core.rules.facing import front_directions, occupied_hexes, opposite_facing, wide_frontage_anchor
@@ -300,32 +300,32 @@ def _validate_wide_unit_move(
         )
 
     destination_unit = _wide_forward_destination(unit=unit, destination=action.destination)
-    if destination_unit is None:
-        return None, "wide_unit_movement_not_implemented"
+    if destination_unit is not None:
+        if any(not state.scenario_map.contains(occupied) for occupied in destination_unit.occupied_hexes):
+            return None, "destination_out_of_map"
 
-    if any(not state.scenario_map.contains(occupied) for occupied in destination_unit.occupied_hexes):
-        return None, "destination_out_of_map"
+        blocking_units = {
+            occupant_id
+            for occupied in destination_unit.occupied_hexes
+            for occupant_id in state.occupant_by_hex.get(occupied, ())
+            if occupant_id != unit.unit_id
+        }
+        if blocking_units:
+            return None, "destination_occupied"
 
-    blocking_units = {
-        occupant_id
-        for occupied in destination_unit.occupied_hexes
-        for occupant_id in state.occupant_by_hex.get(occupied, ())
-        if occupant_id != unit.unit_id
-    }
-    if blocking_units:
-        return None, "destination_occupied"
+        return (
+            _MoveValidationContext(
+                unit=unit,
+                use_mandatory_stacking=False,
+                stacking_lookup={},
+                moving_category=unit.stacking_category,
+                path_result=PathResult(found=True, path=(unit.position, action.destination), total_cost=1, visited_nodes=0, reason="ok"),
+                destination_unit=destination_unit,
+            ),
+            "ok",
+        )
 
-    return (
-        _MoveValidationContext(
-            unit=unit,
-            use_mandatory_stacking=False,
-            stacking_lookup={},
-            moving_category=unit.stacking_category,
-            path_result=PathResult(found=True, path=(unit.position, action.destination), total_cost=1, visited_nodes=0, reason="ok"),
-            destination_unit=destination_unit,
-        ),
-        "ok",
-    )
+    return None, "wide_unit_movement_not_implemented"
 
 
 def _wide_forward_destination(unit: Unit, destination: HexCoord) -> Unit | None:
