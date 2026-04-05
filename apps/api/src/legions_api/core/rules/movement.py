@@ -13,7 +13,7 @@ from legions_api.core.model.leader import Leader
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, DomainEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
-from legions_api.core.rules.facing import wide_frontage_anchor
+from legions_api.core.rules.facing import front_directions, occupied_hexes, opposite_facing, wide_frontage_anchor
 from legions_api.core.rules.pathfinding import MovementPolicy, PathResult, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
 from legions_api.core.tables.adapters import (
@@ -50,6 +50,7 @@ class _MoveValidationContext:
     stacking_lookup: dict[tuple[str, str], StackingOutcome]
     moving_category: str
     path_result: PathResult
+    destination_unit: Unit | None = None
 
 
 def list_legal_move_options(state: GameState, unit_id: str) -> tuple[LegalMoveOption, ...]:
@@ -89,23 +90,31 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
 
     try:
         updated_units = dict(state.units)
-        movement_effects, moved_unit = _resolve_stacking_side_effects(
-            unit=validation.unit,
-            destination=action.destination,
-            path=validation.path_result.path,
-            current_units=updated_units,
-            stacking_lookup=validation.stacking_lookup,
-            moving_category=validation.moving_category,
-            use_mandatory_stacking=validation.use_mandatory_stacking,
-        )
-        pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
-        tq_check_outcomes, next_rng_counter = _resolve_pending_tq_checks(
-            pending_tq_checks,
-            current_units=updated_units,
-            rng_seed=state.rng_seed,
-            rng_counter=state.rng_counter,
-        )
-        updated_units[validation.unit.unit_id] = moved_unit.with_position(action.destination)
+        if validation.destination_unit is not None:
+            moved_unit = validation.destination_unit
+            movement_effects = ()
+            pending_tq_checks = ()
+            tq_check_outcomes = ()
+            next_rng_counter = state.rng_counter
+            updated_units[validation.unit.unit_id] = moved_unit
+        else:
+            movement_effects, moved_unit = _resolve_stacking_side_effects(
+                unit=validation.unit,
+                destination=action.destination,
+                path=validation.path_result.path,
+                current_units=updated_units,
+                stacking_lookup=validation.stacking_lookup,
+                moving_category=validation.moving_category,
+                use_mandatory_stacking=validation.use_mandatory_stacking,
+            )
+            pending_tq_checks = _collect_pending_tq_checks(movement_effects, current_units=updated_units)
+            tq_check_outcomes, next_rng_counter = _resolve_pending_tq_checks(
+                pending_tq_checks,
+                current_units=updated_units,
+                rng_seed=state.rng_seed,
+                rng_counter=state.rng_counter,
+            )
+            updated_units[validation.unit.unit_id] = moved_unit.with_position(action.destination)
         reaction_windows = _collect_reaction_windows(
             state=state,
             moving_unit=validation.unit,
@@ -165,7 +174,7 @@ def _validate_move_path(
         return None, "wrong_active_side"
 
     if unit.is_wide:
-        return None, "wide_unit_movement_not_implemented"
+        return _validate_wide_unit_move(state, action, unit)
 
     if state.turn_phase != TurnPhase.ORDERS:
         return None, "wrong_turn_phase"
@@ -248,9 +257,102 @@ def _validate_move_path(
             stacking_lookup=stacking_lookup,
             moving_category=moving_category,
             path_result=path_result,
+            destination_unit=None,
         ),
         "ok",
     )
+
+
+def _validate_wide_unit_move(
+    state: GameState,
+    action: MoveAction,
+    unit: Unit,
+) -> tuple[_MoveValidationContext | None, str]:
+    """Validate minimal wide-unit maneuvers supported in the current milestone."""
+
+    if state.turn_phase != TurnPhase.ORDERS:
+        return None, "wrong_turn_phase"
+
+    active_leader = state.current_active_leader()
+    if active_leader is None:
+        return None, "no_active_leader"
+    if state.activation.orders_remaining <= 0:
+        return None, "no_orders_remaining"
+    if action.unit_id in state.activation.moved_unit_ids:
+        return None, "unit_already_moved_this_activation"
+    if not _is_within_command_range(leader=active_leader, unit=unit):
+        return None, "unit_out_of_command_range"
+    if state.ruleset.options.zoc_locks_movement and any(is_in_enemy_zoc(state, unit.side, occupied) for occupied in occupied_hexes(unit)):
+        return None, "unit_pinned_by_enemy_zoc"
+
+    reversed_unit = _reverse_face_destination(unit)
+    if action.destination == unit.position and reversed_unit is not None:
+        return (
+            _MoveValidationContext(
+                unit=unit,
+                use_mandatory_stacking=False,
+                stacking_lookup={},
+                moving_category=unit.stacking_category,
+                path_result=PathResult(found=True, path=(unit.position,), total_cost=3, visited_nodes=0, reason="ok"),
+                destination_unit=reversed_unit,
+            ),
+            "ok",
+        )
+
+    destination_unit = _wide_forward_destination(unit=unit, destination=action.destination)
+    if destination_unit is None:
+        return None, "wide_unit_movement_not_implemented"
+
+    if any(not state.scenario_map.contains(occupied) for occupied in destination_unit.occupied_hexes):
+        return None, "destination_out_of_map"
+
+    blocking_units = {
+        occupant_id
+        for occupied in destination_unit.occupied_hexes
+        for occupant_id in state.occupant_by_hex.get(occupied, ())
+        if occupant_id != unit.unit_id
+    }
+    if blocking_units:
+        return None, "destination_occupied"
+
+    return (
+        _MoveValidationContext(
+            unit=unit,
+            use_mandatory_stacking=False,
+            stacking_lookup={},
+            moving_category=unit.stacking_category,
+            path_result=PathResult(found=True, path=(unit.position, action.destination), total_cost=1, visited_nodes=0, reason="ok"),
+            destination_unit=destination_unit,
+        ),
+        "ok",
+    )
+
+
+def _wide_forward_destination(unit: Unit, destination: HexCoord) -> Unit | None:
+    """Return translated wide footprint for simple forward movement, if any."""
+
+    if unit.position_b is None:
+        return None
+
+    front = front_directions(unit.facing)
+    candidates = []
+    for direction in front:
+        translated_primary = unit.position.neighbors()[direction]
+        translated_secondary = unit.position_b.neighbors()[direction]
+        candidates.append(unit.with_footprint(position=translated_primary, position_b=translated_secondary))
+
+    for candidate in candidates:
+        if destination in candidate.occupied_hexes:
+            return candidate
+    return None
+
+
+def _reverse_face_destination(unit: Unit) -> Unit | None:
+    """Return reverse-faced wide unit in the same footprint."""
+
+    if unit.position_b is None:
+        return None
+    return unit.with_facing(opposite_facing(unit.facing))
 
 
 def _load_stacking_lookup(use_mandatory_stacking: bool) -> dict[tuple[str, str], StackingOutcome]:

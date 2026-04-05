@@ -55,7 +55,7 @@ def unit_geometry(unit: Unit) -> UnitGeometry:
     else:
         occupied_hexes = _canonical_occupied_hexes(unit)
         ring_hexes = _wide_ring_hexes(occupied_hexes)
-        front_hexes, flank_hexes, rear_hexes = _wide_arc_hexes(unit.facing, ring_hexes)
+        front_hexes, flank_hexes, rear_hexes = _wide_arc_hexes(unit)
 
     return UnitGeometry(
         occupied_hexes=occupied_hexes,
@@ -122,6 +122,18 @@ def facing_from_direction(direction_index: int) -> Facing:
     raise ValueError(f"unsupported direction index: {direction_index}")
 
 
+def front_directions(facing: Facing) -> tuple[int, int]:
+    """Return the two single-hex front directions for one facing."""
+
+    return _FACING_TO_FRONT_DIRECTIONS[facing]
+
+
+def opposite_facing(facing: Facing) -> Facing:
+    """Return the opposite vertex-facing."""
+
+    return Facing((int(facing) + 180) % 360)
+
+
 def occupied_hexes(unit: Unit) -> tuple[HexCoord, ...]:
     """Return canonical occupied footprint for one unit."""
 
@@ -183,49 +195,28 @@ def _wide_ring_hexes(occupied_hexes: tuple[HexCoord, HexCoord]) -> tuple[HexCoor
     return tuple(sorted(ring, key=lambda coord: (coord.q, coord.r)))
 
 
-def _wide_arc_hexes(facing: Facing, ring_hexes: tuple[HexCoord, ...]) -> tuple[tuple[HexCoord, ...], tuple[HexCoord, ...], tuple[HexCoord, ...]]:
-    """Partition the 8-hex outer ring into 3/2/3 front/flank/rear arcs."""
+def _wide_arc_hexes(unit: Unit) -> tuple[tuple[HexCoord, ...], tuple[HexCoord, ...], tuple[HexCoord, ...]]:
+    """Build wide-unit arcs from the union of each half's local arcs."""
 
-    if len(ring_hexes) != 8:
-        raise ValueError("wide footprint must have an 8-hex outer ring")
+    if unit.position_b is None:
+        raise ValueError("wide arcs require a wide unit")
 
-    ordered = _order_ring_clockwise(ring_hexes)
-    front_start = {
-        Facing.DEG_0: 6,
-        Facing.DEG_60: 0,
-        Facing.DEG_120: 1,
-        Facing.DEG_180: 2,
-        Facing.DEG_240: 4,
-        Facing.DEG_300: 5,
-    }[facing]
-    front_hexes = tuple(ordered[(front_start + offset) % 8] for offset in range(3))
-    rear_start = (front_start + 4) % 8
-    rear_hexes = tuple(ordered[(rear_start + offset) % 8] for offset in range(3))
-    flank_hexes = tuple(hex_coord for hex_coord in ordered if hex_coord not in front_hexes and hex_coord not in rear_hexes)
-    return front_hexes, flank_hexes, rear_hexes
+    occupied_set = set(unit.occupied_hexes)
+    front: list[HexCoord] = []
+    rear: list[HexCoord] = []
+    for occupied in unit.occupied_hexes:
+        neighbors = occupied.neighbors()
+        local_front = front_directions(unit.facing)
+        local_rear = tuple((direction + 3) % 6 for direction in local_front)
+        for direction in local_front:
+            neighbor = neighbors[direction]
+            if neighbor not in occupied_set and neighbor not in front:
+                front.append(neighbor)
+        for direction in local_rear:
+            neighbor = neighbors[direction]
+            if neighbor not in occupied_set and neighbor not in rear:
+                rear.append(neighbor)
 
-
-def _order_ring_clockwise(ring_hexes: tuple[HexCoord, ...]) -> tuple[HexCoord, ...]:
-    """Return a stable clockwise order around the footprint center."""
-
-    center_q = sum(coord.q for coord in ring_hexes) / len(ring_hexes)
-    center_r = sum(coord.r for coord in ring_hexes) / len(ring_hexes)
-    return tuple(
-        sorted(
-            ring_hexes,
-            key=lambda coord: _ring_sort_key(center_q=center_q, center_r=center_r, coord=coord),
-        )
-    )
-
-
-def _ring_sort_key(center_q: float, center_r: float, coord: HexCoord) -> tuple[float, float, int, int]:
-    """Sort key for clockwise ordering around a footprint center."""
-
-    import math
-
-    x = coord.q + coord.r / 2
-    y = -coord.r
-    center_x = center_q + center_r / 2
-    center_y = -center_r
-    angle = math.atan2(y - center_y, x - center_x)
-    return ((angle + 2 * math.pi) % (2 * math.pi), coord.q, coord.r)
+    ring = _wide_ring_hexes(_canonical_occupied_hexes(unit))
+    flank = [coord for coord in ring if coord not in front and coord not in rear]
+    return tuple(front), tuple(flank), tuple(rear)

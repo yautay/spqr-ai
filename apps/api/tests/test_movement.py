@@ -77,6 +77,98 @@ def test_enemy_zoc_hexes_use_only_front_hexes_from_facing() -> None:
     assert zoc == {HexCoord(1, -1), HexCoord(0, -1)}
 
 
+def test_wide_unit_can_move_forward_one_hex() -> None:
+    """Wide unit should translate both occupied hexes when moving straight forward."""
+
+    scenario_map = build_irregular_map(
+        tiles=[
+            HexTile(coord=HexCoord(0, 0)),
+            HexTile(coord=HexCoord(1, 0)),
+            HexTile(coord=HexCoord(1, -1)),
+            HexTile(coord=HexCoord(2, -1)),
+        ]
+    )
+    units = {
+        "r1": Unit(
+            unit_id="r1",
+            side=Side.RED,
+            position=HexCoord(0, 0),
+            position_b=HexCoord(1, 0),
+            facing=Facing.DEG_60,
+            shock_type="PH",
+            move_allowance=4,
+        )
+    }
+    leaders = {
+        "l1": Leader(
+            leader_id="l1",
+            side=Side.RED,
+            name="Leader",
+            position=HexCoord(0, 0),
+            initiative=1,
+            command_range=6,
+            line_command=1,
+        )
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+        leaders=leaders,
+        activation=ActivationState(leader_id="l1", orders_remaining=1, line_commands_remaining=1),
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(1, -1)))
+
+    assert result.ok
+    assert result.state.units["r1"].occupied_hexes == (HexCoord(1, -1), HexCoord(2, -1))
+
+
+def test_wide_unit_can_reverse_face_in_place() -> None:
+    """Wide unit should be able to reverse face without changing occupied hexes."""
+
+    scenario_map = build_irregular_map(tiles=[HexTile(coord=HexCoord(0, 0)), HexTile(coord=HexCoord(1, 0))])
+    units = {
+        "r1": Unit(
+            unit_id="r1",
+            side=Side.RED,
+            position=HexCoord(0, 0),
+            position_b=HexCoord(1, 0),
+            facing=Facing.DEG_60,
+            shock_type="PH",
+            move_allowance=4,
+        )
+    }
+    leaders = {
+        "l1": Leader(
+            leader_id="l1",
+            side=Side.RED,
+            name="Leader",
+            position=HexCoord(0, 0),
+            initiative=1,
+            command_range=6,
+            line_command=1,
+        )
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+        leaders=leaders,
+        activation=ActivationState(leader_id="l1", orders_remaining=1, line_commands_remaining=1),
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 0)))
+
+    assert result.ok
+    assert result.state.units["r1"].occupied_hexes == (HexCoord(0, 0), HexCoord(1, 0))
+    assert result.state.units["r1"].facing == Facing.DEG_240
+
+
 def test_move_fails_when_no_active_leader_exists() -> None:
     """Orders-phase move should require an active leader."""
 
