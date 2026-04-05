@@ -283,6 +283,47 @@ class ShockPreviewResponsePayload(BaseModel):
     preview: ShockPreviewPayload | None
 
 
+class AIMoveRequestPayload(BaseModel):
+    """Configurable AI move search request payload."""
+
+    time_budget_ms: int = 150
+    max_candidates: int = 128
+
+
+class AIActionDescriptorPayload(BaseModel):
+    """Transport-friendly selected action descriptor."""
+
+    action_type: Literal["move", "missile", "reload", "shock"]
+    summary: str
+    unit_id: str | None = None
+    destination: HexPayload | None = None
+    firing_unit_id: str | None = None
+    target_unit_id: str | None = None
+    attacker_unit_id: str | None = None
+    defender_unit_id: str | None = None
+    angle: Literal["front", "flank", "rear"] | None = None
+
+
+class AICandidateScorePayload(BaseModel):
+    """One ranked AI candidate with score explanation metadata."""
+
+    action_type: Literal["move", "missile", "reload", "shock"]
+    summary: str
+    score: float
+
+
+class AIMoveResponsePayload(BaseModel):
+    """AI move endpoint response payload."""
+
+    ok: bool
+    reason: str
+    considered_actions: int
+    elapsed_ms: int
+    selected_action: AIActionDescriptorPayload | None
+    top_candidates: list[AICandidateScorePayload]
+    action_result: ActionResponsePayload | None = None
+
+
 class ShockOutcomePayload(BaseModel):
     """Resolved shock attack details."""
 

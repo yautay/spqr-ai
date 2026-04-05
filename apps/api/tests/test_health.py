@@ -438,3 +438,26 @@ def test_game_events_websocket_stream_emits_live_action_events() -> None:
         assert action_event["event_type"] == "move_resolved"
         assert action_event["reason"] == "ok"
         assert action_event["details"]["unit_id"] == "r1"
+
+
+def test_ai_move_endpoint_returns_selection_and_action_result() -> None:
+    """AI move endpoint should execute one selected action with explanation metadata."""
+
+    client = TestClient(app)
+    _ = client.post("/game/new", json={"ruleset": "original"})
+
+    response = client.post(
+        "/ai/move",
+        json={
+            "time_budget_ms": 120,
+            "max_candidates": 64,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["selected_action"] is not None
+    assert payload["considered_actions"] > 0
+    assert payload["action_result"] is not None
+    assert len(payload["top_candidates"]) > 0

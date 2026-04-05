@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from loguru import logger
 
+from legions_api.api.routes.ai import router as ai_router
 from legions_api.api.routes.game import router as game_router
 from legions_api.core.tables.loader import load_supported_tables
 from legions_api.logging import configure_logging
@@ -27,6 +28,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Legions API", version="0.1.0", lifespan=lifespan)
 app.include_router(game_router)
+app.include_router(ai_router)
 
 
 @app.get("/health")

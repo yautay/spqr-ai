@@ -25,3 +25,13 @@ class AIScoredCandidate:
 
     candidate: AICandidateAction
     score: float
+
+
+@dataclass(frozen=True, slots=True)
+class AISearchResult:
+    """Result of bounded AI candidate scoring iteration."""
+
+    selected: AICandidateAction | None
+    considered_actions: int
+    elapsed_ms: int
+    scored_candidates: tuple[AIScoredCandidate, ...]

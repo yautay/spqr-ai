@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+from legions_api.ai.types import AICandidateAction, AISearchResult
 from legions_api.api.schemas import (
     ActionResponsePayload,
+    AIActionDescriptorPayload,
+    AICandidateScorePayload,
+    AIMoveResponsePayload,
     GameStatePayload,
     HexPayload,
     LegalMoveOptionPayload,
@@ -25,6 +29,7 @@ from legions_api.api.schemas import (
     TQCheckOutcomePayload,
     UnitPayload,
 )
+from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
 from legions_api.core.model.game_state import GameState
 from legions_api.core.results import (
     ActionResult,
@@ -138,6 +143,72 @@ def to_shock_preview_response_payload(preview: ShockPreview | None, reason: str)
         reason=reason,
         preview=_to_shock_preview_payload(preview),
     )
+
+
+def to_ai_move_response_payload(
+    search_result: AISearchResult,
+    action_result: ActionResult | None,
+    reason: str,
+) -> AIMoveResponsePayload:
+    """Convert AI search + execution result to API response payload."""
+
+    return AIMoveResponsePayload(
+        ok=action_result.ok if action_result is not None else False,
+        reason=reason,
+        considered_actions=search_result.considered_actions,
+        elapsed_ms=search_result.elapsed_ms,
+        selected_action=to_ai_action_descriptor_payload(search_result.selected),
+        top_candidates=[
+            AICandidateScorePayload(
+                action_type=scored.candidate.action_type,
+                summary=scored.candidate.summary,
+                score=scored.score,
+            )
+            for scored in search_result.scored_candidates[:3]
+        ],
+        action_result=to_action_response_payload(action_result) if action_result is not None else None,
+    )
+
+
+def to_ai_action_descriptor_payload(candidate: AICandidateAction | None) -> AIActionDescriptorPayload | None:
+    """Convert AI candidate action to transport descriptor payload."""
+
+    if candidate is None:
+        return None
+
+    if isinstance(candidate.action, MoveAction):
+        return AIActionDescriptorPayload(
+            action_type=candidate.action_type,
+            summary=candidate.summary,
+            unit_id=candidate.action.unit_id,
+            destination=HexPayload(q=candidate.action.destination.q, r=candidate.action.destination.r),
+        )
+
+    if isinstance(candidate.action, MissileAction):
+        return AIActionDescriptorPayload(
+            action_type=candidate.action_type,
+            summary=candidate.summary,
+            firing_unit_id=candidate.action.firing_unit_id,
+            target_unit_id=candidate.action.target_unit_id,
+        )
+
+    if isinstance(candidate.action, ReloadMissileAction):
+        return AIActionDescriptorPayload(
+            action_type=candidate.action_type,
+            summary=candidate.summary,
+            unit_id=candidate.action.unit_id,
+        )
+
+    if isinstance(candidate.action, ShockAction):
+        return AIActionDescriptorPayload(
+            action_type=candidate.action_type,
+            summary=candidate.summary,
+            attacker_unit_id=candidate.action.attacker_unit_id,
+            defender_unit_id=candidate.action.defender_unit_id,
+            angle=candidate.action.angle,
+        )
+
+    raise TypeError("unknown AI action payload type")
 
 
 def _to_stacking_effect_payload(effect: StackingEffect) -> StackingEffectPayload:
