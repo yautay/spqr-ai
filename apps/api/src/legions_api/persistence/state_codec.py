@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import cast
 
-from legions_api.core.model.game_state import GameState, ReactionTrigger, ReactionWindow, TurnPhase
+from legions_api.core.model.game_state import ActivationState, GameState, ReactionTrigger, ReactionWindow, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.leader import Leader, LeaderStatus
 from legions_api.core.model.map import HexTile, MapEdge, TerrainType, build_irregular_map, edge_key
@@ -24,6 +24,15 @@ def encode_state(state: GameState) -> dict[str, object]:
         "rng_counter": state.rng_counter,
         "turn_number": state.turn_number,
         "turn_phase": state.turn_phase.value,
+        "activation": {
+            "leader_id": state.activation.leader_id,
+            "orders_remaining": state.activation.orders_remaining,
+            "line_commands_remaining": state.activation.line_commands_remaining,
+            "moved_unit_ids": list(state.activation.moved_unit_ids),
+            "fired_unit_ids": list(state.activation.fired_unit_ids),
+            "shocked_unit_ids": list(state.activation.shocked_unit_ids),
+            "activated_leader_ids": list(state.activation.activated_leader_ids),
+        },
         "map": {
             "tiles": [
                 {
@@ -104,6 +113,7 @@ def decode_state(payload: dict[str, object]) -> GameState:
     ruleset = load_ruleset(ruleset_mode)
 
     raw_map = _as_dict(payload["map"])
+    raw_activation = _as_dict(payload.get("activation", {}))
     raw_tiles = _as_list(raw_map["tiles"])
     raw_edges = _as_list(raw_map["edges"])
 
@@ -192,6 +202,15 @@ def decode_state(payload: dict[str, object]) -> GameState:
         rng_counter=_as_int(payload.get("rng_counter", 0)),
         turn_number=_as_int(payload.get("turn_number", 1)),
         turn_phase=TurnPhase(_as_str(payload.get("turn_phase", TurnPhase.ORDERS.value))),
+        activation=ActivationState(
+            leader_id=_as_optional_str(raw_activation.get("leader_id")),
+            orders_remaining=_as_int(raw_activation.get("orders_remaining", 0)),
+            line_commands_remaining=_as_int(raw_activation.get("line_commands_remaining", 0)),
+            moved_unit_ids=tuple(_as_str(value) for value in _as_list(raw_activation.get("moved_unit_ids", []))),
+            fired_unit_ids=tuple(_as_str(value) for value in _as_list(raw_activation.get("fired_unit_ids", []))),
+            shocked_unit_ids=tuple(_as_str(value) for value in _as_list(raw_activation.get("shocked_unit_ids", []))),
+            activated_leader_ids=tuple(_as_str(value) for value in _as_list(raw_activation.get("activated_leader_ids", []))),
+        ),
         open_reaction_windows=open_reaction_windows,
         spent_reaction_windows=spent_reaction_windows,
     )

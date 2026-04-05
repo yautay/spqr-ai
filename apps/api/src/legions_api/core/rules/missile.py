@@ -86,6 +86,18 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
         )
 
     updated_state = state.with_units(updated_units).with_rng_counter(state.rng_counter + 1)
+    if action.fire_mode == "active":
+        updated_state = updated_state.with_activation(
+            state.activation.__class__(
+                leader_id=state.activation.leader_id,
+                orders_remaining=max(0, state.activation.orders_remaining - 1),
+                line_commands_remaining=state.activation.line_commands_remaining,
+                moved_unit_ids=state.activation.moved_unit_ids,
+                fired_unit_ids=(*state.activation.fired_unit_ids, context.firing_unit.unit_id),
+                shocked_unit_ids=state.activation.shocked_unit_ids,
+                activated_leader_ids=state.activation.activated_leader_ids,
+            )
+        )
     if action.fire_mode == "reaction" and action.reaction_trigger is not None:
         updated_state = updated_state.mark_reaction_window_spent(
             firing_unit_id=context.firing_unit.unit_id,
@@ -223,6 +235,17 @@ def _build_missile_context(state: GameState, action: MissileAction) -> tuple[_Mi
 
     if action.fire_mode == "active" and state.turn_phase != TurnPhase.ORDERS:
         return None, "wrong_turn_phase"
+
+    if action.fire_mode == "active":
+        active_leader = state.current_active_leader()
+        if active_leader is None:
+            return None, "no_active_leader"
+        if state.activation.orders_remaining <= 0:
+            return None, "no_orders_remaining"
+        if firing_unit.unit_id in state.activation.fired_unit_ids:
+            return None, "unit_already_fired_this_activation"
+        if active_leader.position.distance_to(firing_unit.position) > active_leader.command_range:
+            return None, "unit_out_of_command_range"
 
     if firing_unit.side == target_unit.side:
         return None, "target_not_enemy"

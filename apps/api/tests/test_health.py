@@ -36,7 +36,7 @@ def test_game_state_endpoint_returns_tiles_and_units() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["turn_phase"] in {"orders", "shock", "rout_and_reload"}
+    assert payload["turn_phase"] in {"orders", "shock", "rout_and_reload", "withdrawal"}
     assert payload["active_side"] in {"red", "blue"}
     assert len(payload["tiles"]) > 0
     assert len(payload["units"]) > 0

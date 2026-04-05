@@ -35,6 +35,19 @@ class ReactionWindow:
 
 
 @dataclass(frozen=True, slots=True)
+class ActivationState:
+    """Current leader-driven activation context."""
+
+    leader_id: str | None = None
+    orders_remaining: int = 0
+    line_commands_remaining: int = 0
+    moved_unit_ids: tuple[str, ...] = ()
+    fired_unit_ids: tuple[str, ...] = ()
+    shocked_unit_ids: tuple[str, ...] = ()
+    activated_leader_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class GameState:
     """Immutable runtime state for tactical rules execution."""
 
@@ -49,6 +62,7 @@ class GameState:
     rng_counter: int
     turn_number: int
     turn_phase: TurnPhase
+    activation: ActivationState
     open_reaction_windows: tuple[ReactionWindow, ...]
     spent_reaction_windows: tuple[ReactionWindow, ...]
 
@@ -65,12 +79,13 @@ class GameState:
         rng_counter: int = 0,
         turn_number: int = 1,
         turn_phase: TurnPhase = TurnPhase.ORDERS,
+        activation: ActivationState | None = None,
         open_reaction_windows: tuple[ReactionWindow, ...] = (),
         spent_reaction_windows: tuple[ReactionWindow, ...] = (),
     ) -> GameState:
         """Create state and build occupancy index from units."""
 
-        leader_lookup = leaders or {}
+        leader_lookup = _normalize_leaders(active_side=active_side, units=units, leaders=leaders)
         occupant_by_hex: dict[HexCoord, list[str]] = {}
         for unit_id, unit in units.items():
             if not scenario_map.contains(unit.position):
@@ -82,6 +97,7 @@ class GameState:
             if not scenario_map.contains(leader.position):
                 raise ValueError(f"leader {leader_id} starts outside passable map")
 
+        activation_state = activation or _initial_activation_state(active_side=active_side, leaders=leader_lookup)
         frozen_occupants = {coord: tuple(unit_ids) for coord, unit_ids in occupant_by_hex.items()}
 
         return cls(
@@ -96,6 +112,7 @@ class GameState:
             rng_counter=rng_counter,
             turn_number=turn_number,
             turn_phase=turn_phase,
+            activation=activation_state,
             open_reaction_windows=open_reaction_windows,
             spent_reaction_windows=spent_reaction_windows,
         )
@@ -134,6 +151,7 @@ class GameState:
             rng_counter=self.rng_counter,
             turn_number=self.turn_number,
             turn_phase=self.turn_phase,
+            activation=self.activation,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
         )
@@ -152,6 +170,7 @@ class GameState:
             rng_counter=self.rng_counter,
             turn_number=self.turn_number,
             turn_phase=self.turn_phase,
+            activation=self.activation,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
         )
@@ -171,6 +190,7 @@ class GameState:
             rng_counter=self.rng_counter,
             turn_number=self.turn_number,
             turn_phase=self.turn_phase,
+            activation=self.activation,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
         )
@@ -190,6 +210,7 @@ class GameState:
             rng_counter=rng_counter,
             turn_number=self.turn_number,
             turn_phase=self.turn_phase,
+            activation=self.activation,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
         )
@@ -209,6 +230,7 @@ class GameState:
             rng_counter=self.rng_counter,
             turn_number=self.turn_number,
             turn_phase=turn_phase,
+            activation=self.activation,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
         )
@@ -228,6 +250,27 @@ class GameState:
             rng_counter=self.rng_counter,
             turn_number=turn_number,
             turn_phase=self.turn_phase,
+            activation=self.activation,
+            open_reaction_windows=self.open_reaction_windows,
+            spent_reaction_windows=self.spent_reaction_windows,
+        )
+
+    def with_activation(self, activation: ActivationState) -> GameState:
+        """Return copy with replaced activation context."""
+
+        return GameState(
+            scenario_map=self.scenario_map,
+            scenario=self.scenario,
+            ruleset=self.ruleset,
+            active_side=self.active_side,
+            units=self.units,
+            leaders=self.leaders,
+            occupant_by_hex=self.occupant_by_hex,
+            rng_seed=self.rng_seed,
+            rng_counter=self.rng_counter,
+            turn_number=self.turn_number,
+            turn_phase=self.turn_phase,
+            activation=activation,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
         )
@@ -251,6 +294,7 @@ class GameState:
             rng_counter=self.rng_counter,
             turn_number=self.turn_number,
             turn_phase=self.turn_phase,
+            activation=self.activation,
             open_reaction_windows=open_reaction_windows,
             spent_reaction_windows=spent_reaction_windows,
         )
@@ -308,6 +352,7 @@ class GameState:
             rng_counter=self.rng_counter,
             turn_number=self.turn_number,
             turn_phase=self.turn_phase,
+            activation=self.activation,
             open_reaction_windows=next_open_windows,
             spent_reaction_windows=next_spent_windows,
         )
@@ -330,7 +375,58 @@ class GameState:
     def current_active_leader(self) -> Leader | None:
         """Return currently active leader, if any."""
 
-        active = [leader for leader in self.active_leaders() if leader.status == LeaderStatus.ACTIVE]
-        if not active:
+        leader_id = self.activation.leader_id
+        if leader_id is None:
             return None
-        return active[0]
+        return self.leaders.get(leader_id)
+
+
+def _initial_activation_state(active_side: Side, leaders: dict[str, Leader]) -> ActivationState:
+    """Build default activation state for one side's first eligible leader."""
+
+    eligible = sorted(
+        (leader for leader in leaders.values() if leader.side == active_side),
+        key=lambda leader: (leader.initiative, leader.leader_id),
+    )
+    if not eligible:
+        return ActivationState()
+
+    first = eligible[0]
+    return ActivationState(
+        leader_id=first.leader_id,
+        orders_remaining=first.initiative,
+        line_commands_remaining=max(0, first.line_command),
+    )
+
+
+def _normalize_leaders(active_side: Side, units: dict[str, Unit], leaders: dict[str, Leader] | None) -> dict[str, Leader]:
+    """Return provided leaders or synthesize one for isolated rule-test states."""
+
+    if leaders is not None:
+        return leaders
+
+    active_units = sorted(
+        (unit for unit in units.values() if unit.side == active_side),
+        key=lambda unit: unit.unit_id,
+    )
+    if not active_units:
+        return {}
+
+    anchor = active_units[0]
+    return {
+        f"{active_side.value}_synthetic_leader": Leader(
+            leader_id=f"{active_side.value}_synthetic_leader",
+            side=active_side,
+            name=f"{active_side.value.title()} Synthetic Leader",
+            position=anchor.position,
+            is_overall_commander=True,
+            initiative=99,
+            command_range=99,
+            line_command=99,
+            strategy=9,
+            charisma=0,
+            elite_commander=False,
+            command_restrictions=(),
+            status=LeaderStatus.ACTIVE,
+        )
+    }

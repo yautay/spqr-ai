@@ -3,8 +3,9 @@
 import pytest
 
 from legions_api.core.actions import MoveAction
-from legions_api.core.model.game_state import GameState, ReactionWindow
+from legions_api.core.model.game_state import ActivationState, GameState, ReactionWindow
 from legions_api.core.model.hex import HexCoord
+from legions_api.core.model.leader import Leader
 from legions_api.core.model.map import HexTile, TerrainType, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
 from legions_api.core.model.scenario import ScenarioDefinition
@@ -43,6 +44,60 @@ def test_move_fails_when_unit_starts_in_enemy_zoc() -> None:
 
     assert not result.ok
     assert result.reason == "unit_pinned_by_enemy_zoc"
+
+
+def test_move_fails_when_no_active_leader_exists() -> None:
+    """Orders-phase move should require an active leader."""
+
+    scenario_map = build_irregular_map(tiles=[HexTile(coord=HexCoord(0, 0)), HexTile(coord=HexCoord(0, 1))])
+    units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(0, 0), move_allowance=1)}
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+        activation=ActivationState(),
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(0, 1)))
+
+    assert not result.ok
+    assert result.reason == "no_active_leader"
+
+
+def test_move_fails_when_unit_out_of_command_range() -> None:
+    """Orders-phase move should require unit within active leader command range."""
+
+    scenario_map = build_irregular_map(
+        tiles=[HexTile(coord=HexCoord(0, 0)), HexTile(coord=HexCoord(0, 1)), HexTile(coord=HexCoord(4, 0)), HexTile(coord=HexCoord(4, 1))]
+    )
+    units = {"r1": Unit(unit_id="r1", side=Side.RED, position=HexCoord(4, 0), move_allowance=1)}
+    leaders = {
+        "l1": Leader(
+            leader_id="l1",
+            side=Side.RED,
+            name="Leader",
+            position=HexCoord(0, 0),
+            initiative=1,
+            command_range=1,
+            line_command=1,
+        )
+    }
+    state = GameState.from_units(
+        scenario_map=scenario_map,
+        scenario=ScenarioDefinition(),
+        ruleset=load_ruleset(RulesetMode.ORIGINAL),
+        active_side=Side.RED,
+        units=units,
+        leaders=leaders,
+        activation=ActivationState(leader_id="l1", orders_remaining=1, line_commands_remaining=1),
+    )
+
+    result = resolve_move(state, MoveAction(unit_id="r1", destination=HexCoord(4, 1)))
+
+    assert not result.ok
+    assert result.reason == "unit_out_of_command_range"
 
 
 def test_move_opens_reaction_window_event_on_entry_trigger() -> None:

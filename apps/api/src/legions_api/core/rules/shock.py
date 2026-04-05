@@ -90,7 +90,17 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
     )
     updated_units = pursuit_outcome.units
 
-    updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter)
+    updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter).with_activation(
+        state.activation.__class__(
+            leader_id=state.activation.leader_id,
+            orders_remaining=state.activation.orders_remaining,
+            line_commands_remaining=state.activation.line_commands_remaining,
+            moved_unit_ids=state.activation.moved_unit_ids,
+            fired_unit_ids=state.activation.fired_unit_ids,
+            shocked_unit_ids=(*state.activation.shocked_unit_ids, context.attacker.unit_id),
+            activated_leader_ids=state.activation.activated_leader_ids,
+        )
+    )
     events: list[DomainEvent] = [
         DomainEvent(
             event_type="shock_designated",
@@ -218,6 +228,16 @@ def _build_shock_context(state: GameState, action: ShockAction) -> tuple[_ShockR
 
     if state.turn_phase != TurnPhase.SHOCK:
         return None, "wrong_turn_phase"
+
+    active_leader = state.current_active_leader()
+    if active_leader is None:
+        return None, "no_active_leader"
+
+    if attacker.unit_id in state.activation.shocked_unit_ids:
+        return None, "unit_already_shocked_this_activation"
+
+    if active_leader.position.distance_to(attacker.position) > active_leader.command_range:
+        return None, "unit_out_of_command_range"
 
     if attacker.side == defender.side:
         return None, "target_not_enemy"

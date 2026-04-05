@@ -13,6 +13,7 @@ from legions_api.core.model.scenario import ScenarioDefinition
 from legions_api.core.model.unit import MissileSupply, Side, Unit
 from legions_api.core.rules import missile as missile_rules
 from legions_api.core.rules.missile import resolve_missile, resolve_reload
+from legions_api.core.turn import advance_activation_step
 from legions_api.core.tables.loader import load_ruleset
 from legions_api.core.tables.models import MissileTableModel
 
@@ -388,7 +389,13 @@ def test_fire_reload_sequence_updates_supply_and_events(monkeypatch: pytest.Monk
     assert first_fire.ok
     assert first_fire.state.units["r1"].missile_supply == MissileSupply.LOW
 
-    second_fire = resolve_missile(first_fire.state, MissileAction(firing_unit_id="r1", target_unit_id="b1"))
+    advanced = first_fire.state
+    for _ in range(12):
+        advanced, _ = advance_activation_step(advanced)
+        if advanced.active_side == Side.RED and advanced.turn_phase == TurnPhase.ORDERS:
+            break
+
+    second_fire = resolve_missile(advanced, MissileAction(firing_unit_id="r1", target_unit_id="b1"))
     assert second_fire.ok
     assert second_fire.state.units["r1"].missile_supply == MissileSupply.NO
 

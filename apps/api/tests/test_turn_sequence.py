@@ -17,6 +17,7 @@ def test_advance_activation_moves_orders_to_shock() -> None:
     assert transition.next_phase == TurnPhase.SHOCK
     assert transition.previous_side == next_state.active_side
     assert next_state.turn_number == 1
+    assert next_state.current_active_leader() is not None
 
 
 def test_advance_activation_moves_shock_to_reload() -> None:
@@ -32,17 +33,30 @@ def test_advance_activation_moves_shock_to_reload() -> None:
     assert next_state.turn_number == 1
 
 
-def test_advance_activation_moves_to_next_side_after_reload() -> None:
-    """Advancing reload segment should switch active side and reset to orders."""
+def test_advance_activation_moves_to_withdrawal_after_last_red_leader() -> None:
+    """Advancing red reload segment after final leader should enter withdrawal."""
 
     state = create_demo_state().with_turn_phase(TurnPhase.ROUT_AND_RELOAD)
 
     next_state, transition = advance_activation_step(state)
 
     assert transition.previous_side == Side.RED
-    assert transition.next_side == Side.BLUE
-    assert next_state.turn_phase == TurnPhase.ORDERS
+    assert transition.next_side == Side.RED
+    assert next_state.turn_phase == TurnPhase.WITHDRAWAL
     assert next_state.turn_number == 1
+
+
+def test_advance_activation_moves_blue_withdrawal_to_new_red_turn() -> None:
+    """Advancing blue withdrawal should start next turn for red side."""
+
+    state = create_demo_state().with_active_side(Side.BLUE).with_turn_phase(TurnPhase.WITHDRAWAL).with_turn_number(4)
+
+    next_state, transition = advance_activation_step(state)
+
+    assert transition.previous_turn == 4
+    assert transition.next_turn == 5
+    assert next_state.active_side == Side.RED
+    assert next_state.turn_phase == TurnPhase.ORDERS
 
 
 def test_end_turn_from_blue_increments_turn_counter() -> None:

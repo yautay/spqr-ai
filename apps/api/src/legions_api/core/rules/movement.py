@@ -9,6 +9,7 @@ from typing import Literal
 from legions_api.core.actions import MoveAction
 from legions_api.core.model.game_state import GameState, ReactionTrigger, ReactionWindow, TurnPhase
 from legions_api.core.model.hex import HexCoord
+from legions_api.core.model.leader import Leader
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
 from legions_api.core.results import ActionResult, DomainEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
@@ -120,8 +121,20 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
             )
             for window in reaction_windows
         )
+        next_activation = state.activation.__class__(
+            leader_id=state.activation.leader_id,
+            orders_remaining=max(0, state.activation.orders_remaining - 1),
+            line_commands_remaining=state.activation.line_commands_remaining,
+            moved_unit_ids=(*state.activation.moved_unit_ids, validation.unit.unit_id),
+            fired_unit_ids=state.activation.fired_unit_ids,
+            shocked_unit_ids=state.activation.shocked_unit_ids,
+            activated_leader_ids=state.activation.activated_leader_ids,
+        )
         updated_state = (
-            state.with_units(updated_units).with_rng_counter(next_rng_counter).with_reaction_windows(open_reaction_windows=reaction_windows)
+            state.with_units(updated_units)
+            .with_rng_counter(next_rng_counter)
+            .with_reaction_windows(open_reaction_windows=reaction_windows)
+            .with_activation(next_activation)
         )
     except ValueError:
         return ActionResult(ok=False, reason="stacking_category_unmapped", state=state)
@@ -152,6 +165,19 @@ def _validate_move_path(
 
     if state.turn_phase != TurnPhase.ORDERS:
         return None, "wrong_turn_phase"
+
+    active_leader = state.current_active_leader()
+    if active_leader is None:
+        return None, "no_active_leader"
+
+    if state.activation.orders_remaining <= 0:
+        return None, "no_orders_remaining"
+
+    if action.unit_id in state.activation.moved_unit_ids:
+        return None, "unit_already_moved_this_activation"
+
+    if not _is_within_command_range(leader=active_leader, unit=unit):
+        return None, "unit_out_of_command_range"
 
     if not state.scenario_map.contains(action.destination):
         return None, "destination_out_of_map"
@@ -530,3 +556,9 @@ def _resolve_reaction_trigger(
         return "return"
 
     return None
+
+
+def _is_within_command_range(leader: Leader, unit: Unit) -> bool:
+    """Return whether unit lies within simple leader command radius."""
+
+    return leader.position.distance_to(unit.position) <= leader.command_range
