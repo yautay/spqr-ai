@@ -1,4 +1,4 @@
-import type { HexPayload } from "../../types/game";
+import type { HexPayload } from "@shared-schema/game";
 
 const SQRT_3 = Math.sqrt(3);
 

@@ -5,7 +5,7 @@ import type {
   MissilePreviewPayload,
   ShockPreviewPayload,
   UnitPayload,
-} from "../../types/game";
+} from "@shared-schema/game";
 
 interface Props {
   selectedUnit: UnitPayload | null;

@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 
 import { normalizeActionResult, type ActionKind } from "../domain/logs/normalizeActionResult";
 import type { LogDraftEntry, LogEntry, LogLevel } from "../domain/logs/types";
-import type { ActionResponsePayload, GameEventPayload } from "../types/game";
+import type { ActionResponsePayload, GameEventPayload } from "@shared-schema/game";
 
 function buildLogEntry(level: LogLevel, title: string, detail: string): LogEntry {
   return {

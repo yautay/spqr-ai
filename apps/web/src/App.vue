@@ -10,7 +10,7 @@ import UnitDetailsPanel from "./components/panels/UnitDetailsPanel.vue";
 import { useGameStore } from "./stores/gameStore";
 import { useLogStore } from "./stores/logStore";
 import { useUiStore } from "./stores/uiStore";
-import type { HexPayload, RulesetMode, TurnPhase } from "./types/game";
+import type { HexPayload, RulesetMode, TurnPhase } from "@shared-schema/game";
 
 const gameStore = useGameStore();
 const logStore = useLogStore();

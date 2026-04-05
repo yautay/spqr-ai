@@ -1,4 +1,4 @@
-import type { ActionResponsePayload, MissileEventPayload } from "../../types/game";
+import type { ActionResponsePayload, MissileEventPayload } from "@shared-schema/game";
 import type { LogDraftEntry } from "./types";
 
 export type ActionKind = "move" | "missile" | "shock" | "reload";

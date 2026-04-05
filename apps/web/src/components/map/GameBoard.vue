@@ -3,7 +3,7 @@ import { Application, Container, Graphics } from "pixi.js";
 import { onMounted, onUnmounted, ref, watch } from "vue";
 
 import { axialToPixel, buildHexPolygon, buildMapBounds, coordKey } from "./hexGeometry";
-import type { GameStatePayload, HexPayload, LegalMoveOptionPayload } from "../../types/game";
+import type { GameStatePayload, HexPayload, LegalMoveOptionPayload } from "@shared-schema/game";
 
 interface Props {
   state: GameStatePayload | null;

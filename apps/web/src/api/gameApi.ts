@@ -9,7 +9,7 @@ import type {
   RulesetsPayload,
   ShockPreviewResponsePayload,
   TurnPhase,
-} from "../types/game";
+} from "@shared-schema/game";
 
 export async function fetchGameState(): Promise<GameStatePayload> {
   return apiRequest<GameStatePayload>("/game/state");

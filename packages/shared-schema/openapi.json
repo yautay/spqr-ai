@@ -1,0 +1,2084 @@
+{
+  "components": {
+    "schemas": {
+      "AIActionDescriptorPayload": {
+        "description": "Transport-friendly selected action descriptor.",
+        "properties": {
+          "action_type": {
+            "enum": [
+              "move",
+              "missile",
+              "reload",
+              "shock"
+            ],
+            "title": "Action Type",
+            "type": "string"
+          },
+          "angle": {
+            "anyOf": [
+              {
+                "enum": [
+                  "front",
+                  "flank",
+                  "rear"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Angle"
+          },
+          "attacker_unit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attacker Unit Id"
+          },
+          "defender_unit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defender Unit Id"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HexPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "firing_unit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Firing Unit Id"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "target_unit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Unit Id"
+          },
+          "unit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Id"
+          }
+        },
+        "required": [
+          "action_type",
+          "summary"
+        ],
+        "title": "AIActionDescriptorPayload",
+        "type": "object"
+      },
+      "AICandidateScorePayload": {
+        "description": "One ranked AI candidate with score explanation metadata.",
+        "properties": {
+          "action_type": {
+            "enum": [
+              "move",
+              "missile",
+              "reload",
+              "shock"
+            ],
+            "title": "Action Type",
+            "type": "string"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_type",
+          "summary",
+          "score"
+        ],
+        "title": "AICandidateScorePayload",
+        "type": "object"
+      },
+      "AIMoveRequestPayload": {
+        "description": "Configurable AI move search request payload.",
+        "properties": {
+          "max_candidates": {
+            "default": 128,
+            "title": "Max Candidates",
+            "type": "integer"
+          },
+          "time_budget_ms": {
+            "default": 150,
+            "title": "Time Budget Ms",
+            "type": "integer"
+          }
+        },
+        "title": "AIMoveRequestPayload",
+        "type": "object"
+      },
+      "AIMoveResponsePayload": {
+        "description": "AI move endpoint response payload.",
+        "properties": {
+          "action_result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ActionResponsePayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "considered_actions": {
+            "title": "Considered Actions",
+            "type": "integer"
+          },
+          "elapsed_ms": {
+            "title": "Elapsed Ms",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "selected_action": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AIActionDescriptorPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "top_candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AICandidateScorePayload"
+            },
+            "title": "Top Candidates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ok",
+          "reason",
+          "considered_actions",
+          "elapsed_ms",
+          "selected_action",
+          "top_candidates"
+        ],
+        "title": "AIMoveResponsePayload",
+        "type": "object"
+      },
+      "ActionResponsePayload": {
+        "description": "Action execution response.",
+        "properties": {
+          "effects": {
+            "items": {
+              "$ref": "#/components/schemas/StackingEffectPayload"
+            },
+            "title": "Effects",
+            "type": "array"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/MissileEventPayload"
+            },
+            "title": "Events",
+            "type": "array"
+          },
+          "missile_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissileOutcomePayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "morale_outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/MoraleOutcomePayload"
+            },
+            "title": "Morale Outcomes",
+            "type": "array"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "pending_tq_checks": {
+            "items": {
+              "$ref": "#/components/schemas/PendingTQCheckPayload"
+            },
+            "title": "Pending Tq Checks",
+            "type": "array"
+          },
+          "pursuit_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PursuitOutcomePayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "shock_outcome": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShockOutcomePayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/GameStatePayload"
+          },
+          "tq_check_outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/TQCheckOutcomePayload"
+            },
+            "title": "Tq Check Outcomes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ok",
+          "reason",
+          "state",
+          "effects",
+          "pending_tq_checks",
+          "tq_check_outcomes",
+          "morale_outcomes",
+          "events"
+        ],
+        "title": "ActionResponsePayload",
+        "type": "object"
+      },
+      "GameStatePayload": {
+        "description": "Serializable game state payload.",
+        "properties": {
+          "active_side": {
+            "$ref": "#/components/schemas/Side"
+          },
+          "ruleset": {
+            "$ref": "#/components/schemas/RulesetMode"
+          },
+          "tiles": {
+            "items": {
+              "$ref": "#/components/schemas/TilePayload"
+            },
+            "title": "Tiles",
+            "type": "array"
+          },
+          "turn_phase": {
+            "$ref": "#/components/schemas/TurnPhase"
+          },
+          "units": {
+            "items": {
+              "$ref": "#/components/schemas/UnitPayload"
+            },
+            "title": "Units",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ruleset",
+          "turn_phase",
+          "tiles",
+          "active_side",
+          "units"
+        ],
+        "title": "GameStatePayload",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HexPayload": {
+        "description": "Serializable axial coordinate payload.",
+        "properties": {
+          "q": {
+            "title": "Q",
+            "type": "integer"
+          },
+          "r": {
+            "title": "R",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "q",
+          "r"
+        ],
+        "title": "HexPayload",
+        "type": "object"
+      },
+      "LegalMoveOptionPayload": {
+        "description": "One legal destination with deterministic movement path preview.",
+        "properties": {
+          "destination": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "path": {
+            "items": {
+              "$ref": "#/components/schemas/HexPayload"
+            },
+            "title": "Path",
+            "type": "array"
+          },
+          "total_cost": {
+            "title": "Total Cost",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "destination",
+          "total_cost",
+          "path"
+        ],
+        "title": "LegalMoveOptionPayload",
+        "type": "object"
+      },
+      "LegalMovesPayload": {
+        "description": "Legal move options for one unit under current game state.",
+        "properties": {
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/LegalMoveOptionPayload"
+            },
+            "title": "Options",
+            "type": "array"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "options"
+        ],
+        "title": "LegalMovesPayload",
+        "type": "object"
+      },
+      "MissileActionPayload": {
+        "description": "Missile command payload.",
+        "properties": {
+          "fire_mode": {
+            "default": "active",
+            "enum": [
+              "active",
+              "reaction"
+            ],
+            "title": "Fire Mode",
+            "type": "string"
+          },
+          "firing_unit_id": {
+            "title": "Firing Unit Id",
+            "type": "string"
+          },
+          "modifier_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Modifier Ids",
+            "type": "array"
+          },
+          "reaction_trigger": {
+            "anyOf": [
+              {
+                "enum": [
+                  "entry",
+                  "retire",
+                  "return"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaction Trigger"
+          },
+          "target_unit_id": {
+            "title": "Target Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "firing_unit_id",
+          "target_unit_id"
+        ],
+        "title": "MissileActionPayload",
+        "type": "object"
+      },
+      "MissileDRMModifierPayload": {
+        "description": "One missile DR modifier contribution for UI breakdown.",
+        "properties": {
+          "drm": {
+            "title": "Drm",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "drm"
+        ],
+        "title": "MissileDRMModifierPayload",
+        "type": "object"
+      },
+      "MissileEventPayload": {
+        "description": "Domain event emitted by missile and reload resolution.",
+        "properties": {
+          "event_type": {
+            "enum": [
+              "missile_fired",
+              "reaction_fire",
+              "reload_attempt",
+              "supply_changed",
+              "reaction_window_opened",
+              "reaction_window_spent"
+            ],
+            "title": "Event Type",
+            "type": "string"
+          },
+          "reaction_trigger": {
+            "anyOf": [
+              {
+                "enum": [
+                  "entry",
+                  "retire",
+                  "return"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaction Trigger"
+          },
+          "roll": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roll"
+          },
+          "success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success"
+          },
+          "supply_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supply After"
+          },
+          "supply_before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supply Before"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "target_unit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Unit Id"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_type",
+          "unit_id",
+          "target_unit_id",
+          "reaction_trigger",
+          "roll",
+          "target",
+          "success",
+          "supply_before",
+          "supply_after"
+        ],
+        "title": "MissileEventPayload",
+        "type": "object"
+      },
+      "MissileOutcomePayload": {
+        "description": "Resolved missile attack details.",
+        "properties": {
+          "applied_cohesion_hits": {
+            "title": "Applied Cohesion Hits",
+            "type": "integer"
+          },
+          "base_roll": {
+            "title": "Base Roll",
+            "type": "integer"
+          },
+          "drm_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/MissileDRMModifierPayload"
+            },
+            "title": "Drm Breakdown",
+            "type": "array"
+          },
+          "fire_mode": {
+            "enum": [
+              "active",
+              "reaction"
+            ],
+            "title": "Fire Mode",
+            "type": "string"
+          },
+          "firing_unit_id": {
+            "title": "Firing Unit Id",
+            "type": "string"
+          },
+          "hit": {
+            "title": "Hit",
+            "type": "boolean"
+          },
+          "missile_class_id": {
+            "title": "Missile Class Id",
+            "type": "string"
+          },
+          "modified_roll": {
+            "title": "Modified Roll",
+            "type": "integer"
+          },
+          "range_to_target": {
+            "title": "Range To Target",
+            "type": "integer"
+          },
+          "reaction_trigger": {
+            "anyOf": [
+              {
+                "enum": [
+                  "entry",
+                  "retire",
+                  "return"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaction Trigger"
+          },
+          "table_strength": {
+            "title": "Table Strength",
+            "type": "integer"
+          },
+          "target_unit_id": {
+            "title": "Target Unit Id",
+            "type": "string"
+          },
+          "total_drm": {
+            "title": "Total Drm",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "firing_unit_id",
+          "target_unit_id",
+          "fire_mode",
+          "reaction_trigger",
+          "missile_class_id",
+          "range_to_target",
+          "table_strength",
+          "base_roll",
+          "total_drm",
+          "modified_roll",
+          "hit",
+          "applied_cohesion_hits",
+          "drm_breakdown"
+        ],
+        "title": "MissileOutcomePayload",
+        "type": "object"
+      },
+      "MissilePreviewPayload": {
+        "description": "Read-only missile preview details before action execution.",
+        "properties": {
+          "drm_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/MissileDRMModifierPayload"
+            },
+            "title": "Drm Breakdown",
+            "type": "array"
+          },
+          "fire_mode": {
+            "enum": [
+              "active",
+              "reaction"
+            ],
+            "title": "Fire Mode",
+            "type": "string"
+          },
+          "firing_unit_id": {
+            "title": "Firing Unit Id",
+            "type": "string"
+          },
+          "hit_threshold": {
+            "title": "Hit Threshold",
+            "type": "integer"
+          },
+          "missile_class_id": {
+            "title": "Missile Class Id",
+            "type": "string"
+          },
+          "range_to_target": {
+            "title": "Range To Target",
+            "type": "integer"
+          },
+          "reaction_trigger": {
+            "anyOf": [
+              {
+                "enum": [
+                  "entry",
+                  "retire",
+                  "return"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaction Trigger"
+          },
+          "table_strength": {
+            "title": "Table Strength",
+            "type": "integer"
+          },
+          "target_unit_id": {
+            "title": "Target Unit Id",
+            "type": "string"
+          },
+          "total_drm": {
+            "title": "Total Drm",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "firing_unit_id",
+          "target_unit_id",
+          "fire_mode",
+          "reaction_trigger",
+          "missile_class_id",
+          "range_to_target",
+          "table_strength",
+          "total_drm",
+          "hit_threshold",
+          "drm_breakdown"
+        ],
+        "title": "MissilePreviewPayload",
+        "type": "object"
+      },
+      "MissilePreviewResponsePayload": {
+        "description": "Missile preview response shape.",
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MissilePreviewPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "reason",
+          "preview"
+        ],
+        "title": "MissilePreviewResponsePayload",
+        "type": "object"
+      },
+      "MissileReloadActionPayload": {
+        "description": "Missile reload command payload.",
+        "properties": {
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id"
+        ],
+        "title": "MissileReloadActionPayload",
+        "type": "object"
+      },
+      "MissileSupply": {
+        "description": "Missile ammunition readiness state.",
+        "enum": [
+          "normal",
+          "low",
+          "no"
+        ],
+        "title": "MissileSupply",
+        "type": "string"
+      },
+      "MoraleOutcomePayload": {
+        "description": "Resolved morale outcome emitted by shock sequence.",
+        "properties": {
+          "became_routed": {
+            "title": "Became Routed",
+            "type": "boolean"
+          },
+          "eliminated": {
+            "title": "Eliminated",
+            "type": "boolean"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "retreated": {
+            "title": "Retreated",
+            "type": "boolean"
+          },
+          "roll": {
+            "title": "Roll",
+            "type": "integer"
+          },
+          "source": {
+            "const": "shock",
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "source",
+          "target",
+          "roll",
+          "passed",
+          "became_routed",
+          "retreated",
+          "eliminated"
+        ],
+        "title": "MoraleOutcomePayload",
+        "type": "object"
+      },
+      "MoveActionPayload": {
+        "description": "Move command payload.",
+        "properties": {
+          "destination": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "destination"
+        ],
+        "title": "MoveActionPayload",
+        "type": "object"
+      },
+      "NewGamePayload": {
+        "description": "New game creation options.",
+        "properties": {
+          "ruleset": {
+            "$ref": "#/components/schemas/RulesetMode",
+            "default": "original"
+          }
+        },
+        "title": "NewGamePayload",
+        "type": "object"
+      },
+      "PendingTQCheckPayload": {
+        "description": "Deferred TQ check request payload.",
+        "properties": {
+          "drm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drm"
+          },
+          "formula": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formula"
+          },
+          "location": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "location",
+          "source",
+          "required",
+          "formula",
+          "drm",
+          "target"
+        ],
+        "title": "PendingTQCheckPayload",
+        "type": "object"
+      },
+      "PursuitOutcomePayload": {
+        "description": "Pursuit move details after routed enemy retreat/elimination.",
+        "properties": {
+          "destination": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "destination"
+        ],
+        "title": "PursuitOutcomePayload",
+        "type": "object"
+      },
+      "RulesetMode": {
+        "description": "Supported ruleset variants.",
+        "enum": [
+          "original",
+          "simple"
+        ],
+        "title": "RulesetMode",
+        "type": "string"
+      },
+      "RulesetsPayload": {
+        "description": "List of available ruleset identifiers.",
+        "properties": {
+          "rulesets": {
+            "items": {
+              "$ref": "#/components/schemas/RulesetMode"
+            },
+            "title": "Rulesets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rulesets"
+        ],
+        "title": "RulesetsPayload",
+        "type": "object"
+      },
+      "SetPhasePayload": {
+        "description": "Minimal phase transition payload for development flow.",
+        "properties": {
+          "phase": {
+            "$ref": "#/components/schemas/TurnPhase"
+          }
+        },
+        "required": [
+          "phase"
+        ],
+        "title": "SetPhasePayload",
+        "type": "object"
+      },
+      "ShockActionPayload": {
+        "description": "Shock combat command payload.",
+        "properties": {
+          "angle": {
+            "default": "front",
+            "enum": [
+              "front",
+              "flank",
+              "rear"
+            ],
+            "title": "Angle",
+            "type": "string"
+          },
+          "attacker_unit_id": {
+            "title": "Attacker Unit Id",
+            "type": "string"
+          },
+          "defender_unit_id": {
+            "title": "Defender Unit Id",
+            "type": "string"
+          },
+          "modifier_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Modifier Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "attacker_unit_id",
+          "defender_unit_id"
+        ],
+        "title": "ShockActionPayload",
+        "type": "object"
+      },
+      "ShockModifierPayload": {
+        "description": "One shock column-shift contribution for breakdown UI.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "shift": {
+            "title": "Shift",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "shift"
+        ],
+        "title": "ShockModifierPayload",
+        "type": "object"
+      },
+      "ShockOutcomePayload": {
+        "description": "Resolved shock attack details.",
+        "properties": {
+          "angle": {
+            "enum": [
+              "front",
+              "flank",
+              "rear"
+            ],
+            "title": "Angle",
+            "type": "string"
+          },
+          "attacker_hits": {
+            "title": "Attacker Hits",
+            "type": "integer"
+          },
+          "attacker_type": {
+            "title": "Attacker Type",
+            "type": "string"
+          },
+          "attacker_unit_id": {
+            "title": "Attacker Unit Id",
+            "type": "string"
+          },
+          "base_column": {
+            "title": "Base Column",
+            "type": "integer"
+          },
+          "defender_hits": {
+            "title": "Defender Hits",
+            "type": "integer"
+          },
+          "defender_type": {
+            "title": "Defender Type",
+            "type": "string"
+          },
+          "defender_unit_id": {
+            "title": "Defender Unit Id",
+            "type": "string"
+          },
+          "final_column": {
+            "title": "Final Column",
+            "type": "integer"
+          },
+          "modifier_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/ShockModifierPayload"
+            },
+            "title": "Modifier Breakdown",
+            "type": "array"
+          },
+          "roll": {
+            "title": "Roll",
+            "type": "integer"
+          },
+          "total_shift": {
+            "title": "Total Shift",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "attacker_unit_id",
+          "defender_unit_id",
+          "angle",
+          "attacker_type",
+          "defender_type",
+          "base_column",
+          "total_shift",
+          "final_column",
+          "roll",
+          "attacker_hits",
+          "defender_hits",
+          "modifier_breakdown"
+        ],
+        "title": "ShockOutcomePayload",
+        "type": "object"
+      },
+      "ShockPreviewPayload": {
+        "description": "Read-only shock preview details before action execution.",
+        "properties": {
+          "angle": {
+            "enum": [
+              "front",
+              "flank",
+              "rear"
+            ],
+            "title": "Angle",
+            "type": "string"
+          },
+          "attacker_type": {
+            "title": "Attacker Type",
+            "type": "string"
+          },
+          "attacker_unit_id": {
+            "title": "Attacker Unit Id",
+            "type": "string"
+          },
+          "base_column": {
+            "title": "Base Column",
+            "type": "integer"
+          },
+          "defender_type": {
+            "title": "Defender Type",
+            "type": "string"
+          },
+          "defender_unit_id": {
+            "title": "Defender Unit Id",
+            "type": "string"
+          },
+          "final_column": {
+            "title": "Final Column",
+            "type": "integer"
+          },
+          "modifier_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/ShockModifierPayload"
+            },
+            "title": "Modifier Breakdown",
+            "type": "array"
+          },
+          "total_shift": {
+            "title": "Total Shift",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "attacker_unit_id",
+          "defender_unit_id",
+          "angle",
+          "attacker_type",
+          "defender_type",
+          "base_column",
+          "total_shift",
+          "final_column",
+          "modifier_breakdown"
+        ],
+        "title": "ShockPreviewPayload",
+        "type": "object"
+      },
+      "ShockPreviewResponsePayload": {
+        "description": "Shock preview response shape.",
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ShockPreviewPayload"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ok",
+          "reason",
+          "preview"
+        ],
+        "title": "ShockPreviewResponsePayload",
+        "type": "object"
+      },
+      "Side": {
+        "description": "Battle side identifier.",
+        "enum": [
+          "red",
+          "blue"
+        ],
+        "title": "Side",
+        "type": "string"
+      },
+      "StackingEffectPayload": {
+        "description": "Stacking side-effect metadata generated during movement.",
+        "properties": {
+          "effect_type": {
+            "title": "Effect Type",
+            "type": "string"
+          },
+          "interaction": {
+            "title": "Interaction",
+            "type": "string"
+          },
+          "location": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "moving_unit_cohesion_hits": {
+            "title": "Moving Unit Cohesion Hits",
+            "type": "integer"
+          },
+          "moving_unit_id": {
+            "title": "Moving Unit Id",
+            "type": "string"
+          },
+          "stationary_unit_cohesion_hits": {
+            "title": "Stationary Unit Cohesion Hits",
+            "type": "integer"
+          },
+          "stationary_unit_id": {
+            "title": "Stationary Unit Id",
+            "type": "string"
+          },
+          "stationary_unit_tq_check_formula": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stationary Unit Tq Check Formula"
+          },
+          "stationary_unit_tq_check_required": {
+            "title": "Stationary Unit Tq Check Required",
+            "type": "boolean"
+          },
+          "tq_check_drm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tq Check Drm"
+          }
+        },
+        "required": [
+          "effect_type",
+          "interaction",
+          "location",
+          "moving_unit_id",
+          "stationary_unit_id",
+          "moving_unit_cohesion_hits",
+          "stationary_unit_cohesion_hits",
+          "stationary_unit_tq_check_required",
+          "stationary_unit_tq_check_formula",
+          "tq_check_drm"
+        ],
+        "title": "StackingEffectPayload",
+        "type": "object"
+      },
+      "TQCheckOutcomePayload": {
+        "description": "Resolved TQ check with rolled value for UI feedback.",
+        "properties": {
+          "applied_cohesion_hits": {
+            "title": "Applied Cohesion Hits",
+            "type": "integer"
+          },
+          "became_routed": {
+            "title": "Became Routed",
+            "type": "boolean"
+          },
+          "drm": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drm"
+          },
+          "formula": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formula"
+          },
+          "location": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "roll": {
+            "title": "Roll",
+            "type": "integer"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "target": {
+            "title": "Target",
+            "type": "integer"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "location",
+          "source",
+          "required",
+          "formula",
+          "drm",
+          "target",
+          "roll",
+          "passed",
+          "applied_cohesion_hits",
+          "became_routed"
+        ],
+        "title": "TQCheckOutcomePayload",
+        "type": "object"
+      },
+      "TerrainType": {
+        "description": "Terrain classes used by movement and future combat modifiers.",
+        "enum": [
+          "clear",
+          "rough",
+          "woods",
+          "road",
+          "water"
+        ],
+        "title": "TerrainType",
+        "type": "string"
+      },
+      "TilePayload": {
+        "description": "Serializable tile payload.",
+        "properties": {
+          "coord": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "move_cost": {
+            "title": "Move Cost",
+            "type": "integer"
+          },
+          "passable": {
+            "title": "Passable",
+            "type": "boolean"
+          },
+          "terrain": {
+            "$ref": "#/components/schemas/TerrainType"
+          }
+        },
+        "required": [
+          "coord",
+          "terrain",
+          "move_cost",
+          "passable"
+        ],
+        "title": "TilePayload",
+        "type": "object"
+      },
+      "TurnPhase": {
+        "description": "Minimal turn phase marker used by action validation.",
+        "enum": [
+          "orders",
+          "rout_and_reload"
+        ],
+        "title": "TurnPhase",
+        "type": "string"
+      },
+      "UnitPayload": {
+        "description": "Serializable unit payload.",
+        "properties": {
+          "cohesion_hits": {
+            "title": "Cohesion Hits",
+            "type": "integer"
+          },
+          "exerts_zoc": {
+            "title": "Exerts Zoc",
+            "type": "boolean"
+          },
+          "is_routed": {
+            "title": "Is Routed",
+            "type": "boolean"
+          },
+          "missile_class_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missile Class Id"
+          },
+          "missile_supply": {
+            "$ref": "#/components/schemas/MissileSupply"
+          },
+          "move_allowance": {
+            "title": "Move Allowance",
+            "type": "integer"
+          },
+          "move_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move Profile Id"
+          },
+          "position": {
+            "$ref": "#/components/schemas/HexPayload"
+          },
+          "pursuit_capable": {
+            "title": "Pursuit Capable",
+            "type": "boolean"
+          },
+          "shock_type": {
+            "title": "Shock Type",
+            "type": "string"
+          },
+          "side": {
+            "$ref": "#/components/schemas/Side"
+          },
+          "stacking_category": {
+            "title": "Stacking Category",
+            "type": "string"
+          },
+          "tq": {
+            "title": "Tq",
+            "type": "integer"
+          },
+          "unit_id": {
+            "title": "Unit Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "unit_id",
+          "side",
+          "position",
+          "move_allowance",
+          "tq",
+          "cohesion_hits",
+          "is_routed",
+          "exerts_zoc",
+          "move_profile_id",
+          "stacking_category",
+          "missile_class_id",
+          "missile_supply",
+          "shock_type",
+          "pursuit_capable"
+        ],
+        "title": "UnitPayload",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Legions API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/ai/move": {
+      "post": {
+        "description": "Select and execute one bounded AI move for current active side.",
+        "operationId": "ai_move_ai_move_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AIMoveRequestPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AIMoveResponsePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ai Move",
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/game/action": {
+      "post": {
+        "description": "Apply movement action and return updated state payload.",
+        "operationId": "game_action_game_action_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveActionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponsePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Game Action",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/action/missile": {
+      "post": {
+        "description": "Apply missile action and return updated state payload.",
+        "operationId": "missile_action_game_action_missile_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissileActionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponsePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Missile Action",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/action/missile/reload": {
+      "post": {
+        "description": "Apply missile reload action and return updated state payload.",
+        "operationId": "missile_reload_action_game_action_missile_reload_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissileReloadActionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponsePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Missile Reload Action",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/action/shock": {
+      "post": {
+        "description": "Apply shock action and return updated state payload.",
+        "operationId": "shock_action_game_action_shock_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShockActionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActionResponsePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Shock Action",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/legal-moves/{unit_id}": {
+      "get": {
+        "description": "Return legal move destinations and path preview metadata for one unit.",
+        "operationId": "legal_moves_game_legal_moves__unit_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "unit_id",
+            "required": true,
+            "schema": {
+              "title": "Unit Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegalMovesPayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Legal Moves",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/new": {
+      "post": {
+        "description": "Reset in-memory game and return the fresh state.",
+        "operationId": "new_game_game_new_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewGamePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameStatePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "New Game",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/phase": {
+      "post": {
+        "description": "Set minimal in-memory phase marker for development actions.",
+        "operationId": "set_phase_game_phase_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPhasePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameStatePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Phase",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/preview/missile": {
+      "post": {
+        "description": "Return read-only missile preview details without mutating game state.",
+        "operationId": "missile_preview_game_preview_missile_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissileActionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissilePreviewResponsePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Missile Preview",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/preview/shock": {
+      "post": {
+        "description": "Return read-only shock preview details without mutating game state.",
+        "operationId": "shock_preview_game_preview_shock_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShockActionPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShockPreviewResponsePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Shock Preview",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/rulesets": {
+      "get": {
+        "description": "Return supported rulesets that can be selected for a new game.",
+        "operationId": "rulesets_game_rulesets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RulesetsPayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Rulesets",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/state": {
+      "get": {
+        "description": "Return current in-memory game state.",
+        "operationId": "game_state_game_state_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameStatePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Game State",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Basic health endpoint for local checks and CI smoke tests.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    }
+  }
+}

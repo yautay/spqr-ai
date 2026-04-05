@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AIMoveResponsePayload } from "../../types/game";
+import type { AIMoveResponsePayload } from "@shared-schema/game";
 
 interface Props {
   aiMoveResponse: AIMoveResponsePayload | null;

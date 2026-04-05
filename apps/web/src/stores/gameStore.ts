@@ -25,7 +25,7 @@ import type {
   ShockPreviewPayload,
   TurnPhase,
   UnitPayload,
-} from "../types/game";
+} from "@shared-schema/game";
 
 export const useGameStore = defineStore("game", () => {
   const state = ref<GameStatePayload | null>(null);

@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 
-import type { GameEventPayload } from "../types/game";
+import type { GameEventPayload } from "@shared-schema/game";
 
 const RECONNECT_DELAY_MS = 1_500;
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { normalizeActionResult } from "./normalizeActionResult";
-import type { ActionResponsePayload, GameStatePayload } from "../../types/game";
+import type { ActionResponsePayload, GameStatePayload } from "@shared-schema/game";
 
 const EMPTY_STATE: GameStatePayload = {
   ruleset: "original",

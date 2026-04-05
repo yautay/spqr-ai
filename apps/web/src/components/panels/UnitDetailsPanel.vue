@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import type { Side, UnitPayload } from "../../types/game";
+import type { Side, UnitPayload } from "@shared-schema/game";
 
 interface Props {
   selectedUnit: UnitPayload | null;

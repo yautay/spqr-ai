@@ -1,7 +1,7 @@
 import { ref } from "vue";
 import { defineStore } from "pinia";
 
-import type { HexPayload } from "../types/game";
+import type { HexPayload } from "@shared-schema/game";
 
 export const useUiStore = defineStore("ui", () => {
   const selectedUnitId = ref<string | null>(null);
