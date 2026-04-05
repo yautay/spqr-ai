@@ -50,6 +50,14 @@ Status legend:
 - [x] Add action preview and modifier panel
 - [x] Add event log panel
 
+## Milestone 3.1 - UI Hardening and Live Events
+
+- [ ] Add backend read-only preview endpoints for missile and shock actions
+- [ ] Add backend WebSocket event stream for live action events
+- [ ] Subscribe frontend event log to WebSocket stream with reconnect handling
+- [ ] Render pre-execution missile and shock preview in action panel
+- [ ] Add regression tests for preview/websocket payload contracts
+
 ## Milestone 4 - AI v1
 
 - [ ] Integrate legal move generator
