@@ -99,6 +99,26 @@ Implementation staging note:
 - the first wide-unit milestone should make occupancy, adjacency, ZOC, and shock angle footprint-aware,
 - if wide-unit movement, LOS, or missile range are not yet fully footprint-aware, runtime should reject those actions explicitly instead of silently resolving them from a one-hex anchor.
 
+Current implementation status:
+
+- completed:
+  - leader-driven activation baseline,
+  - vertex-angle facing model,
+  - front-only ZOC for standard units,
+  - shock angle resolved from board geometry,
+  - wide-unit footprint model (`position` + `position_b`),
+  - footprint-aware occupancy, ZOC, shock adjacency, and shock angle,
+  - basic wide-unit movement: straight-ahead translation and reverse-face validation path.
+- still missing in this module:
+  - front-to-flank maneuver,
+  - wheeling maneuver,
+  - reverse-face terrain/ZOC restrictions and exact MP/cohesion enforcement,
+  - column movement,
+  - orderly withdrawal,
+  - pre-arranged withdrawal,
+  - reaction facing changes,
+  - repeat-move penalties.
+
 Pathfinding note:
 
 - movement legality should use graph search with rule-aware policy,

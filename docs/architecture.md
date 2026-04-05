@@ -92,6 +92,15 @@ The map model is designed for pathfinding and scenario flexibility from day one.
   - `units_by_id`
   - `occupant_by_hex` index for O(1) occupancy checks
 
+Runtime geometry notes:
+
+- unit facing is modeled as a hex-vertex angle: `0/60/120/180/240/300`
+- single-hex units expose `2` front, `2` flank, and `2` rear adjacent hexes
+- wide units use a two-hex footprint (`position` + optional `position_b`)
+- occupancy indexes all occupied hexes of the footprint, not only the anchor hex
+- ZOC and shock adjacency/angle must be derived from shared geometry helpers, not ad hoc per-rule math
+- wide-unit movement is being implemented incrementally; occupancy and combat geometry are footprint-aware, but advanced phalanx pivots/wheeling remain a separate rules milestone
+
 This allows A* pathfinding, movement cost evaluation, and future terrain/edge effects without redesign.
 
 ## Ruleset and Tables

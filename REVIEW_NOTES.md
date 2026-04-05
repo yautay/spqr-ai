@@ -758,6 +758,31 @@ Powinny dojsc testy typu:
 8. Triarii doctrine.
 9. Scorpio artillery.
 
+## Update 2026-04-05
+
+The repo has moved materially beyond the original verdict above, but the verdict still stands for full rulebook parity.
+
+What is now implemented beyond the earlier review snapshot:
+
+- leaders and leader-driven activation baseline,
+- scenario loading for `victory`, `special_rules`, and `line_command_eligibility`,
+- vertex-based facing stored in runtime state,
+- front-only ZOC for standard units,
+- shock angle resolved from geometry rather than trusted client payload,
+- explicit wide-unit footprint model with `position_b`,
+- footprint-aware occupancy, ZOC, shock adjacency, and shock angle,
+- basic wide-unit movement support for straight-ahead translation and reverse-face validation path.
+
+What remains materially incomplete from the review perspective:
+
+- full phalanx maneuvers (`front-to-flank`, wheeling, exact reverse-face restrictions/costs),
+- column rules,
+- orderly withdrawal and pre-arranged withdrawal,
+- complete missile/LOS footprint handling for wide units,
+- full shock sequence depth (pre-shock, leaders, size ratio, exact advance-after-combat handling),
+- full special-units package,
+- rout/rally/depletion/withdrawal/victory closure.
+
 ## Final Verdict
 
 Jesli pytanie brzmi:

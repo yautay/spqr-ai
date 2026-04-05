@@ -28,13 +28,29 @@ It defines assumptions, architecture guardrails, and a progress checklist.
 
 ## Current Milestone Status
 
-- Milestone 1 (Core Movement Loop): done
-- Milestone 1.5 (Missile Baseline): done
-- Milestone 2 (Combat and Morale): done
-- Milestone 3 (Playable UI Slice): done
-- Milestone 3.1 (UI Hardening and Live Events): done
-- Milestone 4 (AI v1): done
-- Next target: Milestone 5 (Save/Load and Replay)
+- Legacy product milestones below are no longer the operative source of truth for SPQR rules parity work.
+- Current operative source of truth:
+  - `docs/RULEBOOK_IMPLEMENTATION_PLAN.md`
+  - `REVIEW_NOTES.md`
+  - `docs/decisions.md`
+  - `docs/architecture.md`
+  - `docs/AGENT_NEXT_STEPS.md`
+
+### Current SPQR Parity Progress
+
+- done:
+  - leaders and activation baseline
+  - scenario metadata loading baseline
+  - vertex-angle facing model
+  - front-only ZOC baseline
+  - shock angle from geometry
+  - footprint-aware wide-unit geometry and occupancy
+  - basic wide-unit movement validation path
+- in progress:
+  - full movement/facing/ZOC parity for phalanx and other special movement rules
+- next target:
+  - advanced phalanx maneuvers and movement restrictions
+  - then missile, shock, special units, rout/rally/withdrawal/victory gaps from the rulebook plan
 
 ## Non-Negotiable Technical Rules
 
@@ -107,7 +123,7 @@ docs/
 
 1. Read `docs/RULEBOOK_IMPLEMENTATION_PLAN.md` before implementation.
 2. Read `docs/decisions.md` before implementation.
-3. Update `docs/roadmap.md` task statuses during work.
+3. Update status-bearing docs during work, especially `docs/RULEBOOK_IMPLEMENTATION_PLAN.md` and `docs/AGENT_NEXT_STEPS.md`.
 4. Implement features in smallest testable slices.
 5. Add tests for rules behavior and deterministic replay.
 6. Run quality gates via `just check` before completion.

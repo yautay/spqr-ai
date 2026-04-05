@@ -116,6 +116,21 @@ This document records confirmed project decisions and rationale.
 - Decision: game bootstrap must load map and order-of-battle from scenario assets, not hardcoded in Python bootstrap code.
 - Rationale: reduces code-data coupling and allows scaling to additional historical scenarios without rewriting engine bootstrap.
 
+## D-022 Vertex-Based Facing Model
+
+- Decision: unit facing is modeled as a vertex angle in degrees (`0/60/120/180/240/300`), not as a named hexside-like direction.
+- Rationale: SPQR facing is defined around a hex vertex, so angle-based encoding is less ambiguous and keeps front/flank/rear geometry consistent across movement, ZOC, and shock.
+
+## D-023 Wide Unit Footprint Model
+
+- Decision: wide units use an explicit two-hex footprint (`position` + optional `position_b`) in runtime state.
+- Rationale: phalanx behavior cannot be represented honestly as a one-hex anchor with helper exceptions; occupancy, ZOC, and shock geometry must see the whole footprint.
+
+## D-024 Safety Rule for Partially Implemented Wide Rules
+
+- Decision: when a wide-unit subsystem is not yet footprint-correct, runtime should reject that action explicitly instead of silently resolving it from one anchor hex.
+- Rationale: an explicit unsupported reason is safer than shipping rules behavior that looks valid but contradicts the rulebook.
+
 ## Revisit Policy
 
 Any decision can be revised when one of these is true:
