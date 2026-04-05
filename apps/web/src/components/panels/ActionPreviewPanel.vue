@@ -63,9 +63,7 @@ const emit = defineEmits<{
       <h3>Combat</h3>
       <p v-if="!selectedUnit">Select a unit first.</p>
       <p v-else-if="!targetUnit">Hover enemy unit and use buttons below.</p>
-      <p v-else>
-        Target: {{ targetUnit.unit_id }} ({{ targetUnit.side }})
-      </p>
+      <p v-else>Target: {{ targetUnit.unit_id }} ({{ targetUnit.side }})</p>
 
       <div v-if="targetUnit" class="preview-grid">
         <p v-if="missilePreview">

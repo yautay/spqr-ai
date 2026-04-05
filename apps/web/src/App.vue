@@ -321,7 +321,11 @@ async function handleRunAiMove(): Promise<void> {
             @resolve-shock="handleResolveShock"
             @reload-missile="handleReloadMissile"
           />
-          <AIPanel :ai-move-response="gameStore.lastAiMoveResponse" :is-submitting="gameStore.isSubmitting" @run-ai-move="handleRunAiMove" />
+          <AIPanel
+            :ai-move-response="gameStore.lastAiMoveResponse"
+            :is-submitting="gameStore.isSubmitting"
+            @run-ai-move="handleRunAiMove"
+          />
         </aside>
         <div class="board-layout">
           <GameBoard

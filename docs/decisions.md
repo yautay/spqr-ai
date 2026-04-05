@@ -99,6 +99,12 @@ This document records confirmed project decisions and rationale.
 - Decision: shock combat baseline is table-driven (`shock_superiority`, `clash_columns`, `shock_crt`) and exposed via one API action contract.
 - Rationale: keep combat math auditable, deterministic, and easy to tune from data files without resolver rewrites.
 
+## D-019 AI v1 Search Strategy
+
+- Decision: AI v1 uses one-ply bounded search over legal actions produced by the same validation pipeline as player commands.
+- Decision: AI position scoring is deterministic and based on unit preservation, cohesion pressure, rout state, and enemy proximity.
+- Rationale: ensures rules parity between human and AI turns, predictable runtime on low-spec hardware, and explainable candidate ranking.
+
 ## Revisit Policy
 
 Any decision can be revised when one of these is true:

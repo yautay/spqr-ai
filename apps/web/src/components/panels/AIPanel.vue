@@ -20,9 +20,7 @@ const emit = defineEmits<{
       <span class="badge">M4</span>
     </header>
 
-    <button type="button" class="panel-button" :disabled="isSubmitting" @click="emit('run-ai-move')">
-      Run AI Move
-    </button>
+    <button type="button" class="panel-button" :disabled="isSubmitting" @click="emit('run-ai-move')">Run AI Move</button>
 
     <p v-if="!aiMoveResponse" class="empty">Run AI move to see decision explanation.</p>
 

@@ -1,5 +1,7 @@
 # M3.1 + M4 Implementation Plan
 
+Status: completed.
+
 ## Scope
 
 - Close Milestone 3.1 (UI hardening + live events + preview before execute).

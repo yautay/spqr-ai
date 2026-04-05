@@ -104,10 +104,7 @@ export async function fetchShockPreview(payload: {
   });
 }
 
-export async function requestAiMove(payload?: {
-  time_budget_ms?: number;
-  max_candidates?: number;
-}): Promise<AIMoveResponsePayload> {
+export async function requestAiMove(payload?: { time_budget_ms?: number; max_candidates?: number }): Promise<AIMoveResponsePayload> {
   return apiRequest<AIMoveResponsePayload>("/ai/move", {
     method: "POST",
     body: JSON.stringify(payload ?? {}),

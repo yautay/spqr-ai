@@ -68,8 +68,9 @@ Instead of trying to build every feature immediately:
 ## Current Status
 
 - Backend rules engine is currently through Milestone 2 (`movement + missile + shock + morale + rout/pursuit`).
-- Milestone 3 playable UI slice is complete in `apps/web` (Pixi map, overlays, preview, and event log).
-- Next implementation target is Milestone 4 (AI v1).
+- Milestone 3 and 3.1 are complete (`playable UI + live websocket events + pre-action combat previews`).
+- Milestone 4 AI v1 is complete (`legal generator + heuristic evaluator + bounded search + explainability + smoke sims`).
+- Next implementation target is Milestone 5 (save/load and replay).
 
 ## How to Measure AI Quality
 

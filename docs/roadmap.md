@@ -52,19 +52,19 @@ Status legend:
 
 ## Milestone 3.1 - UI Hardening and Live Events
 
-- [ ] Add backend read-only preview endpoints for missile and shock actions
-- [ ] Add backend WebSocket event stream for live action events
-- [ ] Subscribe frontend event log to WebSocket stream with reconnect handling
-- [ ] Render pre-execution missile and shock preview in action panel
-- [ ] Add regression tests for preview/websocket payload contracts
+- [x] Add backend read-only preview endpoints for missile and shock actions
+- [x] Add backend WebSocket event stream for live action events
+- [x] Subscribe frontend event log to WebSocket stream with reconnect handling
+- [x] Render pre-execution missile and shock preview in action panel
+- [x] Add regression tests for preview/websocket payload contracts
 
 ## Milestone 4 - AI v1
 
-- [ ] Integrate legal move generator
-- [ ] Implement heuristic position evaluator
-- [ ] Add shallow search with move time budget
-- [ ] Add AI decision explanation metadata
-- [ ] Run AI-vs-AI smoke simulations
+- [x] Integrate legal move generator
+- [x] Implement heuristic position evaluator
+- [x] Add shallow search with move time budget
+- [x] Add AI decision explanation metadata
+- [x] Run AI-vs-AI smoke simulations
 
 ## Milestone 5 - Save/Load and Replay
 

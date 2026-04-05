@@ -45,11 +45,7 @@ export const useLogStore = defineStore("log", () => {
     }
 
     seenEventIds.value.add(event.event_id);
-    append(
-      resolveEventLevel(event),
-      resolveEventTitle(event),
-      resolveEventDetail(event),
-    );
+    append(resolveEventLevel(event), resolveEventTitle(event), resolveEventDetail(event));
   }
 
   function clear(): void {

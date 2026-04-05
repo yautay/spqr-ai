@@ -32,7 +32,9 @@ It defines assumptions, architecture guardrails, and a progress checklist.
 - Milestone 1.5 (Missile Baseline): done
 - Milestone 2 (Combat and Morale): done
 - Milestone 3 (Playable UI Slice): done
-- Next target: Milestone 4 (AI v1)
+- Milestone 3.1 (UI Hardening and Live Events): done
+- Milestone 4 (AI v1): done
+- Next target: Milestone 5 (Save/Load and Replay)
 
 ## Non-Negotiable Technical Rules
 
@@ -147,14 +149,15 @@ docs/
 - [x] Render hex map with PixiJS
 - [x] Implement selection and legal-move overlays
 - [x] Build action preview and event log panels
-- [~] Hook REST commands and websocket event stream
+- [x] Hook REST commands and websocket event stream
 
 ### AI v1
 
-- [ ] Build legal move generator integration
-- [ ] Add heuristic evaluation function
-- [ ] Add shallow search with time budget
-- [ ] Add explainability field for selected moves
+- [x] Build legal move generator integration
+- [x] Add heuristic evaluation function
+- [x] Add shallow search with time budget
+- [x] Add explainability field for selected moves
+- [x] Add AI-vs-AI smoke simulation baseline
 
 ### Persistence and Replay
 

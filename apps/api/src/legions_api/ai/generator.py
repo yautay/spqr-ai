@@ -96,9 +96,16 @@ def resolve_candidate_action(state: GameState, candidate: AICandidateAction):
     if candidate.action_type == "move":
         return resolve_movement_candidate(state, candidate)
     if candidate.action_type == "missile":
+        if not isinstance(candidate.action, MissileAction):
+            raise TypeError("candidate action_type missile must carry MissileAction")
         return resolve_missile(state, candidate.action)
     if candidate.action_type == "reload":
+        if not isinstance(candidate.action, ReloadMissileAction):
+            raise TypeError("candidate action_type reload must carry ReloadMissileAction")
         return resolve_reload(state, candidate.action)
+
+    if not isinstance(candidate.action, ShockAction):
+        raise TypeError("candidate action_type shock must carry ShockAction")
 
     return resolve_shock(state, candidate.action)
 
