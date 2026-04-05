@@ -2,14 +2,31 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import GameBoard from "./components/map/GameBoard.vue";
+import UnitDetailsPanel from "./components/panels/UnitDetailsPanel.vue";
 import { useGameStore } from "./stores/gameStore";
+import { useUiStore } from "./stores/uiStore";
 import type { RulesetMode } from "./types/game";
 
 const gameStore = useGameStore();
+const uiStore = useUiStore();
 const selectedRuleset = ref<RulesetMode>("original");
 
 const boardState = computed(() => gameStore.state);
 const availableRulesets = computed(() => gameStore.rulesets);
+const selectedUnit = computed(() => {
+  if (!uiStore.selectedUnitId) {
+    return null;
+  }
+
+  return gameStore.unitsById[uiStore.selectedUnitId] ?? null;
+});
+const hoveredUnit = computed(() => {
+  if (!uiStore.hoveredUnitId) {
+    return null;
+  }
+
+  return gameStore.unitsById[uiStore.hoveredUnitId] ?? null;
+});
 
 onMounted(async () => {
   await gameStore.initialize();
@@ -27,6 +44,24 @@ watch(
 
 async function handleNewGame(): Promise<void> {
   await gameStore.startNewGame(selectedRuleset.value);
+  uiStore.resetSelections();
+}
+
+function handleUnitClick(unitId: string): void {
+  if (uiStore.selectedUnitId === unitId) {
+    uiStore.setSelectedUnit(null);
+    return;
+  }
+
+  uiStore.setSelectedUnit(unitId);
+}
+
+function handleUnitHover(unitId: string | null): void {
+  uiStore.setHoveredUnit(unitId);
+}
+
+function handleHexHover(coord: { q: number; r: number } | null): void {
+  uiStore.setHoveredHex(coord);
 }
 </script>
 
@@ -49,10 +84,29 @@ async function handleNewGame(): Promise<void> {
       </div>
     </header>
 
-    <section class="board-layout">
+    <section class="content-layout">
       <p v-if="gameStore.isLoading" class="status">Loading game state...</p>
       <p v-else-if="gameStore.error" class="status error">{{ gameStore.error }}</p>
-      <GameBoard v-else :state="boardState" />
+      <template v-else>
+        <aside class="side-panel">
+          <UnitDetailsPanel
+            :selected-unit="selectedUnit"
+            :hovered-unit="hoveredUnit"
+            :active-side="boardState?.active_side ?? null"
+          />
+        </aside>
+        <div class="board-layout">
+          <GameBoard
+            :state="boardState"
+            :selected-unit-id="uiStore.selectedUnitId"
+            :hovered-unit-id="uiStore.hoveredUnitId"
+            :hovered-hex="uiStore.hoveredHex"
+            @unit-click="handleUnitClick"
+            @unit-hover="handleUnitHover"
+            @hex-hover="handleHexHover"
+          />
+        </div>
+      </template>
     </section>
   </main>
 </template>
@@ -111,6 +165,17 @@ h1 {
   font-weight: 600;
 }
 
+.content-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 1rem;
+}
+
+.side-panel {
+  min-height: 0;
+}
+
 .board-layout {
   min-height: 0;
 }
@@ -125,5 +190,20 @@ h1 {
 
 .status.error {
   color: #872c2c;
+}
+
+@media (max-width: 980px) {
+  .content-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .side-panel {
+    order: 2;
+  }
+
+  .board-layout {
+    order: 1;
+    min-height: 60dvh;
+  }
 }
 </style>
