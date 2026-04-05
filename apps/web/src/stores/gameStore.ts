@@ -7,12 +7,23 @@ import {
   executeMissileReload,
   executeMove,
   executeShockAction,
+  fetchMissilePreview,
   fetchGameState,
   fetchLegalMoves,
   fetchRulesets,
+  fetchShockPreview,
   setTurnPhase,
 } from "../api/gameApi";
-import type { ActionResponsePayload, GameStatePayload, LegalMoveOptionPayload, RulesetMode, TurnPhase, UnitPayload } from "../types/game";
+import type {
+  ActionResponsePayload,
+  GameStatePayload,
+  LegalMoveOptionPayload,
+  MissilePreviewPayload,
+  RulesetMode,
+  ShockPreviewPayload,
+  TurnPhase,
+  UnitPayload,
+} from "../types/game";
 
 export const useGameStore = defineStore("game", () => {
   const state = ref<GameStatePayload | null>(null);
@@ -22,6 +33,10 @@ export const useGameStore = defineStore("game", () => {
   const isSubmitting = ref(false);
   const error = ref<string | null>(null);
   const lastActionResult = ref<ActionResponsePayload | null>(null);
+  const missilePreview = ref<MissilePreviewPayload | null>(null);
+  const shockPreview = ref<ShockPreviewPayload | null>(null);
+  const missilePreviewReason = ref<string | null>(null);
+  const shockPreviewReason = ref<string | null>(null);
 
   const unitsById = computed<Record<string, UnitPayload>>(() => {
     if (!state.value) {
@@ -64,6 +79,7 @@ export const useGameStore = defineStore("game", () => {
       state.value = await createNewGame(ruleset);
       legalMovesByUnit.value = {};
       lastActionResult.value = null;
+      clearCombatPreviews();
     } catch (caughtError) {
       error.value = caughtError instanceof Error ? caughtError.message : "Failed to create a new game.";
     } finally {
@@ -96,6 +112,46 @@ export const useGameStore = defineStore("game", () => {
       error.value = caughtError instanceof Error ? caughtError.message : "Failed to load legal moves.";
       return [];
     }
+  }
+
+  async function loadMissilePreview(payload: {
+    firing_unit_id: string;
+    target_unit_id: string;
+    modifier_ids?: string[];
+    fire_mode?: "active" | "reaction";
+    reaction_trigger?: "entry" | "retire" | "return";
+  }): Promise<void> {
+    try {
+      const response = await fetchMissilePreview(payload);
+      missilePreview.value = response.preview;
+      missilePreviewReason.value = response.reason;
+    } catch (caughtError) {
+      missilePreview.value = null;
+      missilePreviewReason.value = caughtError instanceof Error ? caughtError.message : "missile_preview_failed";
+    }
+  }
+
+  async function loadShockPreview(payload: {
+    attacker_unit_id: string;
+    defender_unit_id: string;
+    angle?: "front" | "flank" | "rear";
+    modifier_ids?: string[];
+  }): Promise<void> {
+    try {
+      const response = await fetchShockPreview(payload);
+      shockPreview.value = response.preview;
+      shockPreviewReason.value = response.reason;
+    } catch (caughtError) {
+      shockPreview.value = null;
+      shockPreviewReason.value = caughtError instanceof Error ? caughtError.message : "shock_preview_failed";
+    }
+  }
+
+  function clearCombatPreviews(): void {
+    missilePreview.value = null;
+    shockPreview.value = null;
+    missilePreviewReason.value = null;
+    shockPreviewReason.value = null;
   }
 
   function clearLegalMoves(unitId?: string): void {
@@ -149,6 +205,7 @@ export const useGameStore = defineStore("game", () => {
       state.value = result.state;
       lastActionResult.value = result;
       legalMovesByUnit.value = {};
+      clearCombatPreviews();
       return result;
     } catch (caughtError) {
       error.value = caughtError instanceof Error ? caughtError.message : "Action request failed.";
@@ -166,12 +223,19 @@ export const useGameStore = defineStore("game", () => {
     isSubmitting,
     error,
     lastActionResult,
+    missilePreview,
+    shockPreview,
+    missilePreviewReason,
+    shockPreviewReason,
     unitsById,
     initialize,
     refreshState,
     startNewGame,
     changePhase,
     loadLegalMoves,
+    loadMissilePreview,
+    loadShockPreview,
+    clearCombatPreviews,
     clearLegalMoves,
     moveUnit,
     fireMissile,

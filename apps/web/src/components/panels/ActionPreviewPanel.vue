@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import type { ActionResponsePayload, LegalMoveOptionPayload, UnitPayload } from "../../types/game";
+import type {
+  ActionResponsePayload,
+  LegalMoveOptionPayload,
+  MissilePreviewPayload,
+  ShockPreviewPayload,
+  UnitPayload,
+} from "../../types/game";
 
 interface Props {
   selectedUnit: UnitPayload | null;
   targetUnit: UnitPayload | null;
   movePreview: LegalMoveOptionPayload | null;
+  missilePreview: MissilePreviewPayload | null;
+  missilePreviewReason: string | null;
+  shockPreview: ShockPreviewPayload | null;
+  shockPreviewReason: string | null;
   lastActionResult: ActionResponsePayload | null;
   isSubmitting: boolean;
 }
@@ -53,7 +63,30 @@ const emit = defineEmits<{
       <h3>Combat</h3>
       <p v-if="!selectedUnit">Select a unit first.</p>
       <p v-else-if="!targetUnit">Hover enemy unit and use buttons below.</p>
-      <p v-else>Target: {{ targetUnit.unit_id }} ({{ targetUnit.side }})</p>
+      <p v-else>
+        Target: {{ targetUnit.unit_id }} ({{ targetUnit.side }})
+      </p>
+
+      <div v-if="targetUnit" class="preview-grid">
+        <p v-if="missilePreview">
+          <strong>Missile:</strong>
+          range {{ missilePreview.range_to_target }}, DR {{ missilePreview.total_drm }}, threshold
+          {{ missilePreview.hit_threshold }}
+        </p>
+        <p v-else>
+          <strong>Missile preview:</strong>
+          {{ missilePreviewReason ?? "unavailable" }}
+        </p>
+
+        <p v-if="shockPreview">
+          <strong>Shock:</strong>
+          base {{ shockPreview.base_column }}, shift {{ shockPreview.total_shift }}, final {{ shockPreview.final_column }}
+        </p>
+        <p v-else>
+          <strong>Shock preview:</strong>
+          {{ shockPreviewReason ?? "unavailable" }}
+        </p>
+      </div>
 
       <div class="button-row">
         <button type="button" class="panel-button" :disabled="!selectedUnit || !targetUnit || isSubmitting" @click="emit('fire-missile')">

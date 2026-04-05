@@ -1,5 +1,14 @@
 import { apiRequest } from "./httpClient";
-import type { ActionResponsePayload, GameStatePayload, LegalMovesPayload, RulesetMode, RulesetsPayload, TurnPhase } from "../types/game";
+import type {
+  ActionResponsePayload,
+  GameStatePayload,
+  LegalMovesPayload,
+  MissilePreviewResponsePayload,
+  RulesetMode,
+  RulesetsPayload,
+  ShockPreviewResponsePayload,
+  TurnPhase,
+} from "../types/game";
 
 export async function fetchGameState(): Promise<GameStatePayload> {
   return apiRequest<GameStatePayload>("/game/state");
@@ -64,6 +73,31 @@ export async function executeShockAction(payload: {
   modifier_ids?: string[];
 }): Promise<ActionResponsePayload> {
   return apiRequest<ActionResponsePayload>("/game/action/shock", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchMissilePreview(payload: {
+  firing_unit_id: string;
+  target_unit_id: string;
+  modifier_ids?: string[];
+  fire_mode?: "active" | "reaction";
+  reaction_trigger?: "entry" | "retire" | "return";
+}): Promise<MissilePreviewResponsePayload> {
+  return apiRequest<MissilePreviewResponsePayload>("/game/preview/missile", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchShockPreview(payload: {
+  attacker_unit_id: string;
+  defender_unit_id: string;
+  angle?: "front" | "flank" | "rear";
+  modifier_ids?: string[];
+}): Promise<ShockPreviewResponsePayload> {
+  return apiRequest<ShockPreviewResponsePayload>("/game/preview/shock", {
     method: "POST",
     body: JSON.stringify(payload),
   });

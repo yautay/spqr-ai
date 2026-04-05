@@ -145,6 +145,25 @@ export interface MissileOutcomePayload {
   drm_breakdown: MissileDRMModifierPayload[];
 }
 
+export interface MissilePreviewPayload {
+  firing_unit_id: string;
+  target_unit_id: string;
+  fire_mode: "active" | "reaction";
+  reaction_trigger: ReactionTrigger | null;
+  missile_class_id: string;
+  range_to_target: number;
+  table_strength: number;
+  total_drm: number;
+  hit_threshold: number;
+  drm_breakdown: MissileDRMModifierPayload[];
+}
+
+export interface MissilePreviewResponsePayload {
+  ok: boolean;
+  reason: string;
+  preview: MissilePreviewPayload | null;
+}
+
 export interface MissileEventPayload {
   event_type: "missile_fired" | "reaction_fire" | "reload_attempt" | "supply_changed" | "reaction_window_opened" | "reaction_window_spent";
   unit_id: string;
@@ -175,6 +194,24 @@ export interface ShockOutcomePayload {
   attacker_hits: number;
   defender_hits: number;
   modifier_breakdown: ShockModifierPayload[];
+}
+
+export interface ShockPreviewPayload {
+  attacker_unit_id: string;
+  defender_unit_id: string;
+  angle: "front" | "flank" | "rear";
+  attacker_type: string;
+  defender_type: string;
+  base_column: number;
+  total_shift: number;
+  final_column: number;
+  modifier_breakdown: ShockModifierPayload[];
+}
+
+export interface ShockPreviewResponsePayload {
+  ok: boolean;
+  reason: string;
+  preview: ShockPreviewPayload | null;
 }
 
 export interface MoraleOutcomePayload {

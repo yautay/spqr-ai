@@ -123,6 +123,30 @@ watch(
   { immediate: true },
 );
 
+watch(
+  [selectedUnit, hoveredTargetUnit],
+  async ([activeUnit, targetUnit]) => {
+    if (!activeUnit || !targetUnit) {
+      gameStore.clearCombatPreviews();
+      return;
+    }
+
+    await Promise.all([
+      gameStore.loadMissilePreview({
+        firing_unit_id: activeUnit.unit_id,
+        target_unit_id: targetUnit.unit_id,
+        fire_mode: "active",
+      }),
+      gameStore.loadShockPreview({
+        attacker_unit_id: activeUnit.unit_id,
+        defender_unit_id: targetUnit.unit_id,
+        angle: "front",
+      }),
+    ]);
+  },
+  { immediate: true },
+);
+
 async function handleNewGame(): Promise<void> {
   await gameStore.startNewGame(selectedRuleset.value);
   uiStore.resetSelections();
@@ -267,6 +291,10 @@ async function handleSetPhase(): Promise<void> {
             :selected-unit="selectedUnit"
             :target-unit="hoveredTargetUnit"
             :move-preview="movePreview"
+            :missile-preview="gameStore.missilePreview"
+            :missile-preview-reason="gameStore.missilePreviewReason"
+            :shock-preview="gameStore.shockPreview"
+            :shock-preview-reason="gameStore.shockPreviewReason"
             :last-action-result="gameStore.lastActionResult"
             :is-submitting="gameStore.isSubmitting"
             @fire-missile="handleFireMissile"
