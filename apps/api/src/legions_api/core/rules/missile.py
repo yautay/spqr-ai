@@ -209,6 +209,9 @@ def _build_missile_context(state: GameState, action: MissileAction) -> tuple[_Mi
     if action.fire_mode == "active" and firing_unit.side != state.active_side:
         return None, "wrong_active_side"
 
+    if action.fire_mode == "active" and state.turn_phase != TurnPhase.ORDERS:
+        return None, "wrong_turn_phase"
+
     if firing_unit.side == target_unit.side:
         return None, "target_not_enemy"
 

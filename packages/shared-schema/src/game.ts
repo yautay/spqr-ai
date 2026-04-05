@@ -35,6 +35,7 @@ export interface UnitPayload {
 
 export interface GameStatePayload {
   ruleset: RulesetMode;
+  turn_number: number;
   turn_phase: TurnPhase;
   tiles: TilePayload[];
   active_side: Side;
@@ -50,7 +51,8 @@ export interface GameEventPayload {
   timestamp: string;
   event_type:
     | "game_reset"
-    | "phase_changed"
+    | "activation_advanced"
+    | "turn_ended"
     | "move_resolved"
     | "missile_resolved"
     | "reload_resolved"

@@ -51,6 +51,7 @@ class GameStatePayload(BaseModel):
     """Serializable game state payload."""
 
     ruleset: RulesetMode
+    turn_number: int
     turn_phase: TurnPhase
     tiles: list[TilePayload]
     active_side: Side
@@ -95,12 +96,6 @@ class NewGamePayload(BaseModel):
     ruleset: RulesetMode = RulesetMode.ORIGINAL
 
 
-class SetPhasePayload(BaseModel):
-    """Minimal phase transition payload for development flow."""
-
-    phase: TurnPhase
-
-
 class RulesetsPayload(BaseModel):
     """List of available ruleset identifiers."""
 
@@ -114,7 +109,8 @@ class GameEventPayload(BaseModel):
     timestamp: str
     event_type: Literal[
         "game_reset",
-        "phase_changed",
+        "activation_advanced",
+        "turn_ended",
         "move_resolved",
         "missile_resolved",
         "reload_resolved",

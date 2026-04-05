@@ -8,6 +8,7 @@ from legions_api.ai.generator import resolve_candidate_action
 from legions_api.ai.search import choose_action
 from legions_api.core.bootstrap import create_demo_state
 from legions_api.core.model.unit import Side
+from legions_api.core.turn import end_turn
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,8 +65,7 @@ def run_ai_vs_ai_smoke(
         else:
             blue_actions += 1
 
-        next_side = Side.BLUE if side_to_move == Side.RED else Side.RED
-        state = action_result.state.with_active_side(next_side)
+        state, _ = end_turn(action_result.state)
 
     return AISmokeSummary(
         turns_played=turn_limit,

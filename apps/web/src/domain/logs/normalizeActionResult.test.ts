@@ -5,6 +5,7 @@ import type { ActionResponsePayload, GameStatePayload } from "@shared-schema/gam
 
 const EMPTY_STATE: GameStatePayload = {
   ruleset: "original",
+  turn_number: 1,
   turn_phase: "orders",
   tiles: [],
   active_side: "red",

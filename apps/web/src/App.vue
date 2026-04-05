@@ -10,13 +10,12 @@ import UnitDetailsPanel from "./components/panels/UnitDetailsPanel.vue";
 import { useGameStore } from "./stores/gameStore";
 import { useLogStore } from "./stores/logStore";
 import { useUiStore } from "./stores/uiStore";
-import type { HexPayload, RulesetMode, TurnPhase } from "@shared-schema/game";
+import type { HexPayload, RulesetMode } from "@shared-schema/game";
 
 const gameStore = useGameStore();
 const logStore = useLogStore();
 const uiStore = useUiStore();
 const selectedRuleset = ref<RulesetMode>("original");
-const selectedPhase = ref<TurnPhase>("orders");
 let gameEventsSocket: GameEventsSocketHandle | null = null;
 
 const boardState = computed(() => gameStore.state);
@@ -74,9 +73,6 @@ onMounted(async () => {
     },
   );
 
-  if (gameStore.state) {
-    selectedPhase.value = gameStore.state.turn_phase;
-  }
   logStore.append("info", "Session started", "Game state loaded from API.");
 });
 
@@ -112,16 +108,6 @@ watch(
 
     await gameStore.loadLegalMoves(unitId);
   },
-);
-
-watch(
-  () => boardState.value?.turn_phase,
-  (phase) => {
-    if (phase) {
-      selectedPhase.value = phase;
-    }
-  },
-  { immediate: true },
 );
 
 watch(
@@ -249,14 +235,34 @@ async function handleReloadMissile(): Promise<void> {
   logStore.appendActionResult("reload", result);
 }
 
-async function handleSetPhase(): Promise<void> {
-  await gameStore.changePhase(selectedPhase.value);
+async function handleAdvanceActivation(): Promise<void> {
+  await gameStore.advanceActivation();
   if (gameStore.error) {
-    logStore.append("error", "Phase change failed", gameStore.error);
+    logStore.append("error", "Activation advance failed", gameStore.error);
     return;
   }
 
-  logStore.append("info", "Phase updated", `Turn phase set to ${selectedPhase.value}.`);
+  const state = gameStore.state;
+  if (!state) {
+    return;
+  }
+
+  logStore.append("info", "Activation advanced", `Turn ${state.turn_number}: ${state.active_side} / ${state.turn_phase}`);
+}
+
+async function handleEndTurn(): Promise<void> {
+  await gameStore.endTurn();
+  if (gameStore.error) {
+    logStore.append("error", "End turn failed", gameStore.error);
+    return;
+  }
+
+  const state = gameStore.state;
+  if (!state) {
+    return;
+  }
+
+  logStore.append("info", "Turn ended", `Turn ${state.turn_number}: ${state.active_side} / ${state.turn_phase}`);
 }
 
 async function handleRunAiMove(): Promise<void> {
@@ -292,11 +298,11 @@ async function handleRunAiMove(): Promise<void> {
             {{ ruleset }}
           </option>
         </select>
-        <select v-model="selectedPhase" :disabled="gameStore.isSubmitting" class="ruleset-select">
-          <option value="orders">orders</option>
-          <option value="rout_and_reload">rout_and_reload</option>
-        </select>
-        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleSetPhase">Set Phase</button>
+        <span class="phase-indicator">Turn {{ boardState?.turn_number ?? "-" }} / {{ boardState?.turn_phase ?? "-" }}</span>
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleAdvanceActivation">
+          Advance Activation
+        </button>
+        <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleEndTurn">End Turn</button>
         <button type="button" class="action-button" :disabled="gameStore.isSubmitting" @click="handleNewGame">New Game</button>
       </div>
     </header>
@@ -386,6 +392,12 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.phase-indicator {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #4f402a;
 }
 
 .ruleset-select,

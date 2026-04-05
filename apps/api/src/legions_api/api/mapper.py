@@ -84,6 +84,7 @@ def to_game_state_payload(state: GameState) -> GameStatePayload:
     ]
     return GameStatePayload(
         ruleset=state.ruleset.mode,
+        turn_number=state.turn_number,
         turn_phase=state.turn_phase,
         tiles=tiles,
         active_side=state.active_side,

@@ -2,6 +2,7 @@ import { computed, ref } from "vue";
 import { defineStore } from "pinia";
 
 import {
+  advanceActivationStep,
   createNewGame,
   executeMissileAction,
   executeMissileReload,
@@ -12,8 +13,8 @@ import {
   fetchLegalMoves,
   fetchRulesets,
   fetchShockPreview,
+  forceEndTurn,
   requestAiMove,
-  setTurnPhase,
 } from "../api/gameApi";
 import type {
   AIMoveResponsePayload,
@@ -23,7 +24,6 @@ import type {
   MissilePreviewPayload,
   RulesetMode,
   ShockPreviewPayload,
-  TurnPhase,
   UnitPayload,
 } from "@shared-schema/game";
 
@@ -91,13 +91,25 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
-  async function changePhase(phase: TurnPhase): Promise<void> {
+  async function advanceActivation(): Promise<void> {
     isSubmitting.value = true;
     error.value = null;
     try {
-      state.value = await setTurnPhase(phase);
+      state.value = await advanceActivationStep();
     } catch (caughtError) {
-      error.value = caughtError instanceof Error ? caughtError.message : "Failed to change phase.";
+      error.value = caughtError instanceof Error ? caughtError.message : "Failed to advance activation.";
+    } finally {
+      isSubmitting.value = false;
+    }
+  }
+
+  async function endTurn(): Promise<void> {
+    isSubmitting.value = true;
+    error.value = null;
+    try {
+      state.value = await forceEndTurn();
+    } catch (caughtError) {
+      error.value = caughtError instanceof Error ? caughtError.message : "Failed to end turn.";
     } finally {
       isSubmitting.value = false;
     }
@@ -257,7 +269,8 @@ export const useGameStore = defineStore("game", () => {
     initialize,
     refreshState,
     startNewGame,
-    changePhase,
+    advanceActivation,
+    endTurn,
     loadLegalMoves,
     loadMissilePreview,
     loadShockPreview,

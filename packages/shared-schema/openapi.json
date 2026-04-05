@@ -321,6 +321,10 @@
             "title": "Tiles",
             "type": "array"
           },
+          "turn_number": {
+            "title": "Turn Number",
+            "type": "integer"
+          },
           "turn_phase": {
             "$ref": "#/components/schemas/TurnPhase"
           },
@@ -334,6 +338,7 @@
         },
         "required": [
           "ruleset",
+          "turn_number",
           "turn_phase",
           "tiles",
           "active_side",
@@ -1013,19 +1018,6 @@
         "title": "RulesetsPayload",
         "type": "object"
       },
-      "SetPhasePayload": {
-        "description": "Minimal phase transition payload for development flow.",
-        "properties": {
-          "phase": {
-            "$ref": "#/components/schemas/TurnPhase"
-          }
-        },
-        "required": [
-          "phase"
-        ],
-        "title": "SetPhasePayload",
-        "type": "object"
-      },
       "ShockActionPayload": {
         "description": "Shock combat command payload.",
         "properties": {
@@ -1451,6 +1443,7 @@
         "description": "Minimal turn phase marker used by action validation.",
         "enum": [
           "orders",
+          "shock",
           "rout_and_reload"
         ],
         "title": "TurnPhase",
@@ -1803,6 +1796,50 @@
         ]
       }
     },
+    "/game/activation/advance": {
+      "post": {
+        "description": "Advance one activation step in deterministic turn sequence.",
+        "operationId": "advance_activation_game_activation_advance_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameStatePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Advance Activation",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/end-turn": {
+      "post": {
+        "description": "Force end current side and start opposite side orders segment.",
+        "operationId": "force_end_turn_game_end_turn_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GameStatePayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Force End Turn",
+        "tags": [
+          "game"
+        ]
+      }
+    },
     "/game/legal-moves/{unit_id}": {
       "get": {
         "description": "Return legal move destinations and path preview metadata for one unit.",
@@ -1882,48 +1919,6 @@
           }
         },
         "summary": "New Game",
-        "tags": [
-          "game"
-        ]
-      }
-    },
-    "/game/phase": {
-      "post": {
-        "description": "Set minimal in-memory phase marker for development actions.",
-        "operationId": "set_phase_game_phase_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetPhasePayload"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GameStatePayload"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Set Phase",
         "tags": [
           "game"
         ]

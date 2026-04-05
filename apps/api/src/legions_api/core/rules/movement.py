@@ -7,7 +7,7 @@ from itertools import pairwise
 from typing import Literal
 
 from legions_api.core.actions import MoveAction
-from legions_api.core.model.game_state import GameState, ReactionTrigger, ReactionWindow
+from legions_api.core.model.game_state import GameState, ReactionTrigger, ReactionWindow, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
@@ -147,6 +147,9 @@ def _validate_move_path(
 
     if unit.side != state.active_side:
         return None, "wrong_active_side"
+
+    if state.turn_phase != TurnPhase.ORDERS:
+        return None, "wrong_turn_phase"
 
     if not state.scenario_map.contains(action.destination):
         return None, "destination_out_of_map"

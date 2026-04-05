@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from legions_api.ai.types import AICandidateAction
 from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAction, ShockAction
-from legions_api.core.model.game_state import GameState
+from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.rules.missile import resolve_missile, resolve_reload
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.rules.shock import resolve_shock
@@ -12,6 +12,20 @@ from legions_api.core.rules.shock import resolve_shock
 
 def generate_legal_actions(state: GameState, max_actions: int | None = None) -> tuple[AICandidateAction, ...]:
     """Enumerate legal actions for current active side using core rule validators."""
+
+    candidates: list[AICandidateAction] = []
+    if state.turn_phase == TurnPhase.ORDERS:
+        return _generate_orders_actions(state, max_actions=max_actions)
+    if state.turn_phase == TurnPhase.SHOCK:
+        return _generate_shock_actions(state, max_actions=max_actions)
+    if state.turn_phase == TurnPhase.ROUT_AND_RELOAD:
+        return _generate_reload_actions(state, max_actions=max_actions)
+
+    return ()
+
+
+def _generate_orders_actions(state: GameState, max_actions: int | None = None) -> tuple[AICandidateAction, ...]:
+    """Enumerate legal movement and active missile actions for orders segment."""
 
     candidates: list[AICandidateAction] = []
     active_units = sorted(
@@ -54,18 +68,22 @@ def generate_legal_actions(state: GameState, max_actions: int | None = None) -> 
                     if _reached_limit(candidates, max_actions):
                         return tuple(candidates)
 
-        reload_action = ReloadMissileAction(unit_id=unit.unit_id)
-        if resolve_reload(state, reload_action).ok:
-            candidates.append(
-                AICandidateAction(
-                    action_type="reload",
-                    action=reload_action,
-                    summary=f"reload {unit.unit_id}",
-                )
-            )
-            if _reached_limit(candidates, max_actions):
-                return tuple(candidates)
+    return tuple(candidates)
 
+
+def _generate_shock_actions(state: GameState, max_actions: int | None = None) -> tuple[AICandidateAction, ...]:
+    """Enumerate legal shock actions for shock segment."""
+
+    candidates: list[AICandidateAction] = []
+    active_units = sorted(
+        (unit for unit in state.units.values() if unit.side == state.active_side),
+        key=lambda unit: unit.unit_id,
+    )
+    enemy_units = sorted(
+        (unit for unit in state.units.values() if unit.side != state.active_side),
+        key=lambda unit: unit.unit_id,
+    )
+    for unit in active_units:
         for target_unit in enemy_units:
             if unit.position.distance_to(target_unit.position) != 1:
                 continue
@@ -86,6 +104,32 @@ def generate_legal_actions(state: GameState, max_actions: int | None = None) -> 
                     )
                     if _reached_limit(candidates, max_actions):
                         return tuple(candidates)
+
+    return tuple(candidates)
+
+
+def _generate_reload_actions(state: GameState, max_actions: int | None = None) -> tuple[AICandidateAction, ...]:
+    """Enumerate legal reload actions for rout-and-reload segment."""
+
+    candidates: list[AICandidateAction] = []
+    active_units = sorted(
+        (unit for unit in state.units.values() if unit.side == state.active_side),
+        key=lambda unit: unit.unit_id,
+    )
+    for unit in active_units:
+        reload_action = ReloadMissileAction(unit_id=unit.unit_id)
+        if not resolve_reload(state, reload_action).ok:
+            continue
+
+        candidates.append(
+            AICandidateAction(
+                action_type="reload",
+                action=reload_action,
+                summary=f"reload {unit.unit_id}",
+            )
+        )
+        if _reached_limit(candidates, max_actions):
+            return tuple(candidates)
 
     return tuple(candidates)
 

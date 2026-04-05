@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from legions_api.core.actions import ShockAction
-from legions_api.core.model.game_state import GameState
+from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.map import HexTile, build_irregular_map
 from legions_api.core.model.ruleset import RulesetMode
@@ -173,6 +173,7 @@ def test_shock_eliminates_routed_unit_when_retreat_hex_unavailable(monkeypatch: 
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
+        turn_phase=TurnPhase.SHOCK,
     )
     _patch_shock_tables(monkeypatch)
 
@@ -261,4 +262,5 @@ def _build_state(units: dict[str, Unit]) -> GameState:
         ruleset=load_ruleset(RulesetMode.ORIGINAL),
         active_side=Side.RED,
         units=units,
+        turn_phase=TurnPhase.SHOCK,
     )

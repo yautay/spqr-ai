@@ -31,7 +31,6 @@ from legions_api.api.schemas import (
     MoveActionPayload,
     NewGamePayload,
     RulesetsPayload,
-    SetPhasePayload,
     ShockActionPayload,
     ShockPreviewResponsePayload,
 )
@@ -41,13 +40,15 @@ from legions_api.core.model.hex import HexCoord
 from legions_api.core.rules.missile import preview_missile, resolve_missile, resolve_reload
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.rules.shock import preview_shock, resolve_shock
+from legions_api.core.turn import advance_activation_step, end_turn
 from legions_api.core.tables.loader import available_rulesets
 
 router = APIRouter(prefix="/game", tags=["game"])
 
 GameEventType = Literal[
     "game_reset",
-    "phase_changed",
+    "activation_advanced",
+    "turn_ended",
     "move_resolved",
     "missile_resolved",
     "reload_resolved",
@@ -100,25 +101,75 @@ async def legal_moves(unit_id: str, store: GameStateStore = Depends(get_game_sto
     return to_legal_moves_payload(unit_id=unit_id, options=options)
 
 
-@router.post("/phase", response_model=GameStatePayload)
-async def set_phase(
-    payload: SetPhasePayload,
+@router.post("/activation/advance", response_model=GameStatePayload)
+async def advance_activation(
     store: GameStateStore = Depends(get_game_store),
     event_stream: GameEventStream = Depends(get_event_stream),
 ) -> GameStatePayload:
-    """Set minimal in-memory phase marker for development actions."""
+    """Advance one activation step in deterministic turn sequence."""
 
-    state = store.state.with_turn_phase(payload.phase)
+    state, transition = advance_activation_step(store.state)
     store.replace(state)
     event_stream.publish(
         _build_game_event(
-            event_type="phase_changed",
+            event_type="activation_advanced",
             ok=True,
             reason="ok",
-            details={"phase": payload.phase.value},
+            details={
+                "from_phase": transition.previous_phase.value,
+                "to_phase": transition.next_phase.value,
+                "from_side": transition.previous_side.value,
+                "to_side": transition.next_side.value,
+                "from_turn": transition.previous_turn,
+                "to_turn": transition.next_turn,
+            },
         )
     )
-    logger.debug("Phase set to {}", payload.phase.value)
+    logger.debug(
+        "Activation advanced: {} -> {} | side {} -> {} | turn {} -> {}",
+        transition.previous_phase.value,
+        transition.next_phase.value,
+        transition.previous_side.value,
+        transition.next_side.value,
+        transition.previous_turn,
+        transition.next_turn,
+    )
+    return to_game_state_payload(state)
+
+
+@router.post("/end-turn", response_model=GameStatePayload)
+async def force_end_turn(
+    store: GameStateStore = Depends(get_game_store),
+    event_stream: GameEventStream = Depends(get_event_stream),
+) -> GameStatePayload:
+    """Force end current side and start opposite side orders segment."""
+
+    state, transition = end_turn(store.state)
+    store.replace(state)
+    event_stream.publish(
+        _build_game_event(
+            event_type="turn_ended",
+            ok=True,
+            reason="ok",
+            details={
+                "from_phase": transition.previous_phase.value,
+                "to_phase": transition.next_phase.value,
+                "from_side": transition.previous_side.value,
+                "to_side": transition.next_side.value,
+                "from_turn": transition.previous_turn,
+                "to_turn": transition.next_turn,
+            },
+        )
+    )
+    logger.debug(
+        "Turn ended: phase {} -> {} | side {} -> {} | turn {} -> {}",
+        transition.previous_phase.value,
+        transition.next_phase.value,
+        transition.previous_side.value,
+        transition.next_side.value,
+        transition.previous_turn,
+        transition.next_turn,
+    )
     return to_game_state_payload(state)
 
 

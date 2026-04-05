@@ -79,8 +79,10 @@ function resolveEventTitle(event: GameEventPayload): string {
   switch (event.event_type) {
     case "game_reset":
       return "Game reset";
-    case "phase_changed":
-      return "Phase changed";
+    case "activation_advanced":
+      return "Activation advanced";
+    case "turn_ended":
+      return "Turn ended";
     case "move_resolved":
       return "Move resolved";
     case "missile_resolved":

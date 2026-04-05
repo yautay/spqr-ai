@@ -8,7 +8,6 @@ import type {
   RulesetMode,
   RulesetsPayload,
   ShockPreviewResponsePayload,
-  TurnPhase,
 } from "@shared-schema/game";
 
 export async function fetchGameState(): Promise<GameStatePayload> {
@@ -26,10 +25,15 @@ export async function createNewGame(ruleset: RulesetMode): Promise<GameStatePayl
   });
 }
 
-export async function setTurnPhase(phase: TurnPhase): Promise<GameStatePayload> {
-  return apiRequest<GameStatePayload>("/game/phase", {
+export async function advanceActivationStep(): Promise<GameStatePayload> {
+  return apiRequest<GameStatePayload>("/game/activation/advance", {
     method: "POST",
-    body: JSON.stringify({ phase }),
+  });
+}
+
+export async function forceEndTurn(): Promise<GameStatePayload> {
+  return apiRequest<GameStatePayload>("/game/end-turn", {
+    method: "POST",
   });
 }
 

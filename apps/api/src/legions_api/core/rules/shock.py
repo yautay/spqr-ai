@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from legions_api.core.actions import ShockAction
-from legions_api.core.model.game_state import GameState
+from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
 from legions_api.core.random import seeded_d10_roll
@@ -151,6 +151,9 @@ def _build_shock_context(state: GameState, action: ShockAction) -> tuple[_ShockR
 
     if attacker.side != state.active_side:
         return None, "wrong_active_side"
+
+    if state.turn_phase != TurnPhase.SHOCK:
+        return None, "wrong_turn_phase"
 
     if attacker.side == defender.side:
         return None, "target_not_enemy"

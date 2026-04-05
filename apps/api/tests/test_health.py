@@ -36,7 +36,7 @@ def test_game_state_endpoint_returns_tiles_and_units() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["turn_phase"] in {"orders", "rout_and_reload"}
+    assert payload["turn_phase"] in {"orders", "shock", "rout_and_reload"}
     assert payload["active_side"] in {"red", "blue"}
     assert len(payload["tiles"]) > 0
     assert len(payload["units"]) > 0
@@ -135,6 +135,7 @@ def test_shock_preview_endpoint_returns_read_only_metadata() -> None:
         "/game/action",
         json={"unit_id": "r1", "destination": {"q": 1, "r": 0}},
     )
+    _ = client.post("/game/activation/advance")
     before_state = client.get("/game/state").json()
 
     response = client.post(
@@ -170,16 +171,30 @@ def test_new_game_accepts_ruleset_selection() -> None:
     assert payload["ruleset"] == "simple"
 
 
-def test_phase_endpoint_updates_turn_phase() -> None:
-    """Phase endpoint should update serialized turn phase marker."""
+def test_activation_advance_endpoint_updates_turn_phase() -> None:
+    """Activation endpoint should advance phase marker deterministically."""
 
     client = TestClient(app)
 
-    response = client.post("/game/phase", json={"phase": "rout_and_reload"})
+    response = client.post("/game/activation/advance")
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["turn_phase"] == "rout_and_reload"
+    assert payload["turn_phase"] == "shock"
+
+
+def test_end_turn_endpoint_switches_active_side_and_orders_phase() -> None:
+    """End-turn endpoint should switch side and reset to orders phase."""
+
+    client = TestClient(app)
+    initial = client.get("/game/state").json()
+
+    response = client.post("/game/end-turn")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["turn_phase"] == "orders"
+    assert payload["active_side"] != initial["active_side"]
 
 
 def test_game_action_response_exposes_tq_roll_metadata(monkeypatch) -> None:

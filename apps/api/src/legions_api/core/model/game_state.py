@@ -18,6 +18,7 @@ class TurnPhase(StrEnum):
     """Minimal turn phase marker used by action validation."""
 
     ORDERS = "orders"
+    SHOCK = "shock"
     ROUT_AND_RELOAD = "rout_and_reload"
 
 
@@ -41,6 +42,7 @@ class GameState:
     occupant_by_hex: dict[HexCoord, tuple[str, ...]]
     rng_seed: int
     rng_counter: int
+    turn_number: int
     turn_phase: TurnPhase
     open_reaction_windows: tuple[ReactionWindow, ...]
     spent_reaction_windows: tuple[ReactionWindow, ...]
@@ -54,6 +56,7 @@ class GameState:
         units: dict[str, Unit],
         rng_seed: int = 1,
         rng_counter: int = 0,
+        turn_number: int = 1,
         turn_phase: TurnPhase = TurnPhase.ORDERS,
         open_reaction_windows: tuple[ReactionWindow, ...] = (),
         spent_reaction_windows: tuple[ReactionWindow, ...] = (),
@@ -77,6 +80,7 @@ class GameState:
             occupant_by_hex=frozen_occupants,
             rng_seed=rng_seed,
             rng_counter=rng_counter,
+            turn_number=turn_number,
             turn_phase=turn_phase,
             open_reaction_windows=open_reaction_windows,
             spent_reaction_windows=spent_reaction_windows,
@@ -107,6 +111,7 @@ class GameState:
             units=units,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
+            turn_number=self.turn_number,
             turn_phase=self.turn_phase,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
@@ -123,6 +128,7 @@ class GameState:
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
+            turn_number=self.turn_number,
             turn_phase=self.turn_phase,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
@@ -139,6 +145,7 @@ class GameState:
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=rng_counter,
+            turn_number=self.turn_number,
             turn_phase=self.turn_phase,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
@@ -155,7 +162,25 @@ class GameState:
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
+            turn_number=self.turn_number,
             turn_phase=turn_phase,
+            open_reaction_windows=self.open_reaction_windows,
+            spent_reaction_windows=self.spent_reaction_windows,
+        )
+
+    def with_turn_number(self, turn_number: int) -> GameState:
+        """Return copy with updated turn number."""
+
+        return GameState(
+            scenario_map=self.scenario_map,
+            ruleset=self.ruleset,
+            active_side=self.active_side,
+            units=self.units,
+            occupant_by_hex=self.occupant_by_hex,
+            rng_seed=self.rng_seed,
+            rng_counter=self.rng_counter,
+            turn_number=turn_number,
+            turn_phase=self.turn_phase,
             open_reaction_windows=self.open_reaction_windows,
             spent_reaction_windows=self.spent_reaction_windows,
         )
@@ -175,6 +200,7 @@ class GameState:
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
+            turn_number=self.turn_number,
             turn_phase=self.turn_phase,
             open_reaction_windows=open_reaction_windows,
             spent_reaction_windows=spent_reaction_windows,
@@ -229,6 +255,7 @@ class GameState:
             occupant_by_hex=self.occupant_by_hex,
             rng_seed=self.rng_seed,
             rng_counter=self.rng_counter,
+            turn_number=self.turn_number,
             turn_phase=self.turn_phase,
             open_reaction_windows=next_open_windows,
             spent_reaction_windows=next_spent_windows,
