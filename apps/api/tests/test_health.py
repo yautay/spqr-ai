@@ -6,8 +6,8 @@ from legions_api.api.routes import game as game_routes
 from legions_api.core.bootstrap import create_demo_state
 from legions_api.core.results import (
     ActionResult,
+    DomainEvent,
     MissileDRMModifier,
-    MissileEvent,
     MissileOutcome,
     ShockModifier,
     ShockOutcome,
@@ -275,18 +275,13 @@ def test_missile_action_endpoint_returns_drm_breakdown(monkeypatch) -> None:
                 ),
             ),
             events=(
-                MissileEvent(
+                DomainEvent(
                     event_type="missile_fired",
-                    unit_id="r1",
-                    target_unit_id="b1",
-                    roll=6,
-                    success=True,
+                    details={"unit_id": "r1", "target_unit_id": "b1", "roll": 6, "success": True},
                 ),
-                MissileEvent(
+                DomainEvent(
                     event_type="supply_changed",
-                    unit_id="r1",
-                    supply_before="normal",
-                    supply_after="low",
+                    details={"unit_id": "r1", "supply_before": "normal", "supply_after": "low"},
                 ),
             ),
         )
@@ -329,21 +324,20 @@ def test_missile_reload_endpoint_returns_reload_events(monkeypatch) -> None:
             reason="ok",
             state=demo_state,
             events=(
-                MissileEvent(
+                DomainEvent(
                     event_type="reload_attempt",
-                    unit_id="r1",
-                    roll=2,
-                    target=6,
-                    success=True,
-                    supply_before="no",
-                    supply_after="no",
+                    details={
+                        "unit_id": "r1",
+                        "roll": 2,
+                        "target": 6,
+                        "success": True,
+                        "supply_before": "no",
+                        "supply_after": "no",
+                    },
                 ),
-                MissileEvent(
+                DomainEvent(
                     event_type="supply_changed",
-                    unit_id="r1",
-                    supply_before="no",
-                    supply_after="low",
-                    success=True,
+                    details={"unit_id": "r1", "supply_before": "no", "supply_after": "low", "success": True},
                 ),
             ),
         )
@@ -361,25 +355,23 @@ def test_missile_reload_endpoint_returns_reload_events(monkeypatch) -> None:
     assert payload["events"] == [
         {
             "event_type": "reload_attempt",
-            "unit_id": "r1",
-            "target_unit_id": None,
-            "reaction_trigger": None,
-            "roll": 2,
-            "target": 6,
-            "success": True,
-            "supply_before": "no",
-            "supply_after": "no",
+            "details": {
+                "roll": 2,
+                "success": True,
+                "supply_after": "no",
+                "supply_before": "no",
+                "target": 6,
+                "unit_id": "r1",
+            },
         },
         {
             "event_type": "supply_changed",
-            "unit_id": "r1",
-            "target_unit_id": None,
-            "reaction_trigger": None,
-            "roll": None,
-            "target": None,
-            "success": True,
-            "supply_before": "no",
-            "supply_after": "low",
+            "details": {
+                "success": True,
+                "supply_after": "low",
+                "supply_before": "no",
+                "unit_id": "r1",
+            },
         },
     ]
 

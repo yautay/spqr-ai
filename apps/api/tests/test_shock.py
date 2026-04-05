@@ -55,6 +55,9 @@ def test_shock_applies_crt_hits_and_advances_rng(monkeypatch: pytest.MonkeyPatch
     assert result.state.units["r1"].cohesion_hits == 1
     assert result.state.units["b1"].cohesion_hits == 1
     assert result.state.rng_counter == 3
+    assert result.events[0].event_type == "shock_designated"
+    assert result.events[1].event_type == "shock_resolved"
+    assert any(event.event_type == "morale_resolved" for event in result.events)
 
 
 def test_shock_applies_superiority_and_explicit_modifier_shifts(monkeypatch: pytest.MonkeyPatch) -> None:

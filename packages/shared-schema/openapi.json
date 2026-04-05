@@ -224,7 +224,7 @@
           },
           "events": {
             "items": {
-              "$ref": "#/components/schemas/MissileEventPayload"
+              "$ref": "#/components/schemas/DomainEventPayload"
             },
             "title": "Events",
             "type": "array"
@@ -303,6 +303,40 @@
           "events"
         ],
         "title": "ActionResponsePayload",
+        "type": "object"
+      },
+      "DomainEventPayload": {
+        "description": "Ordered action event emitted during resolution pipeline.",
+        "properties": {
+          "details": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Details",
+            "type": "object"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_type"
+        ],
+        "title": "DomainEventPayload",
         "type": "object"
       },
       "GameStatePayload": {
@@ -495,122 +529,6 @@
           "drm"
         ],
         "title": "MissileDRMModifierPayload",
-        "type": "object"
-      },
-      "MissileEventPayload": {
-        "description": "Domain event emitted by missile and reload resolution.",
-        "properties": {
-          "event_type": {
-            "enum": [
-              "missile_fired",
-              "reaction_fire",
-              "reload_attempt",
-              "supply_changed",
-              "reaction_window_opened",
-              "reaction_window_spent"
-            ],
-            "title": "Event Type",
-            "type": "string"
-          },
-          "reaction_trigger": {
-            "anyOf": [
-              {
-                "enum": [
-                  "entry",
-                  "retire",
-                  "return"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reaction Trigger"
-          },
-          "roll": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Roll"
-          },
-          "success": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success"
-          },
-          "supply_after": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Supply After"
-          },
-          "supply_before": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Supply Before"
-          },
-          "target": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Target"
-          },
-          "target_unit_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Target Unit Id"
-          },
-          "unit_id": {
-            "title": "Unit Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "event_type",
-          "unit_id",
-          "target_unit_id",
-          "reaction_trigger",
-          "roll",
-          "target",
-          "success",
-          "supply_before",
-          "supply_after"
-        ],
-        "title": "MissileEventPayload",
         "type": "object"
       },
       "MissileOutcomePayload": {

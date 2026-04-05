@@ -1,4 +1,4 @@
-import type { ActionResponsePayload, MissileEventPayload } from "@shared-schema/game";
+import type { ActionResponsePayload, DomainEventPayload } from "@shared-schema/game";
 import type { LogDraftEntry } from "./types";
 
 export type ActionKind = "move" | "missile" | "shock" | "reload";
@@ -62,43 +62,82 @@ export function normalizeActionResult(actionKind: ActionKind, result: ActionResp
   return entries;
 }
 
-function normalizeMissileEvent(event: MissileEventPayload): LogDraftEntry {
+function normalizeMissileEvent(event: DomainEventPayload): LogDraftEntry {
+  const details = event.details;
   switch (event.event_type) {
     case "missile_fired":
       return {
         level: "info",
         title: "Missile fired",
-        detail: `${event.unit_id} fired at ${event.target_unit_id ?? "?"}`,
+        detail: `${details.unit_id ?? "?"} fired at ${details.target_unit_id ?? "?"}`,
       };
     case "reaction_fire":
       return {
         level: "info",
         title: "Reaction fire",
-        detail: `${event.unit_id} used ${event.reaction_trigger ?? "unknown"} trigger`,
+        detail: `${details.unit_id ?? "?"} used ${details.reaction_trigger ?? "unknown"} trigger`,
       };
     case "reload_attempt":
       return {
-        level: event.success ? "success" : "warning",
+        level: details.success ? "success" : "warning",
         title: "Reload attempt",
-        detail: `${event.unit_id} ${event.success ? "reloaded" : "failed reload"}`,
+        detail: `${details.unit_id ?? "?"} ${details.success ? "reloaded" : "failed reload"}`,
       };
     case "supply_changed":
       return {
         level: "info",
         title: "Missile supply",
-        detail: `${event.unit_id}: ${event.supply_before ?? "?"} -> ${event.supply_after ?? "?"}`,
+        detail: `${details.unit_id ?? "?"}: ${details.supply_before ?? "?"} -> ${details.supply_after ?? "?"}`,
       };
     case "reaction_window_opened":
       return {
         level: "info",
         title: "Reaction window opened",
-        detail: `${event.unit_id} can react vs ${event.target_unit_id ?? "?"} (${event.reaction_trigger ?? "?"})`,
+        detail: `${details.unit_id ?? "?"} can react vs ${details.target_unit_id ?? "?"} (${details.reaction_trigger ?? "?"})`,
       };
     case "reaction_window_spent":
       return {
         level: "info",
         title: "Reaction window spent",
-        detail: `${event.unit_id} spent ${event.reaction_trigger ?? "?"} reaction`,
+        detail: `${details.unit_id ?? "?"} spent ${details.reaction_trigger ?? "?"} reaction`,
+      };
+    case "shock_designated":
+      return {
+        level: "info",
+        title: "Shock designated",
+        detail: `${details.attacker_unit_id ?? "?"} targets ${details.defender_unit_id ?? "?"}`,
+      };
+    case "shock_resolved":
+      return {
+        level: "info",
+        title: "Shock step",
+        detail: `roll ${details.roll ?? "?"}, column ${details.final_column ?? "?"}`,
+      };
+    case "morale_resolved":
+      return {
+        level: details.passed ? "info" : "warning",
+        title: "Morale step",
+        detail: `${details.unit_id ?? "?"} roll ${details.roll ?? "?"} vs ${details.target ?? "?"}`,
+      };
+    case "rout_resolved":
+      return {
+        level: "warning",
+        title: "Rout step",
+        detail: `${details.unit_id ?? "?"} retreated=${details.retreated ?? false}, eliminated=${details.eliminated ?? false}`,
+      };
+    case "pursuit_resolved":
+      return {
+        level: "info",
+        title: "Pursuit step",
+        detail: `${details.unit_id ?? "?"} -> (${details.destination_q ?? "?"}, ${details.destination_r ?? "?"})`,
+      };
+    default:
+      return {
+        level: "info",
+        title: event.event_type,
+        detail: Object.entries(details)
+          .map(([key, value]) => `${key}=${String(value)}`)
+          .join(", "),
       };
   }
 }

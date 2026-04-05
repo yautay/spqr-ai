@@ -75,7 +75,7 @@ export interface ActionResponsePayload {
   shock_outcome: ShockOutcomePayload | null;
   morale_outcomes: MoraleOutcomePayload[];
   pursuit_outcome: PursuitOutcomePayload | null;
-  events: MissileEventPayload[];
+  events: DomainEventPayload[];
 }
 
 export interface LegalMoveOptionPayload {
@@ -166,16 +166,9 @@ export interface MissilePreviewResponsePayload {
   preview: MissilePreviewPayload | null;
 }
 
-export interface MissileEventPayload {
-  event_type: "missile_fired" | "reaction_fire" | "reload_attempt" | "supply_changed" | "reaction_window_opened" | "reaction_window_spent";
-  unit_id: string;
-  target_unit_id: string | null;
-  reaction_trigger: ReactionTrigger | null;
-  roll: number | null;
-  target: number | null;
-  success: boolean | null;
-  supply_before: string | null;
-  supply_after: string | null;
+export interface DomainEventPayload {
+  event_type: string;
+  details: Record<string, string | number | boolean | null>;
 }
 
 export interface ShockModifierPayload {

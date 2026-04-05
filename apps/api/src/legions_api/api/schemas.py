@@ -229,25 +229,11 @@ class MissileOutcomePayload(BaseModel):
     drm_breakdown: list[MissileDRMModifierPayload]
 
 
-class MissileEventPayload(BaseModel):
-    """Domain event emitted by missile and reload resolution."""
+class DomainEventPayload(BaseModel):
+    """Ordered action event emitted during resolution pipeline."""
 
-    event_type: Literal[
-        "missile_fired",
-        "reaction_fire",
-        "reload_attempt",
-        "supply_changed",
-        "reaction_window_opened",
-        "reaction_window_spent",
-    ]
-    unit_id: str
-    target_unit_id: str | None
-    reaction_trigger: Literal["entry", "retire", "return"] | None
-    roll: int | None
-    target: int | None
-    success: bool | None
-    supply_before: str | None
-    supply_after: str | None
+    event_type: str
+    details: dict[str, str | int | bool | None] = Field(default_factory=dict)
 
 
 class ShockModifierPayload(BaseModel):
@@ -370,4 +356,4 @@ class ActionResponsePayload(BaseModel):
     shock_outcome: ShockOutcomePayload | None = None
     morale_outcomes: list[MoraleOutcomePayload]
     pursuit_outcome: PursuitOutcomePayload | None = None
-    events: list[MissileEventPayload]
+    events: list[DomainEventPayload]

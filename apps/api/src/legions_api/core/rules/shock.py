@@ -9,7 +9,7 @@ from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import Unit
 from legions_api.core.random import seeded_d10_roll
-from legions_api.core.results import ActionResult, MoraleOutcome, PursuitOutcome, ShockModifier, ShockOutcome, ShockPreview
+from legions_api.core.results import ActionResult, DomainEvent, MoraleOutcome, PursuitOutcome, ShockModifier, ShockOutcome, ShockPreview
 from legions_api.core.tables.adapters import (
     ShockCRTCellLookup,
     clash_column_lookup,
@@ -91,6 +91,69 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
     updated_units = pursuit_outcome.units
 
     updated_state = state.with_units(updated_units).with_rng_counter(next_rng_counter)
+    events: list[DomainEvent] = [
+        DomainEvent(
+            event_type="shock_designated",
+            details={
+                "attacker_unit_id": context.attacker.unit_id,
+                "defender_unit_id": context.defender.unit_id,
+                "angle": action.angle,
+            },
+        ),
+        DomainEvent(
+            event_type="shock_resolved",
+            details={
+                "attacker_unit_id": context.attacker.unit_id,
+                "defender_unit_id": context.defender.unit_id,
+                "roll": roll,
+                "final_column": context.final_column,
+                "attacker_hits": crt_cell.attacker_hits,
+                "defender_hits": crt_cell.defender_hits,
+            },
+        ),
+    ]
+    for morale_outcome in morale_outcomes:
+        events.append(
+            DomainEvent(
+                event_type="morale_resolved",
+                details={
+                    "unit_id": morale_outcome.unit_id,
+                    "target": morale_outcome.target,
+                    "roll": morale_outcome.roll,
+                    "passed": morale_outcome.passed,
+                    "became_routed": morale_outcome.became_routed,
+                    "retreated": morale_outcome.retreated,
+                    "eliminated": morale_outcome.eliminated,
+                },
+            )
+        )
+
+    for morale_outcome in morale_outcomes:
+        if not morale_outcome.became_routed:
+            continue
+
+        events.append(
+            DomainEvent(
+                event_type="rout_resolved",
+                details={
+                    "unit_id": morale_outcome.unit_id,
+                    "retreated": morale_outcome.retreated,
+                    "eliminated": morale_outcome.eliminated,
+                },
+            )
+        )
+
+    if pursuit_outcome.outcome is not None:
+        events.append(
+            DomainEvent(
+                event_type="pursuit_resolved",
+                details={
+                    "unit_id": pursuit_outcome.outcome.unit_id,
+                    "destination_q": pursuit_outcome.outcome.destination.q,
+                    "destination_r": pursuit_outcome.outcome.destination.r,
+                },
+            )
+        )
 
     return ActionResult(
         ok=True,
@@ -112,6 +175,7 @@ def resolve_shock(state: GameState, action: ShockAction) -> ActionResult:
         ),
         morale_outcomes=tuple(morale_outcomes),
         pursuit_outcome=pursuit_outcome.outcome,
+        events=tuple(events),
     )
 
 

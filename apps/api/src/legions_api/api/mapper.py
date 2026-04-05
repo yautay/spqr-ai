@@ -11,9 +11,9 @@ from legions_api.api.schemas import (
     GameStatePayload,
     HexPayload,
     LegalMoveOptionPayload,
+    DomainEventPayload,
     LegalMovesPayload,
     MissileDRMModifierPayload,
-    MissileEventPayload,
     MissileOutcomePayload,
     MissilePreviewPayload,
     MissilePreviewResponsePayload,
@@ -33,8 +33,8 @@ from legions_api.core.actions import MissileAction, MoveAction, ReloadMissileAct
 from legions_api.core.model.game_state import GameState
 from legions_api.core.results import (
     ActionResult,
+    DomainEvent,
     MissileDRMModifier,
-    MissileEvent,
     MissileOutcome,
     MissilePreview,
     MoraleOutcome,
@@ -106,7 +106,7 @@ def to_action_response_payload(result: ActionResult) -> ActionResponsePayload:
         shock_outcome=_to_shock_outcome_payload(result.shock_outcome),
         morale_outcomes=[_to_morale_outcome_payload(outcome) for outcome in result.morale_outcomes],
         pursuit_outcome=_to_pursuit_outcome_payload(result.pursuit_outcome),
-        events=[_to_missile_event_payload(event) for event in result.events],
+        events=[_to_domain_event_payload(event) for event in result.events],
     )
 
 
@@ -310,20 +310,10 @@ def _to_missile_drm_modifier_payload(modifier: MissileDRMModifier) -> MissileDRM
     return MissileDRMModifierPayload(id=modifier.id, drm=modifier.drm)
 
 
-def _to_missile_event_payload(event: MissileEvent) -> MissileEventPayload:
-    """Convert missile domain event to API payload."""
+def _to_domain_event_payload(event: DomainEvent) -> DomainEventPayload:
+    """Convert one domain event to API payload."""
 
-    return MissileEventPayload(
-        event_type=event.event_type,
-        unit_id=event.unit_id,
-        target_unit_id=event.target_unit_id,
-        reaction_trigger=event.reaction_trigger,
-        roll=event.roll,
-        target=event.target,
-        success=event.success,
-        supply_before=event.supply_before,
-        supply_after=event.supply_after,
-    )
+    return DomainEventPayload(event_type=event.event_type, details=event.details)
 
 
 def _to_shock_outcome_payload(outcome: ShockOutcome | None) -> ShockOutcomePayload | None:

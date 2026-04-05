@@ -11,7 +11,7 @@ from legions_api.core.model.game_state import GameState, ReactionTrigger, Reacti
 from legions_api.core.model.hex import HexCoord
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
-from legions_api.core.results import ActionResult, MissileEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
+from legions_api.core.results import ActionResult, DomainEvent, PendingTQCheck, StackingEffect, TQCheckOutcome
 from legions_api.core.rules.pathfinding import MovementPolicy, PathResult, shortest_path
 from legions_api.core.rules.zoc import is_in_enemy_zoc
 from legions_api.core.tables.adapters import (
@@ -110,11 +110,13 @@ def resolve_move(state: GameState, action: MoveAction) -> ActionResult:
             movement_path=validation.path_result.path,
         )
         reaction_events = tuple(
-            MissileEvent(
+            DomainEvent(
                 event_type="reaction_window_opened",
-                unit_id=window.firing_unit_id,
-                target_unit_id=window.target_unit_id,
-                reaction_trigger=window.reaction_trigger,
+                details={
+                    "unit_id": window.firing_unit_id,
+                    "target_unit_id": window.target_unit_id,
+                    "reaction_trigger": window.reaction_trigger,
+                },
             )
             for window in reaction_windows
         )

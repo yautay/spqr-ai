@@ -99,25 +99,11 @@ class MissilePreview:
 
 
 @dataclass(frozen=True, slots=True)
-class MissileEvent:
-    """Domain event emitted by missile fire/reload resolution."""
+class DomainEvent:
+    """Generic ordered domain event emitted by action resolvers."""
 
-    event_type: Literal[
-        "missile_fired",
-        "reaction_fire",
-        "reload_attempt",
-        "supply_changed",
-        "reaction_window_opened",
-        "reaction_window_spent",
-    ]
-    unit_id: str
-    target_unit_id: str | None = None
-    reaction_trigger: Literal["entry", "retire", "return"] | None = None
-    roll: int | None = None
-    target: int | None = None
-    success: bool | None = None
-    supply_before: str | None = None
-    supply_after: str | None = None
+    event_type: str
+    details: dict[str, str | int | bool | None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,4 +183,4 @@ class ActionResult:
     shock_outcome: ShockOutcome | None = None
     morale_outcomes: tuple[MoraleOutcome, ...] = ()
     pursuit_outcome: PursuitOutcome | None = None
-    events: tuple[MissileEvent, ...] = ()
+    events: tuple[DomainEvent, ...] = ()

@@ -77,14 +77,16 @@ describe("normalizeActionResult", () => {
       events: [
         {
           event_type: "missile_fired",
-          unit_id: "r1",
-          target_unit_id: "b1",
-          reaction_trigger: null,
-          roll: 6,
-          target: null,
-          success: true,
-          supply_before: null,
-          supply_after: null,
+          details: {
+            unit_id: "r1",
+            target_unit_id: "b1",
+            reaction_trigger: null,
+            roll: 6,
+            target: null,
+            success: true,
+            supply_before: null,
+            supply_after: null,
+          },
         },
       ],
     };

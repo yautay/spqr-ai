@@ -396,7 +396,7 @@ def test_fire_reload_sequence_updates_supply_and_events(monkeypatch: pytest.Monk
     assert reload.ok
     assert reload.state.units["r1"].missile_supply == MissileSupply.LOW
     assert [event.event_type for event in reload.events] == ["reload_attempt", "supply_changed"]
-    assert reload.events[0].success is True
+    assert reload.events[0].details["success"] is True
 
 
 def test_reload_rejects_outside_reload_phase(monkeypatch: pytest.MonkeyPatch) -> None:

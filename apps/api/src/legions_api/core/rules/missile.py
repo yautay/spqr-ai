@@ -9,7 +9,7 @@ from legions_api.core.model.game_state import GameState, TurnPhase
 from legions_api.core.model.map import TerrainType
 from legions_api.core.model.unit import MissileSupply, Unit
 from legions_api.core.random import seeded_d10_roll
-from legions_api.core.results import ActionResult, MissileDRMModifier, MissileEvent, MissileOutcome, MissilePreview
+from legions_api.core.results import ActionResult, DomainEvent, MissileDRMModifier, MissileOutcome, MissilePreview
 from legions_api.core.rules.los import has_line_of_sight
 from legions_api.core.tables.adapters import MissileClassLookup, missile_class_lookup, missile_drm_lookup
 from legions_api.core.tables.loader import load_table
@@ -48,34 +48,40 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
     updated_units[context.firing_unit.unit_id] = context.firing_unit.with_missile_supply(supply_after)
 
     events = [
-        MissileEvent(
+        DomainEvent(
             event_type="missile_fired",
-            unit_id=context.firing_unit.unit_id,
-            target_unit_id=context.target_unit.unit_id,
-            reaction_trigger=action.reaction_trigger,
-            roll=base_roll,
-            success=hit,
+            details={
+                "unit_id": context.firing_unit.unit_id,
+                "target_unit_id": context.target_unit.unit_id,
+                "reaction_trigger": action.reaction_trigger,
+                "roll": base_roll,
+                "success": hit,
+            },
         ),
     ]
     if action.fire_mode == "reaction":
         events.append(
-            MissileEvent(
+            DomainEvent(
                 event_type="reaction_fire",
-                unit_id=context.firing_unit.unit_id,
-                target_unit_id=context.target_unit.unit_id,
-                reaction_trigger=action.reaction_trigger,
-                roll=base_roll,
-                success=hit,
+                details={
+                    "unit_id": context.firing_unit.unit_id,
+                    "target_unit_id": context.target_unit.unit_id,
+                    "reaction_trigger": action.reaction_trigger,
+                    "roll": base_roll,
+                    "success": hit,
+                },
             )
         )
 
     if supply_before != supply_after:
         events.append(
-            MissileEvent(
+            DomainEvent(
                 event_type="supply_changed",
-                unit_id=context.firing_unit.unit_id,
-                supply_before=supply_before.value,
-                supply_after=supply_after.value,
+                details={
+                    "unit_id": context.firing_unit.unit_id,
+                    "supply_before": supply_before.value,
+                    "supply_after": supply_after.value,
+                },
             )
         )
 
@@ -87,11 +93,13 @@ def resolve_missile(state: GameState, action: MissileAction) -> ActionResult:
             reaction_trigger=action.reaction_trigger,
         )
         events.append(
-            MissileEvent(
+            DomainEvent(
                 event_type="reaction_window_spent",
-                unit_id=context.firing_unit.unit_id,
-                target_unit_id=context.target_unit.unit_id,
-                reaction_trigger=action.reaction_trigger,
+                details={
+                    "unit_id": context.firing_unit.unit_id,
+                    "target_unit_id": context.target_unit.unit_id,
+                    "reaction_trigger": action.reaction_trigger,
+                },
             )
         )
 
@@ -165,15 +173,17 @@ def resolve_reload(state: GameState, action: ReloadMissileAction) -> ActionResul
     target = 7 if unit.missile_supply == MissileSupply.LOW else 6
     success = roll <= target
 
-    events: list[MissileEvent] = [
-        MissileEvent(
+    events: list[DomainEvent] = [
+        DomainEvent(
             event_type="reload_attempt",
-            unit_id=unit.unit_id,
-            roll=roll,
-            target=target,
-            success=success,
-            supply_before=unit.missile_supply.value,
-            supply_after=unit.missile_supply.value,
+            details={
+                "unit_id": unit.unit_id,
+                "roll": roll,
+                "target": target,
+                "success": success,
+                "supply_before": unit.missile_supply.value,
+                "supply_after": unit.missile_supply.value,
+            },
         )
     ]
 
@@ -182,12 +192,14 @@ def resolve_reload(state: GameState, action: ReloadMissileAction) -> ActionResul
         supply_after = _improve_supply(unit.missile_supply)
         updated_units[unit.unit_id] = unit.with_missile_supply(supply_after)
         events.append(
-            MissileEvent(
+            DomainEvent(
                 event_type="supply_changed",
-                unit_id=unit.unit_id,
-                supply_before=unit.missile_supply.value,
-                supply_after=supply_after.value,
-                success=True,
+                details={
+                    "unit_id": unit.unit_id,
+                    "supply_before": unit.missile_supply.value,
+                    "supply_after": supply_after.value,
+                    "success": True,
+                },
             )
         )
 
