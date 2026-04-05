@@ -12,15 +12,18 @@ from legions_api.core.model.ruleset import RulesetDefinition, RulesetMode, Rules
 from legions_api.core.tables.adapters import movement_costs_by_profile
 from legions_api.core.tables.models import (
     ClashColumnsTableModel,
+    CohesionTQChecksTableModel,
     LeaderCasualtyTableModel,
     MissileTableModel,
     MovementCostsTableModel,
     ParsedTableModel,
+    PursuitOptionTableModel,
     RallyTableModel,
     ShockCRTTableModel,
     ShockSuperiorityTableModel,
     StackingMandatoryTableModel,
     StackingVoluntaryTableModel,
+    UnitTypeTraitsTableModel,
 )
 
 _RULESET_FILES_DIR = Path(__file__).resolve().parents[2] / "data" / "rulesets"
@@ -36,6 +39,9 @@ TableId = Literal[
     "shock_crt",
     "rally_table",
     "leader_casualty_table",
+    "cohesion_tq_checks",
+    "pursuit_option",
+    "unit_type_traits",
 ]
 
 _SUPPORTED_TABLE_IDS: tuple[TableId, ...] = (
@@ -48,6 +54,9 @@ _SUPPORTED_TABLE_IDS: tuple[TableId, ...] = (
     "shock_crt",
     "rally_table",
     "leader_casualty_table",
+    "cohesion_tq_checks",
+    "pursuit_option",
+    "unit_type_traits",
 )
 
 
@@ -146,7 +155,13 @@ def load_table(table_id: TableId) -> ParsedTableModel:
         return ShockCRTTableModel.model_validate(raw)
     if table_id == "rally_table":
         return RallyTableModel.model_validate(raw)
-    return LeaderCasualtyTableModel.model_validate(raw)
+    if table_id == "leader_casualty_table":
+        return LeaderCasualtyTableModel.model_validate(raw)
+    if table_id == "cohesion_tq_checks":
+        return CohesionTQChecksTableModel.model_validate(raw)
+    if table_id == "pursuit_option":
+        return PursuitOptionTableModel.model_validate(raw)
+    return UnitTypeTraitsTableModel.model_validate(raw)
 
 
 def load_supported_tables() -> dict[TableId, ParsedTableModel]:

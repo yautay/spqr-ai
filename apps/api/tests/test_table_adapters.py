@@ -11,19 +11,23 @@ from legions_api.core.tables.adapters import (
     missile_class_lookup,
     missile_drm_lookup,
     movement_costs_by_profile,
+    pursuit_option_lookup,
     shock_column_adjustment_lookup,
     shock_crt_lookup,
     shock_superiority_lookup,
+    unit_type_traits_lookup,
     voluntary_stacking_lookup,
 )
 from legions_api.core.tables.models import (
     ClashColumnsTableModel,
     MissileTableModel,
     MovementCostsTableModel,
+    PursuitOptionTableModel,
     ShockCRTTableModel,
     ShockSuperiorityTableModel,
     StackingMandatoryTableModel,
     StackingVoluntaryTableModel,
+    UnitTypeTraitsTableModel,
 )
 
 
@@ -309,3 +313,42 @@ def test_shock_column_adjustment_lookup_converts_direction_to_shift() -> None:
 
     assert lookup["charge"].shift == 1
     assert lookup["rough"].shift == -2
+
+
+def test_pursuit_option_lookup_builds_rating_and_modifier_maps() -> None:
+    """Pursuit option adapter should map ratings and DR modifiers."""
+
+    table = PursuitOptionTableModel.model_validate(
+        {
+            "table_id": "pursuit_option",
+            "version": "test",
+            "ratings": {"LC": 5, "HC": 7},
+            "dr_modifiers": [
+                {"id": "numidian_lc", "drm": -1},
+                {"id": "attacker_in_enemy_zoc", "drm": 1},
+            ],
+        }
+    )
+
+    lookup = pursuit_option_lookup(table)
+
+    assert lookup.ratings["LC"] == 5
+    assert lookup.dr_modifiers["numidian_lc"] == -1
+
+
+def test_unit_type_traits_lookup_rejects_duplicate_unit_types() -> None:
+    """Unit traits adapter should reject duplicated unit type rows."""
+
+    table = UnitTypeTraitsTableModel.model_validate(
+        {
+            "table_id": "unit_type_traits",
+            "version": "test",
+            "unit_types": [
+                {"unit_type": "HI", "traits": {"is_cavalry": False}},
+                {"unit_type": "HI", "traits": {"is_cavalry": True}},
+            ],
+        }
+    )
+
+    with pytest.raises(ValueError, match="duplicate unit_type traits row"):
+        unit_type_traits_lookup(table)

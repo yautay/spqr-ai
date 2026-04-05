@@ -1,0 +1,20 @@
+{
+  "scenario_id": "demo",
+  "line_rules": [
+    {
+      "line_id": "demo_line",
+      "side_id": "red",
+      "eligible_unit_filters": {
+        "unit_types": ["HI"],
+        "unit_classes": ["HA"],
+        "allow_velites_skirmish_interruption": false
+      },
+      "adjacency_rule": {
+        "max_gap": 0,
+        "allow_gap_through": []
+      },
+      "requires_same_orientation": false,
+      "max_lines_per_command": 1
+    }
+  ]
+}

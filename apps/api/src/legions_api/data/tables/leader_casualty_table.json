@@ -1,0 +1,14 @@
+{
+  "table_id": "leader_casualty_table",
+  "version": "import-1",
+  "notes": "Baseline leader casualty outcomes by die roll.",
+  "rows": [
+    {"die_roll": 0, "outcome": "leader_eliminated", "effects": ["remove_leader"]},
+    {"die_roll": 1, "outcome": "leader_wounded", "effects": ["reduce_initiative"]},
+    {"die_roll": 2, "outcome": "leader_wounded", "effects": ["reduce_command_range"]},
+    {"die_roll": 3, "outcome": "near_miss", "effects": []},
+    {"die_roll": 4, "outcome": "near_miss", "effects": []},
+    {"die_roll": 5, "outcome": "safe", "effects": []},
+    {"die_roll": 6, "outcome": "safe", "effects": []}
+  ]
+}

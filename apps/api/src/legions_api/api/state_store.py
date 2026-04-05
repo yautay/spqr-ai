@@ -19,10 +19,10 @@ class GameStateStore:
 
         return self._state
 
-    def reset(self, ruleset_mode: RulesetMode = RulesetMode.ORIGINAL) -> GameState:
+    def reset(self, ruleset_mode: RulesetMode = RulesetMode.ORIGINAL, scenario_id: str = "demo") -> GameState:
         """Reset game to deterministic demo state."""
 
-        self._state = create_demo_state(mode=ruleset_mode)
+        self._state = create_demo_state(mode=ruleset_mode, scenario_id=scenario_id)
         return self._state
 
     def replace(self, state: GameState) -> None:

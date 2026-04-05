@@ -1,0 +1,28 @@
+{
+  "table_id": "cohesion_tq_checks",
+  "version": "import-1",
+  "notes": "Baseline cohesion/TQ triggers used by movement and shock sequencing.",
+  "triggers": [
+    {
+      "trigger_id": "move_again_same_turn",
+      "phase": "orders",
+      "type": "automatic_hits",
+      "formula": "1",
+      "exceptions": ["skirmisher"]
+    },
+    {
+      "trigger_id": "stacking_mandatory_check",
+      "phase": "orders",
+      "type": "tq_check",
+      "formula": "tq-1",
+      "exceptions": []
+    },
+    {
+      "trigger_id": "pre_shock_check",
+      "phase": "shock",
+      "type": "tq_check",
+      "formula": "if dr > tq then hits = dr - tq",
+      "exceptions": []
+    }
+  ]
+}

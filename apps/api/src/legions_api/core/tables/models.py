@@ -189,6 +189,52 @@ class LeaderCasualtyTableModel(BaseTableModel):
     rows: list[LeaderCasualtyRowModel]
 
 
+class CohesionTQTriggerModel(BaseModel):
+    """One trigger entry for cohesion/TQ checks."""
+
+    trigger_id: str
+    phase: str
+    type: Literal["automatic_hits", "tq_check"]
+    formula: str
+    exceptions: list[str]
+
+
+class CohesionTQChecksTableModel(BaseTableModel):
+    """Cohesion/TQ trigger table data."""
+
+    table_id: Literal["cohesion_tq_checks"]
+    triggers: list[CohesionTQTriggerModel]
+
+
+class PursuitDRModifierModel(BaseModel):
+    """Pursuit option DR modifier row."""
+
+    id: str
+    drm: int
+
+
+class PursuitOptionTableModel(BaseTableModel):
+    """Pursuit option ratings and DR modifiers."""
+
+    table_id: Literal["pursuit_option"]
+    ratings: dict[str, int]
+    dr_modifiers: list[PursuitDRModifierModel]
+
+
+class UnitTypeTraitsModel(BaseModel):
+    """Trait flags for one canonical unit type id."""
+
+    unit_type: str
+    traits: dict[str, bool]
+
+
+class UnitTypeTraitsTableModel(BaseTableModel):
+    """Canonical unit type trait registry table."""
+
+    table_id: Literal["unit_type_traits"]
+    unit_types: list[UnitTypeTraitsModel]
+
+
 class ShockSuperiorityRowModel(BaseModel):
     """One superiority matrix row from attacker perspective."""
 
@@ -254,6 +300,9 @@ ParsedTableModel = (
     | MissileTableModel
     | RallyTableModel
     | LeaderCasualtyTableModel
+    | CohesionTQChecksTableModel
+    | PursuitOptionTableModel
+    | UnitTypeTraitsTableModel
     | ShockSuperiorityTableModel
     | ClashColumnsTableModel
     | ShockCRTTableModel

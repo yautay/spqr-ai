@@ -9,6 +9,7 @@ import type {
   ReplayVerificationPayload,
   RulesetMode,
   RulesetsPayload,
+  ScenariosPayload,
   SnapshotListPayload,
   SnapshotPayload,
   ShockPreviewResponsePayload,
@@ -22,10 +23,14 @@ export async function fetchRulesets(): Promise<RulesetsPayload> {
   return apiRequest<RulesetsPayload>("/game/rulesets");
 }
 
-export async function createNewGame(ruleset: RulesetMode): Promise<GameStatePayload> {
+export async function fetchScenarios(): Promise<ScenariosPayload> {
+  return apiRequest<ScenariosPayload>("/game/scenarios");
+}
+
+export async function createNewGame(ruleset: RulesetMode, scenarioId = "demo"): Promise<GameStatePayload> {
   return apiRequest<GameStatePayload>("/game/new", {
     method: "POST",
-    body: JSON.stringify({ ruleset }),
+    body: JSON.stringify({ ruleset, scenario_id: scenarioId }),
   });
 }
 

@@ -46,6 +46,10 @@ export interface RulesetsPayload {
   rulesets: RulesetMode[];
 }
 
+export interface ScenariosPayload {
+  scenarios: string[];
+}
+
 export interface SnapshotSummaryPayload {
   slot_id: string;
   saved_at: string;

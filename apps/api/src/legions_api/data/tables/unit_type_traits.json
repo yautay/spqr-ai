@@ -1,0 +1,47 @@
+{
+  "table_id": "unit_type_traits",
+  "version": "import-1",
+  "notes": "Canonical unit-type trait registry for rule lookups.",
+  "unit_types": [
+    {
+      "unit_type": "HI",
+      "traits": {
+        "shock_capable": true,
+        "is_heavy_for_must_shock": true,
+        "is_skirmisher": false,
+        "is_cavalry": false,
+        "is_elephant": false
+      }
+    },
+    {
+      "unit_type": "HC",
+      "traits": {
+        "shock_capable": true,
+        "is_heavy_for_must_shock": true,
+        "is_skirmisher": false,
+        "is_cavalry": true,
+        "is_elephant": false
+      }
+    },
+    {
+      "unit_type": "SK",
+      "traits": {
+        "shock_capable": false,
+        "is_heavy_for_must_shock": false,
+        "is_skirmisher": true,
+        "is_cavalry": false,
+        "is_elephant": false
+      }
+    },
+    {
+      "unit_type": "EL",
+      "traits": {
+        "shock_capable": true,
+        "is_heavy_for_must_shock": true,
+        "is_skirmisher": false,
+        "is_cavalry": false,
+        "is_elephant": true
+      }
+    }
+  ]
+}

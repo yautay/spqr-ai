@@ -1,0 +1,17 @@
+{
+  "table_id": "rally_table",
+  "version": "import-1",
+  "notes": "Baseline rally result values by die roll.",
+  "rows": [
+    {"die_roll": 0, "result": {"cohesion_hits_after_rally": 4}},
+    {"die_roll": 1, "result": {"cohesion_hits_after_rally": 3}},
+    {"die_roll": 2, "result": {"cohesion_hits_after_rally": 2}},
+    {"die_roll": 3, "result": {"cohesion_hits_after_rally": 2}},
+    {"die_roll": 4, "result": {"cohesion_hits_after_rally": 1}},
+    {"die_roll": 5, "result": {"cohesion_hits_after_rally": 1}},
+    {"die_roll": 6, "result": {"cohesion_hits_after_rally": 0}},
+    {"die_roll": 7, "result": {"cohesion_hits_after_rally": 0}},
+    {"die_roll": 8, "result": {"cohesion_hits_after_rally": 0}},
+    {"die_roll": 9, "result": {"cohesion_hits_after_rally": null}}
+  ]
+}

@@ -80,6 +80,18 @@ def test_rulesets_endpoint_returns_original_and_simple() -> None:
     assert set(payload["rulesets"]) == {"original", "simple"}
 
 
+def test_scenarios_endpoint_returns_demo_scenario() -> None:
+    """Scenario catalog endpoint should expose demo scenario id."""
+
+    client = TestClient(app)
+
+    response = client.get("/game/scenarios")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "demo" in payload["scenarios"]
+
+
 def test_legal_moves_endpoint_returns_preview_options() -> None:
     """Legal moves endpoint should return destination and path metadata for active unit."""
 

@@ -23,6 +23,9 @@ from legions_api.core.tables.models import MissileTableModel, MovementCostsTable
         "shock_crt",
         "rally_table",
         "leader_casualty_table",
+        "cohesion_tq_checks",
+        "pursuit_option",
+        "unit_type_traits",
     ],
 )
 def test_known_table_templates_load_and_validate(table_id: TableId) -> None:
@@ -56,6 +59,9 @@ def test_load_supported_tables_returns_all_known_ids() -> None:
         "shock_crt",
         "rally_table",
         "leader_casualty_table",
+        "cohesion_tq_checks",
+        "pursuit_option",
+        "unit_type_traits",
     }
 
 

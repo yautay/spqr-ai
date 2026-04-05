@@ -9,6 +9,7 @@ import {
   executeMove,
   executeShockAction,
   fetchReplayState,
+  fetchScenarios,
   fetchSnapshots,
   fetchMissilePreview,
   fetchGameState,
@@ -37,6 +38,7 @@ import type {
 export const useGameStore = defineStore("game", () => {
   const state = ref<GameStatePayload | null>(null);
   const rulesets = ref<RulesetMode[]>([]);
+  const scenarios = ref<string[]>([]);
   const snapshots = ref<SnapshotSummaryPayload[]>([]);
   const legalMovesByUnit = ref<Record<string, LegalMoveOptionPayload[]>>({});
   const isLoading = ref(false);
@@ -62,8 +64,9 @@ export const useGameStore = defineStore("game", () => {
     isLoading.value = true;
     error.value = null;
     try {
-      const [rulesetsPayload, gameState] = await Promise.all([fetchRulesets(), fetchGameState()]);
+      const [rulesetsPayload, scenariosPayload, gameState] = await Promise.all([fetchRulesets(), fetchScenarios(), fetchGameState()]);
       rulesets.value = rulesetsPayload.rulesets;
+      scenarios.value = scenariosPayload.scenarios;
       state.value = gameState;
       snapshots.value = (await fetchSnapshots()).snapshots;
     } catch (caughtError) {
@@ -94,11 +97,11 @@ export const useGameStore = defineStore("game", () => {
     }
   }
 
-  async function startNewGame(ruleset: RulesetMode): Promise<void> {
+  async function startNewGame(ruleset: RulesetMode, scenarioId: string): Promise<void> {
     isSubmitting.value = true;
     error.value = null;
     try {
-      state.value = await createNewGame(ruleset);
+      state.value = await createNewGame(ruleset, scenarioId);
       legalMovesByUnit.value = {};
       lastActionResult.value = null;
       lastAiMoveResponse.value = null;
@@ -324,6 +327,7 @@ export const useGameStore = defineStore("game", () => {
   return {
     state,
     rulesets,
+    scenarios,
     snapshots,
     legalMovesByUnit,
     isLoading,

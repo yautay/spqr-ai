@@ -35,6 +35,7 @@ from legions_api.api.schemas import (
     ReplayVerificationPayload,
     RulesetsPayload,
     SaveGamePayload,
+    ScenariosPayload,
     ShockActionPayload,
     ShockPreviewResponsePayload,
     SnapshotListPayload,
@@ -48,6 +49,7 @@ from legions_api.core.replay import replay_events, verify_replay_state
 from legions_api.core.rules.missile import preview_missile, resolve_missile, resolve_reload
 from legions_api.core.rules.movement import list_legal_move_options, resolve_move
 from legions_api.core.rules.shock import preview_shock, resolve_shock
+from legions_api.core.scenario.loader import available_scenarios
 from legions_api.core.tables.loader import available_rulesets
 from legions_api.core.turn import advance_activation_step, end_turn
 from legions_api.persistence.replay_log import ReplayEvent, ReplayLog
@@ -81,17 +83,17 @@ async def new_game(
 
     event_stream.clear_history()
     replay_log.clear()
-    state = store.reset(ruleset_mode=payload.ruleset)
+    state = store.reset(ruleset_mode=payload.ruleset, scenario_id=payload.scenario_id)
     replay_log.append(ReplayEvent(event_type="game_reset", payload={"ruleset": payload.ruleset.value}))
     event_stream.publish(
         _build_game_event(
             event_type="game_reset",
             ok=True,
             reason="ok",
-            details={"ruleset": payload.ruleset.value},
+            details={"ruleset": payload.ruleset.value, "scenario_id": payload.scenario_id},
         )
     )
-    logger.info("Game reset to demo scenario using ruleset={}", payload.ruleset.value)
+    logger.info("Game reset to scenario={} using ruleset={}", payload.scenario_id, payload.ruleset.value)
     return to_game_state_payload(state)
 
 
@@ -210,6 +212,13 @@ async def rulesets() -> RulesetsPayload:
     """Return supported rulesets that can be selected for a new game."""
 
     return RulesetsPayload(rulesets=list(available_rulesets()))
+
+
+@router.get("/scenarios", response_model=ScenariosPayload)
+async def scenarios() -> ScenariosPayload:
+    """Return scenario identifiers available for new game setup."""
+
+    return ScenariosPayload(scenarios=list(available_scenarios()))
 
 
 @router.get("/state", response_model=GameStatePayload)

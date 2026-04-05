@@ -1,0 +1,18 @@
+{
+  "table_id": "pursuit_option",
+  "version": "import-1",
+  "notes": "Baseline pursuit option ratings and DR modifiers.",
+  "ratings": {
+    "LC": 5,
+    "LN": 5,
+    "RC": 6,
+    "HC": 7,
+    "BC": 6
+  },
+  "dr_modifiers": [
+    {"id": "numidian_lc", "drm": -1},
+    {"id": "defender_is_infantry", "drm": 1},
+    {"id": "leader_charisma", "drm": 0},
+    {"id": "attacker_in_enemy_zoc", "drm": 1}
+  ]
+}

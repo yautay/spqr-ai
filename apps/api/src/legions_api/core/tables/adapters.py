@@ -9,10 +9,12 @@ from legions_api.core.tables.models import (
     ClashColumnsTableModel,
     MissileTableModel,
     MovementCostsTableModel,
+    PursuitOptionTableModel,
     ShockCRTTableModel,
     ShockSuperiorityTableModel,
     StackingMandatoryTableModel,
     StackingVoluntaryTableModel,
+    UnitTypeTraitsTableModel,
 )
 
 
@@ -59,6 +61,14 @@ class ShockColumnAdjustmentLookup:
 
     id: str
     shift: int
+
+
+@dataclass(frozen=True, slots=True)
+class PursuitOptionLookup:
+    """Normalized pursuit ratings and DR modifiers."""
+
+    ratings: dict[str, int]
+    dr_modifiers: dict[str, int]
 
 
 def movement_costs_by_profile(table: MovementCostsTableModel) -> dict[str, dict[TerrainType, int]]:
@@ -228,4 +238,23 @@ def shock_column_adjustment_lookup(table: ShockCRTTableModel) -> dict[str, Shock
         shift = row.value if row.direction == "right" else -row.value
         lookup[row.id] = ShockColumnAdjustmentLookup(id=row.id, shift=shift)
 
+    return lookup
+
+
+def pursuit_option_lookup(table: PursuitOptionTableModel) -> PursuitOptionLookup:
+    """Build pursuit option lookup payload from table model."""
+
+    ratings = {key: int(value) for key, value in table.ratings.items()}
+    dr_modifiers = {row.id: row.drm for row in table.dr_modifiers}
+    return PursuitOptionLookup(ratings=ratings, dr_modifiers=dr_modifiers)
+
+
+def unit_type_traits_lookup(table: UnitTypeTraitsTableModel) -> dict[str, dict[str, bool]]:
+    """Build unit-type trait lookup by canonical unit type id."""
+
+    lookup: dict[str, dict[str, bool]] = {}
+    for row in table.unit_types:
+        if row.unit_type in lookup:
+            raise ValueError(f"duplicate unit_type traits row: {row.unit_type!r}")
+        lookup[row.unit_type] = {trait_id: bool(enabled) for trait_id, enabled in row.traits.items()}
     return lookup

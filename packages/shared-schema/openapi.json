@@ -842,6 +842,11 @@
           "ruleset": {
             "$ref": "#/components/schemas/RulesetMode",
             "default": "original"
+          },
+          "scenario_id": {
+            "default": "demo",
+            "title": "Scenario Id",
+            "type": "string"
           }
         },
         "title": "NewGamePayload",
@@ -1010,6 +1015,23 @@
           }
         },
         "title": "SaveGamePayload",
+        "type": "object"
+      },
+      "ScenariosPayload": {
+        "description": "List of available scenario identifiers.",
+        "properties": {
+          "scenarios": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scenarios",
+            "type": "array"
+          }
+        },
+        "required": [
+          "scenarios"
+        ],
+        "title": "ScenariosPayload",
         "type": "object"
       },
       "ShockActionPayload": {
@@ -2236,6 +2258,28 @@
           }
         },
         "summary": "List Saves",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/game/scenarios": {
+      "get": {
+        "description": "Return scenario identifiers available for new game setup.",
+        "operationId": "scenarios_game_scenarios_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScenariosPayload"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Scenarios",
         "tags": [
           "game"
         ]

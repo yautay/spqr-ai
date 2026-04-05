@@ -1,0 +1,19 @@
+{
+  "scenario_id": "demo",
+  "retreat_edges": {
+    "red": "S",
+    "blue": "N"
+  },
+  "withdrawal_levels": {
+    "red": 12,
+    "blue": 12
+  },
+  "rout_point_rules": {
+    "default": "unit_tq",
+    "overrides": [],
+    "leader_rules": {
+      "named_multiplier": 5,
+      "tribune_prefect_replacement": "initiative"
+    }
+  }
+}

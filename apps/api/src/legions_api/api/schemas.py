@@ -94,6 +94,7 @@ class NewGamePayload(BaseModel):
     """New game creation options."""
 
     ruleset: RulesetMode = RulesetMode.ORIGINAL
+    scenario_id: str = "demo"
 
 
 class SaveGamePayload(BaseModel):
@@ -112,6 +113,12 @@ class RulesetsPayload(BaseModel):
     """List of available ruleset identifiers."""
 
     rulesets: list[RulesetMode]
+
+
+class ScenariosPayload(BaseModel):
+    """List of available scenario identifiers."""
+
+    scenarios: list[str]
 
 
 class SnapshotSummaryPayload(BaseModel):

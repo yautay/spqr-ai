@@ -16,11 +16,13 @@ const gameStore = useGameStore();
 const logStore = useLogStore();
 const uiStore = useUiStore();
 const selectedRuleset = ref<RulesetMode>("original");
+const selectedScenario = ref("demo");
 const selectedSaveSlot = ref("quicksave");
 let gameEventsSocket: GameEventsSocketHandle | null = null;
 
 const boardState = computed(() => gameStore.state);
 const availableRulesets = computed(() => gameStore.rulesets);
+const availableScenarios = computed(() => gameStore.scenarios);
 const selectedUnit = computed(() => {
   if (!uiStore.selectedUnitId) {
     return null;
@@ -93,6 +95,16 @@ watch(
 );
 
 watch(
+  availableScenarios,
+  (scenarios) => {
+    if (scenarios.length > 0 && !scenarios.includes(selectedScenario.value)) {
+      selectedScenario.value = scenarios[0];
+    }
+  },
+  { immediate: true },
+);
+
+watch(
   () => uiStore.selectedUnitId,
   async (unitId) => {
     uiStore.setSelectedDestination(null);
@@ -136,9 +148,9 @@ watch(
 );
 
 async function handleNewGame(): Promise<void> {
-  await gameStore.startNewGame(selectedRuleset.value);
+  await gameStore.startNewGame(selectedRuleset.value, selectedScenario.value);
   uiStore.resetSelections();
-  logStore.append("info", "New game", `Created ${selectedRuleset.value} ruleset match.`);
+  logStore.append("info", "New game", `Created ${selectedRuleset.value} / ${selectedScenario.value}.`);
 }
 
 async function handleSaveGame(): Promise<void> {
@@ -337,6 +349,11 @@ async function handleRunAiMove(): Promise<void> {
         <select v-model="selectedRuleset" :disabled="gameStore.isSubmitting" class="ruleset-select">
           <option v-for="ruleset in availableRulesets" :key="ruleset" :value="ruleset">
             {{ ruleset }}
+          </option>
+        </select>
+        <select v-model="selectedScenario" :disabled="gameStore.isSubmitting" class="ruleset-select">
+          <option v-for="scenario in availableScenarios" :key="scenario" :value="scenario">
+            {{ scenario }}
           </option>
         </select>
         <span class="phase-indicator">Turn {{ boardState?.turn_number ?? "-" }} / {{ boardState?.turn_phase ?? "-" }}</span>
